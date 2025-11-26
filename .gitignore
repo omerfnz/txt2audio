@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+ENV/
+env/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Database
+*.db
+*.sqlite3
+*.sqlite
+
+# Environment
+.env
+.env.local
+
+# Data & Models
+storage/models/
+storage/uploads/
+storage/outputs/
+!storage/.gitkeep
+
+# Frontend
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+.DS_Store

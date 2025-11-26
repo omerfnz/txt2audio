@@ -1,0 +1,11 @@
+[MASTER]
+extension-pkg-whitelist=pydantic
+
+[MESSAGES CONTROL]
+disable=
+    missing-docstring,
+    line-too-long,
+    import-error,
+
+[FORMAT]
+max-line-length=120
