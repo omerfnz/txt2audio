@@ -27,6 +27,8 @@ storage/outputs/
 !storage/.gitkeep
 
 # Backend storage (models, uploads, outputs, cache, etc.)
+backend/storage/models/
+backend/storage/uploads/
 backend/storage/
 !backend/storage/.gitkeep
 
