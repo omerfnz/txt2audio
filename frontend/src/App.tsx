@@ -2,23 +2,24 @@ import { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { FileUpload } from './components/FileUpload';
 import { Player } from './components/Player';
-import { createProject, startProcessing } from './api/client';
+import { createProject, startProcessing, getProjectStatus } from './api/client';
 import { useWebSocket } from './hooks/useWebSocket';
 import { Terminal, CheckCircle, Circle } from 'lucide-react';
 import { clsx } from 'clsx';
+import axios from 'axios';
 
 interface ChunkData {
-    index: number;
-    isProcessed: boolean;
+  index: number;
+  isProcessed: boolean;
 }
 
 interface Message {
-    type: 'status_update' | 'progress_update';
-    status?: string;
-    progress?: number;
-    chunk_index?: number;
-    project_id?: number;
-    error?: string;
+  type: 'status_update' | 'progress_update';
+  status?: string;
+  progress?: number;
+  chunk_index?: number;
+  project_id?: number;
+  error?: string;
 }
 
 function App() {
@@ -28,6 +29,8 @@ function App() {
   const [chunks, setChunks] = useState<ChunkData[]>([]);
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState('idle');
+  const [currentAudioUrl, setCurrentAudioUrl] = useState<string | null>(null);
+  const [currentChunkIndex, setCurrentChunkIndex] = useState<number | null>(null);
 
   const lastMessage = useWebSocket() as Message | null;
 
@@ -60,7 +63,7 @@ function App() {
           }
           return newChunks;
         });
-        setLogs(prev => [...prev, `Processed chunk ${lastMessage.chunk_index}`]);
+        setLogs(prev => [...prev, `Processed chunk ${lastMessage.chunk_index} `]);
       }
     }
   }, [lastMessage]);
@@ -72,6 +75,35 @@ function App() {
     setChunks([]);
     setProgress(0);
     setStatus('idle');
+    setCurrentAudioUrl(null);
+    setCurrentChunkIndex(null);
+  }, []);
+
+  const handleProjectClick = useCallback(async (id: number) => {
+    try {
+      setLogs(prev => [...prev, `Loading project ${id}...`]);
+
+      // Get project status
+      const projectData = await getProjectStatus(id);
+      setProjectId(id);
+      setStatus(projectData.status);
+      setProgress(projectData.progress);
+
+      // Get chunks
+      const chunksResponse = await axios.get<{ chunks: Array<{ index: number; is_processed: boolean }> }>(`http://localhost:8000/api/projects/${id}/chunks`);
+      const chunksData = chunksResponse.data.chunks;
+
+      setChunks(chunksData.map((chunk) => ({
+        index: chunk.index,
+        isProcessed: chunk.is_processed
+      })));
+
+      setView('project');
+      setLogs(prev => [...prev, `Project loaded: ${projectData.name}`, `Chunks: ${chunksData.length}`]);
+    } catch (error) {
+      console.error('Failed to load project:', error);
+      setLogs(prev => [...prev, `Error loading project: ${error}`]);
+    }
   }, []);
 
   const handleUpload = useCallback(async (data: {
@@ -124,10 +156,37 @@ function App() {
     }
   }, []);
 
+  const handlePlayChunk = (chunkIndex: number) => {
+    if (!projectId) return;
+    const audioUrl = `http://localhost:8000/api/audio/chunk/${projectId}/${chunkIndex}`;
+    setCurrentAudioUrl(audioUrl);
+    setCurrentChunkIndex(chunkIndex);
+  };
+
+  const handleNextChunk = () => {
+    if (currentChunkIndex === null || projectId === null) return;
+    const nextIndex = currentChunkIndex + 1;
+    if (nextIndex < chunks.length && chunks[nextIndex]?.isProcessed) {
+      handlePlayChunk(nextIndex);
+    }
+  };
+
+  const handlePreviousChunk = () => {
+    if (currentChunkIndex === null || projectId === null) return;
+    const prevIndex = currentChunkIndex - 1;
+    if (prevIndex >= 0 && chunks[prevIndex]?.isProcessed) {
+      handlePlayChunk(prevIndex);
+    }
+  };
+
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Sidebar - Fixed width, full height */}
-      <Sidebar onNewProject={handleNewProject} />
+      <Sidebar
+        onNewProject={handleNewProject}
+        onProjectClick={handleProjectClick}
+        currentProjectId={projectId}
+      />
 
       {/* Main Content Area - Flex-1, scrollable */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
@@ -170,7 +229,8 @@ function App() {
                             'p-3 rounded-lg border flex items-center justify-between transition-colors',
                             chunk.isProcessed
                               ? 'bg-emerald-500/10 border-emerald-500/30'
-                              : 'bg-slate-800/50 border-slate-700'
+                              : 'bg-slate-800/50 border-slate-700',
+                            currentChunkIndex === idx && 'ring-2 ring-indigo-500'
                           )}
                         >
                           <div className="flex items-center gap-3">
@@ -191,8 +251,16 @@ function App() {
                             </span>
                           </div>
                           {chunk.isProcessed && (
-                            <button className="text-xs bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 px-2 py-1 rounded transition-colors">
-                              Play
+                            <button
+                              onClick={() => handlePlayChunk(idx)}
+                              className={clsx(
+                                'text-xs px-3 py-1.5 rounded transition-colors',
+                                currentChunkIndex === idx
+                                  ? 'bg-indigo-500 text-white'
+                                  : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400'
+                              )}
+                            >
+                              {currentChunkIndex === idx ? 'Playing' : 'Play'}
                             </button>
                           )}
                         </div>
@@ -224,7 +292,12 @@ function App() {
         </main>
 
         {/* Player - Fixed at bottom */}
-        <Player />
+        <Player
+          audioUrl={currentAudioUrl}
+          projectId={projectId}
+          onNext={handleNextChunk}
+          onPrevious={handlePreviousChunk}
+        />
       </div>
     </div>
   );

@@ -20,10 +20,15 @@ pip-delete-this-directory.txt
 .env.local
 
 # Data & Models
+# Legacy storage paths (keep for backward compatibility)
 storage/models/
 storage/uploads/
 storage/outputs/
 !storage/.gitkeep
+
+# Backend storage (models, uploads, outputs, cache, etc.)
+backend/storage/
+!backend/storage/.gitkeep
 
 # Frontend
 node_modules/

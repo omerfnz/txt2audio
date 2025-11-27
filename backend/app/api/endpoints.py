@@ -1,4 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect, Query
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from ..db.session import get_db
 from ..db.models import Project, Chunk
@@ -317,6 +318,24 @@ async def websocket_endpoint(websocket: WebSocket):
         except Exception as e:
             print(f"Error disconnecting: {e}")
 
+
+@router.get("/projects")
+def get_all_projects(db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """Get all projects"""
+    projects = db.query(Project).order_by(Project.created_at.desc()).all()
+    
+    return {
+        "projects": [
+            {
+                "id": project.id,
+                "name": project.name,
+                "status": project.status,
+                "created_at": project.created_at.isoformat() if project.created_at else None
+            }
+            for project in projects
+        ]
+    }
+
 @router.get("/projects/{project_id}")
 def get_project_status(project_id: int, db: Session = Depends(get_db)) -> Dict[str, Any]:
     project = db.query(Project).filter(Project.id == project_id).first()
@@ -334,3 +353,91 @@ def get_project_status(project_id: int, db: Session = Depends(get_db)) -> Dict[s
         "processed_chunks": processed_count,
         "progress": (processed_count / len(chunks)) * 100 if chunks else 0
     }
+
+@router.get("/projects/{project_id}/chunks")
+def get_project_chunks(project_id: int, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """Get all chunks with their audio paths"""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    chunks = db.query(Chunk).filter(Chunk.project_id == project_id).order_by(Chunk.index).all()
+    
+    return {
+        "project_id": project_id,
+        "chunks": [
+            {
+                "index": chunk.index,
+                "text": chunk.text_content,
+                "is_processed": chunk.is_processed,
+                "audio_path": chunk.chunk_audio_path if chunk.is_processed else None
+            }
+            for chunk in chunks
+        ]
+    }
+
+@router.get("/audio/chunk/{project_id}/{chunk_index}")
+async def serve_chunk_audio(project_id: int, chunk_index: int, db: Session = Depends(get_db)):
+    """Serve individual chunk audio file"""
+    chunk = db.query(Chunk).filter(
+        Chunk.project_id == project_id,
+        Chunk.index == chunk_index
+    ).first()
+    
+    if not chunk or not chunk.is_processed or not chunk.chunk_audio_path:
+        raise HTTPException(status_code=404, detail="Audio not found")
+    
+    if not os.path.exists(chunk.chunk_audio_path):
+        raise HTTPException(status_code=404, detail="Audio file not found on disk")
+    
+    return FileResponse(
+        chunk.chunk_audio_path,
+        media_type="audio/wav",
+        filename=f"chunk_{chunk_index}.wav"
+    )
+
+@router.get("/audio/download/{project_id}")
+async def download_merged_audio(project_id: int, db: Session = Depends(get_db)):
+    """Download merged final audio"""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    chunks = db.query(Chunk).filter(
+        Chunk.project_id == project_id,
+        Chunk.is_processed == True
+    ).order_by(Chunk.index).all()
+    
+    if not chunks:
+        raise HTTPException(status_code=404, detail="No processed chunks found")
+    
+    # Merge audio files
+    try:
+        from pydub import AudioSegment
+        
+        combined = AudioSegment.empty()
+        for chunk in chunks:
+            if chunk.chunk_audio_path and os.path.exists(chunk.chunk_audio_path):
+                audio = AudioSegment.from_wav(chunk.chunk_audio_path)
+                # Add 350ms silence between chunks
+                combined += audio + AudioSegment.silent(duration=350)
+        
+        # Save merged file
+        output_filename = f"{project.name}_final.wav"
+        output_path = os.path.join(OUTPUT_DIR, output_filename)
+        combined.export(output_path, format="wav")
+        
+        # Update project
+        project.audio_path = output_path
+        db.commit()
+        
+        return FileResponse(
+            output_path,
+            media_type="audio/wav",
+            filename=output_filename
+        )
+        
+    except Exception as e:
+        print(f"Error merging audio: {e}")
+        raise HTTPException(status_code=500, detail=f"Error merging audio: {str(e)}")
+

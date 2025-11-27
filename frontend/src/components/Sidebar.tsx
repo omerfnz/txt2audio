@@ -1,17 +1,72 @@
-import { Plus, BookOpen, Sparkles } from 'lucide-react';
+import { Plus, BookOpen, Sparkles, Clock, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { getAllProjects } from '../api/client';
+import { clsx } from 'clsx';
 
 interface Project {
     id: number;
     name: string;
     status: string;
+    created_at: string | null;
 }
 
 interface SidebarProps {
-    projects?: Project[];
     onNewProject: () => void;
+    onProjectClick?: (projectId: number) => void;
+    currentProjectId?: number | null;
 }
 
-export function Sidebar({ projects = [], onNewProject }: SidebarProps) {
+export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: SidebarProps) {
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        loadProjects();
+    }, []);
+
+    const loadProjects = async () => {
+        try {
+            const data = await getAllProjects();
+            setProjects(data.projects);
+        } catch (error) {
+            console.error('Failed to load projects:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const formatDate = (dateStr: string | null) => {
+        if (!dateStr) return 'Unknown';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
+
+    const getStatusIcon = (status: string) => {
+        switch (status) {
+            case 'completed':
+                return <CheckCircle className="w-4 h-4 text-emerald-500" />;
+            case 'processing':
+                return <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />;
+            case 'failed':
+                return <AlertCircle className="w-4 h-4 text-red-500" />;
+            default:
+                return <Clock className="w-4 h-4 text-slate-500" />;
+        }
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'completed':
+                return 'text-emerald-400';
+            case 'processing':
+                return 'text-indigo-400';
+            case 'failed':
+                return 'text-red-400';
+            default:
+                return 'text-slate-400';
+        }
+    };
+
     return (
         <div className={`w-80 h-full glass border-r border-white/10 flex flex-col transition-all duration-300 lg:w-80 lg:block hidden md:flex`}>
             {/* Header */}
@@ -42,21 +97,51 @@ export function Sidebar({ projects = [], onNewProject }: SidebarProps) {
                 <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                     <Sparkles className="w-3 h-3" />
                     <span>Recent Projects</span>
+                    {projects.length > 0 && (
+                        <span className="ml-auto text-slate-500">({projects.length})</span>
+                    )}
                 </h2>
                 <div className="space-y-2">
-                    {projects.length === 0 ? (
+                    {loading ? (
+                        <div className="text-sm text-slate-400 text-center py-8 flex items-center justify-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Loading...</span>
+                        </div>
+                    ) : projects.length === 0 ? (
                         <div className="text-sm text-slate-400 text-center py-8 animate-pulse-soft">
                             No projects yet.
                         </div>
                     ) : (
-                        projects.map((_project, idx) => (
+                        projects.map((project) => (
                             <div
-                                key={idx}
-                                className="p-3 rounded-xl hover:bg-white/5 cursor-pointer text-sm text-slate-200 transition-all duration-200 border border-transparent hover:border-indigo-500/30 group"
+                                key={project.id}
+                                onClick={() => onProjectClick?.(project.id)}
+                                className={clsx(
+                                    'p-3 rounded-xl cursor-pointer transition-all duration-200 border group',
+                                    currentProjectId === project.id
+                                        ? 'bg-indigo-500/20 border-indigo-500/50'
+                                        : 'hover:bg-white/5 border-transparent hover:border-indigo-500/30'
+                                )}
                             >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-2 h-2 rounded-full bg-indigo-500 group-hover:animate-pulse" />
-                                    <span>Project {idx + 1}</span>
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            {getStatusIcon(project.status)}
+                                            <p className="text-sm font-medium text-slate-200 truncate">
+                                                {project.name}
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs">
+                                            <span className={clsx('capitalize', getStatusColor(project.status))}>
+                                                {project.status}
+                                            </span>
+                                            <span className="text-slate-500">•</span>
+                                            <span className="text-slate-500">
+                                                {formatDate(project.created_at)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <span className="text-xs text-slate-500">#{project.id}</span>
                                 </div>
                             </div>
                         ))

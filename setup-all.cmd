@@ -48,6 +48,30 @@ if errorlevel 1 (
 cd ..
 echo.
 
+REM Check espeak-ng
+echo.
+echo ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+echo ░ CHECKING DEPENDENCIES
+echo ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+echo.
+where espeak-ng >nul 2>&1
+if errorlevel 1 (
+    echo ⚠ espeak-ng not found in PATH
+    echo Installing espeak-ng with winget...
+    winget install eSpeak-NG.eSpeak-NG --silent --accept-source-agreements --accept-package-agreements
+    if errorlevel 1 (
+        echo.
+        echo ⚠ Auto-install failed. Please install manually:
+        echo   winget install eSpeak-NG.eSpeak-NG
+        echo.
+    ) else (
+        echo ✓ espeak-ng installed successfully
+    )
+) else (
+    echo ✓ espeak-ng found
+)
+echo.
+
 :skip_setup
 
 echo ========================================

@@ -74,3 +74,15 @@ export async function getProjectStatus(
   );
   return response.data;
 }
+
+export async function getAllProjects(): Promise<{
+  projects: Array<{
+    id: number;
+    name: string;
+    status: string;
+    created_at: string | null;
+  }>;
+}> {
+  const response = await api.get("/projects");
+  return response.data;
+}
