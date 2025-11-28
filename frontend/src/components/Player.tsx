@@ -102,7 +102,12 @@ export function Player({ audioUrl, projectId, onNext, onPrevious }: PlayerProps)
     const handleDownload = async () => {
         if (!projectId) return;
         try {
-            const url = `http://localhost:8000/api/audio/download/${projectId}`;
+            // Dynamic URL for localhost and Lightning AI
+            const apiBase = window.location.hostname === 'localhost'
+                ? 'http://localhost:8000/api'
+                : `${window.location.protocol}//${window.location.hostname.replace('4173', '8000')}/api`;
+
+            const url = `${apiBase}/audio/download/${projectId}`;
             const link = document.createElement('a');
             link.href = url;
             link.download = `audiobook_${projectId}.wav`;

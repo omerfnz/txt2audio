@@ -8,6 +8,16 @@ import { Terminal, CheckCircle, Circle } from 'lucide-react';
 import { clsx } from 'clsx';
 import axios from 'axios';
 
+// Dynamic API base URL for localhost and Lightning AI
+const getApiBase = () => {
+  if (window.location.hostname === 'localhost') {
+    return 'http://localhost:8000/api';
+  }
+  const protocol = window.location.protocol;
+  const host = window.location.hostname.replace('4173', '8000');
+  return `${protocol}//${host}/api`;
+};
+
 interface ChunkData {
   index: number;
   isProcessed: boolean;
@@ -90,7 +100,7 @@ function App() {
       setProgress(projectData.progress);
 
       // Get chunks
-      const chunksResponse = await axios.get<{ chunks: Array<{ index: number; is_processed: boolean }> }>(`http://localhost:8000/api/projects/${id}/chunks`);
+      const chunksResponse = await axios.get<{ chunks: Array<{ index: number; is_processed: boolean }> }>(`${getApiBase()}/projects/${id}/chunks`);
       const chunksData = chunksResponse.data.chunks;
 
       setChunks(chunksData.map((chunk) => ({
@@ -171,7 +181,7 @@ function App() {
 
   const handlePlayChunk = (chunkIndex: number) => {
     if (!projectId) return;
-    const audioUrl = `http://localhost:8000/api/audio/chunk/${projectId}/${chunkIndex}`;
+    const audioUrl = `${getApiBase()}/audio/chunk/${projectId}/${chunkIndex}`;
     setCurrentAudioUrl(audioUrl);
     setCurrentChunkIndex(chunkIndex);
   };
