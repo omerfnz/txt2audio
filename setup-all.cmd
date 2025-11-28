@@ -1,95 +1,73 @@
 @echo off
-setlocal enabledelayedexpansion
-color 0A
-title AI Audiobook Studio - Complete Setup
+setlocal
 
-echo.
 echo ========================================
-echo AI Audiobook Studio - Complete Setup
+echo AI Audiobook Studio - Unified Setup (Windows)
 echo ========================================
 echo.
 
-REM Check if already setup
-if exist "backend\venv" (
-    if exist "frontend\node_modules" (
-        echo ✓ Already installed! Skipping setup...
-        echo.
-        goto :skip_setup
-    )
-)
-
-REM Backend setup
-echo.
-echo ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-echo ░ BACKEND SETUP
-echo ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-cd backend
-call setup.cmd
-if errorlevel 1 (
-    echo ERROR: Backend setup failed
+:: 1. Check espeak-ng
+echo [1/4] Checking espeak-ng...
+where espeak-ng >nul 2>nul
+if %errorlevel% neq 0 (
+    echo [WARNING] espeak-ng not found in PATH!
+    echo Please install it from: https://github.com/espeak-ng/espeak-ng/releases
+    echo Add it to your PATH environment variable.
     pause
-    exit /b 1
-)
-cd ..
-echo.
-
-REM Frontend setup
-echo.
-echo ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-echo ░ FRONTEND SETUP
-echo ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-cd frontend
-call setup.cmd
-if errorlevel 1 (
-    echo ERROR: Frontend setup failed
-    pause
-    exit /b 1
-)
-cd ..
-echo.
-
-REM Check espeak-ng
-echo.
-echo ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-echo ░ CHECKING DEPENDENCIES
-echo ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-echo.
-where espeak-ng >nul 2>&1
-if errorlevel 1 (
-    echo ⚠ espeak-ng not found in PATH
-    echo Installing espeak-ng with winget...
-    winget install eSpeak-NG.eSpeak-NG --silent --accept-source-agreements --accept-package-agreements
-    if errorlevel 1 (
-        echo.
-        echo ⚠ Auto-install failed. Please install manually:
-        echo   winget install eSpeak-NG.eSpeak-NG
-        echo.
-    ) else (
-        echo ✓ espeak-ng installed successfully
-    )
 ) else (
-    echo ✓ espeak-ng found
+    echo [OK] espeak-ng found.
 )
 echo.
 
-:skip_setup
+:: 2. Backend Setup
+echo [2/4] Setting up Backend...
+cd backend
+if exist venv rmdir /s /q venv
+python -m venv venv
+call venv\Scripts\activate
+python -m pip install --upgrade pip setuptools wheel
+
+echo Installing PyTorch (CUDA 12.1 Enabled)...
+:: Windows'ta da varsayılan olarak GPU versiyonunu deniyoruz
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+pip install -r requirements.txt
+python -m spacy download en_core_web_sm
+
+:: Model Check
+if exist "storage\models" (
+    echo [INFO] Models directory exists.
+) else (
+    echo [INFO] Models will be downloaded on first run.
+)
+
+cd ..
+echo [OK] Backend setup complete.
+echo.
+
+:: 3. Frontend Setup
+echo [3/4] Setting up Frontend...
+cd frontend
+call npm install
+call npm run build
+cd ..
+echo [OK] Frontend setup complete.
+echo.
+
+:: 4. Create Start Script
+echo [4/4] Creating start script...
+(
+echo @echo off
+echo set TTS_HOME=%%CD%%\backend\storage\models
+echo start "Backend" cmd /k "cd backend ^& venv\Scripts\activate ^& uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+echo start "Frontend" cmd /k "cd frontend ^& npm run dev"
+echo echo App is starting...
+echo echo Backend: http://localhost:8000
+echo echo Frontend: http://localhost:5173
+) > start_app.cmd
 
 echo ========================================
-echo ✅ COMPLETE SETUP FINISHED!
+echo [SUCCESS] Setup Completed!
+echo To start the application, run: start_app.cmd
 echo ========================================
-echo.
-echo NEXT STEPS:
-echo.
-echo 1. Backend (Terminal 1):
-echo    cd backend
-echo    venv\Scripts\activate
-echo    uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-echo.
-echo 2. Frontend (Terminal 2):
-echo    cd frontend
-echo    npm run dev
-echo.
-echo 3. Open browser:
-echo    http://localhost:5173
-echo.
 pause

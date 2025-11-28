@@ -112,6 +112,13 @@ function App() {
     referenceVoicePath: string | null;
     useGpu: boolean;
     name: string;
+    // XTTS Config
+    language: string;
+    speed: number;
+    temperature: number;
+    topK: number;
+    topP: number;
+    repetitionPenalty: number;
   }) => {
     try {
       setLogs(prev => [...prev, "Uploading files..."]);
@@ -120,6 +127,12 @@ function App() {
       formData.append('name', data.name);
       formData.append('text_file', data.text);
       formData.append('use_gpu', String(data.useGpu));
+      formData.append('language', data.language);
+      formData.append('speed', String(data.speed));
+      formData.append('temperature', String(data.temperature));
+      formData.append('top_k', String(data.topK));
+      formData.append('top_p', String(data.topP));
+      formData.append('repetition_penalty', String(data.repetitionPenalty));
 
       // Either upload audio file or use reference voice
       if (data.audio) {

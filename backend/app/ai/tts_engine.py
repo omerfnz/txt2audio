@@ -103,7 +103,7 @@ class TTSEngine:
                 print(f"   Detay: {str(e)}")
                 raise
 
-    def generate_audio(self, text: str, speaker_wav: str, output_path: str, language: str = "en") -> bool:
+    def generate_audio(self, text: str, speaker_wav: str, output_path: str, language: str = "en", **kwargs) -> bool:
         if self.tts is None:
             self.load_model()
         
@@ -119,7 +119,8 @@ class TTSEngine:
                 text=text,
                 speaker_wav=speaker_wav,
                 language=language,
-                file_path=output_path
+                file_path=output_path,
+                **kwargs
             )
             
             # Dosya oluşturuldu mu kontrol et

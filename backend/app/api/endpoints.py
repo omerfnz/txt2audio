@@ -106,6 +106,13 @@ async def create_project(
     voice_file: Optional[UploadFile] = File(None),
     reference_voice_path: Optional[str] = Form(None),
     use_gpu: bool = Form(False),
+    # XTTS Parameters
+    language: str = Form("en"),
+    speed: float = Form(1.0),
+    temperature: float = Form(0.75),
+    top_k: int = Form(50),
+    top_p: float = Form(0.85),
+    repetition_penalty: float = Form(2.0),
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """Yeni proje oluştur ve metni chunk'la"""
@@ -133,7 +140,14 @@ async def create_project(
             name=name,
             text_path=text_path,
             voice_ref_path=voice_path,
-            status="created"
+            status="created",
+            # XTTS Config
+            language=language,
+            speed=speed,
+            temperature=temperature,
+            top_k=top_k,
+            top_p=top_p,
+            repetition_penalty=repetition_penalty
         )
         db.add(project)
         db.commit()
@@ -221,7 +235,13 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
                     engine.generate_audio,
                     text=chunk.text_content,
                     speaker_wav=project.voice_ref_path,
-                    output_path=output_path
+                    output_path=output_path,
+                    language=project.language or "en",
+                    speed=project.speed or 1.0,
+                    temperature=project.temperature or 0.75,
+                    top_k=project.top_k or 50,
+                    top_p=project.top_p or 0.85,
+                    repetition_penalty=project.repetition_penalty or 2.0
                 )
             except RuntimeError as e:
                 print(f"Critical error: {e}")

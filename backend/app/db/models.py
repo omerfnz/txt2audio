@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from .session import Base
@@ -13,6 +13,14 @@ class Project(Base):
     text_path = Column(String)
     audio_path = Column(String, nullable=True)
     voice_ref_path = Column(String)
+    
+    # XTTS Configuration
+    language = Column(String, default="en")
+    speed = Column(Float, default=1.0)
+    temperature = Column(Float, default=0.75)
+    top_k = Column(Integer, default=50)
+    top_p = Column(Float, default=0.85)
+    repetition_penalty = Column(Float, default=2.0)
     
     chunks = relationship("Chunk", back_populates="project")
 
