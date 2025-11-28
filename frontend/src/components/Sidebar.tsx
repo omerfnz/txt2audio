@@ -1,13 +1,15 @@
-import { Plus, BookOpen, Sparkles, Clock, CheckCircle, AlertCircle, Loader2, Trash2 } from 'lucide-react';
+import { Plus, BookOpen, Sparkles, Clock, CheckCircle, AlertCircle, Loader2, Trash2, Merge } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getAllProjects, deleteProject } from '../api/client';
 import { clsx } from 'clsx';
+import { AlertDialog } from './AlertDialog';
 
 interface Project {
     id: number;
     name: string;
     status: string;
     created_at: string | null;
+    audio_path?: string | null;
 }
 
 interface SidebarProps {
@@ -19,6 +21,11 @@ interface SidebarProps {
 export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: SidebarProps) {
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
+    const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; projectId: number | null; projectName: string }>({
+        isOpen: false,
+        projectId: null,
+        projectName: ''
+    });
 
     useEffect(() => {
         loadProjects();
@@ -37,17 +44,30 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
         }
     };
 
-    const handleDelete = async (projectId: number, e: React.MouseEvent) => {
+    const handleDeleteClick = (projectId: number, projectName: string, e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent project click
-        if (!confirm('Are you sure you want to delete this project?')) return;
+        setDeleteDialog({
+            isOpen: true,
+            projectId,
+            projectName
+        });
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!deleteDialog.projectId) return;
 
         try {
-            await deleteProject(projectId);
+            await deleteProject(deleteDialog.projectId);
             await loadProjects(); // Refresh list
+            setDeleteDialog({ isOpen: false, projectId: null, projectName: '' });
         } catch (error) {
             console.error('Failed to delete project:', error);
             alert('Failed to delete project');
         }
+    };
+
+    const handleDeleteCancel = () => {
+        setDeleteDialog({ isOpen: false, projectId: null, projectName: '' });
     };
 
     const formatDate = (dateStr: string | null) => {
@@ -56,7 +76,12 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };
 
-    const getStatusIcon = (status: string) => {
+    const getStatusIcon = (status: string, audioPath: string | null | undefined) => {
+        // If status is completed but audio_path is null, it's merging
+        if (status === 'completed' && !audioPath) {
+            return <Merge className="w-4 h-4 text-purple-500 animate-pulse" />;
+        }
+        
         switch (status) {
             case 'completed':
                 return <CheckCircle className="w-4 h-4 text-emerald-500" />;
@@ -69,7 +94,12 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
         }
     };
 
-    const getStatusColor = (status: string) => {
+    const getStatusColor = (status: string, audioPath: string | null | undefined) => {
+        // If status is completed but audio_path is null, it's merging
+        if (status === 'completed' && !audioPath) {
+            return 'text-purple-400';
+        }
+        
         switch (status) {
             case 'completed':
                 return 'text-emerald-400';
@@ -80,6 +110,14 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
             default:
                 return 'text-slate-400';
         }
+    };
+
+    const getStatusText = (status: string, audioPath: string | null | undefined) => {
+        // If status is completed but audio_path is null, it's merging
+        if (status === 'completed' && !audioPath) {
+            return 'merging';
+        }
+        return status;
     };
 
     return (
@@ -141,14 +179,14 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
                                 <div className="flex items-start justify-between gap-2">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
-                                            {getStatusIcon(project.status)}
+                                            {getStatusIcon(project.status, project.audio_path)}
                                             <p className="text-sm font-medium text-slate-200 truncate">
                                                 {project.name}
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-2 text-xs">
-                                            <span className={clsx('capitalize', getStatusColor(project.status))}>
-                                                {project.status}
+                                            <span className={clsx('capitalize', getStatusColor(project.status, project.audio_path))}>
+                                                {getStatusText(project.status, project.audio_path)}
                                             </span>
                                             <span className="text-slate-500">•</span>
                                             <span className="text-slate-500">
@@ -159,7 +197,7 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs text-slate-500">#{project.id}</span>
                                         <button
-                                            onClick={(e) => handleDelete(project.id, e)}
+                                            onClick={(e) => handleDeleteClick(project.id, project.name, e)}
                                             className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
                                             title="Delete project"
                                         >
@@ -172,6 +210,18 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
                     )}
                 </div>
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog
+                isOpen={deleteDialog.isOpen}
+                title="Delete Project"
+                message={`Are you sure you want to delete "${deleteDialog.projectName}"? This action cannot be undone.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                onConfirm={handleDeleteConfirm}
+                onCancel={handleDeleteCancel}
+                variant="danger"
+            />
         </div>
     );
 }

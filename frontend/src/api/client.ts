@@ -84,6 +84,7 @@ export async function getAllProjects(): Promise<{
     name: string;
     status: string;
     created_at: string | null;
+    audio_path?: string | null;
   }>;
 }> {
   const response = await api.get("/projects");

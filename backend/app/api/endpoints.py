@@ -479,7 +479,8 @@ def get_all_projects(db: Session = Depends(get_db)) -> Dict[str, Any]:
                 "id": project.id,
                 "name": project.name,
                 "status": project.status,
-                "created_at": project.created_at.isoformat() if project.created_at else None
+                "created_at": project.created_at.isoformat() if project.created_at else None,
+                "audio_path": project.audio_path  # Include audio_path to detect merge status
             }
             for project in projects
         ]
