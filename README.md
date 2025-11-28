@@ -17,6 +17,7 @@ Modern bir sesli kitap oluşturma uygulaması. TXT/EPUB dosyalarınızı referan
 - **Python**: 3.10 veya üzeri
 - **Node.js**: 16 veya üzeri
 - **espeak-ng**: TTS için gerekli (otomatik kurulum talimatları aşağıda)
+- **ffmpeg**: Ses dosyalarını birleştirmek için gerekli (otomatik kurulum talimatları aşağıda)
 
 ### Donanım
 - **CPU Mode**: En az 8 GB RAM
@@ -24,9 +25,23 @@ Modern bir sesli kitap oluşturma uygulaması. TXT/EPUB dosyalarınızı referan
 
 ## 🔧 Kurulum
 
-### 1. espeak-ng Kurulumu (İlk Kez)
+### 1. Sistem Bağımlılıkları (İlk Kez)
+
+**Windows:**
 ```bash
 winget install eSpeak-NG.eSpeak-NG
+winget install Gyan.FFmpeg
+```
+
+**Linux (Ubuntu/Debian):**
+```bash
+sudo apt-get update
+sudo apt-get install -y espeak-ng ffmpeg
+```
+
+**macOS:**
+```bash
+brew install espeak-ng ffmpeg
 ```
 
 ### 2. Projeyi Kur
@@ -123,9 +138,35 @@ txt2audio/
 ### espeak-ng bulunamıyor
 **Çözüm**: 
 ```bash
+# Windows
 winget install eSpeak-NG.eSpeak-NG
+
+# Linux
+sudo apt-get install espeak-ng
+
+# macOS
+brew install espeak-ng
 ```
 Kurulumdan sonra terminal'i yeniden başlatın.
+
+### ffmpeg bulunamıyor (Audio merging hatası)
+**Hata**: `Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work`
+
+**Çözüm**: 
+```bash
+# Windows
+winget install Gyan.FFmpeg
+
+# Linux (Ubuntu/Debian)
+sudo apt-get install ffmpeg
+
+# macOS
+brew install ffmpeg
+
+# CentOS/RHEL
+sudo yum install ffmpeg
+```
+Kurulumdan sonra backend'i yeniden başlatın.
 
 ### GPU Memory (VRAM) yetersiz
 **Çözüm**: 

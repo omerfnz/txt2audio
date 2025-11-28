@@ -487,20 +487,47 @@ async def download_merged_audio(project_id: int, db: Session = Depends(get_db)):
     # Merge audio files
     try:
         from pydub import AudioSegment
+        import subprocess
+        
+        # Check if ffmpeg is available
+        try:
+            subprocess.run(['ffmpeg', '-version'], capture_output=True, check=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            raise HTTPException(
+                status_code=500, 
+                detail="ffmpeg is not installed. Please install ffmpeg to merge audio files. "
+                       "Ubuntu/Debian: sudo apt-get install ffmpeg | "
+                       "macOS: brew install ffmpeg | "
+                       "CentOS/RHEL: sudo yum install ffmpeg"
+            )
         
         combined = AudioSegment.empty()
         for chunk in chunks:
             if chunk.chunk_audio_path and os.path.exists(chunk.chunk_audio_path):
-                audio = AudioSegment.from_wav(chunk.chunk_audio_path)
-                # Add 350ms silence between chunks
-                combined += audio + AudioSegment.silent(duration=350)
+                try:
+                    audio = AudioSegment.from_wav(chunk.chunk_audio_path)
+                    # Add 350ms silence between chunks
+                    combined += audio + AudioSegment.silent(duration=350)
+                except Exception as e:
+                    print(f"Warning: Could not load chunk {chunk.index}: {e}")
+                    continue
+        
+        if len(combined) == 0:
+            raise HTTPException(status_code=500, detail="No valid audio chunks found to merge")
         
         # Save merged file in project-specific directory
         project_output_dir = os.path.join(OUTPUT_DIR, str(project_id))
         os.makedirs(project_output_dir, exist_ok=True)
         output_filename = f"{project.name}_final.wav"
         output_path = os.path.join(project_output_dir, output_filename)
-        combined.export(output_path, format="wav")
+        
+        try:
+            combined.export(output_path, format="wav")
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Error exporting merged audio. Make sure ffmpeg is properly installed: {str(e)}"
+            )
         
         # Update project
         project.audio_path = output_path
@@ -522,7 +549,11 @@ async def download_merged_audio(project_id: int, db: Session = Depends(get_db)):
             }
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error merging audio: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error merging audio: {str(e)}")
 

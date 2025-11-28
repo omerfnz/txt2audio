@@ -6,16 +6,35 @@ echo AI Audiobook Studio - Unified Setup (Windows)
 echo ========================================
 echo.
 
-:: 1. Check espeak-ng
-echo [1/4] Checking espeak-ng...
+:: 1. Check system dependencies
+echo [1/4] Checking system dependencies...
+
+:: Check espeak-ng
+echo Checking espeak-ng...
 where espeak-ng >nul 2>nul
 if %errorlevel% neq 0 (
     echo [WARNING] espeak-ng not found in PATH!
-    echo Please install it from: https://github.com/espeak-ng/espeak-ng/releases
+    echo Please install: winget install eSpeak-NG.eSpeak-NG
+    echo Or download from: https://github.com/espeak-ng/espeak-ng/releases
     echo Add it to your PATH environment variable.
-    pause
 ) else (
     echo [OK] espeak-ng found.
+)
+echo.
+
+:: Check ffmpeg
+echo Checking ffmpeg...
+where ffmpeg >nul 2>nul
+if %errorlevel% neq 0 (
+    echo [WARNING] ffmpeg not found in PATH!
+    echo ffmpeg is required for audio merging. Please install:
+    echo   winget install Gyan.FFmpeg
+    echo Or download from: https://ffmpeg.org/download.html
+    echo Add it to your PATH environment variable.
+    echo.
+    echo [WARNING] Audio merging will fail without ffmpeg!
+) else (
+    echo [OK] ffmpeg found.
 )
 echo.
 

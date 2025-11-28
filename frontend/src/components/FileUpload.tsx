@@ -163,6 +163,13 @@ export function FileUpload({ onUpload }: FileUploadProps) {
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
+                    onClick={(e) => {
+                        // Only trigger if clicking directly on the drop zone or its background, not on nested interactive elements
+                        const target = e.target as HTMLElement;
+                        if (target === e.currentTarget || target.closest('.drop-zone-content')) {
+                            textInputRef.current?.click();
+                        }
+                    }}
                     className={clsx(
                         "border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 cursor-pointer relative overflow-hidden group",
                         isDragging ? "border-indigo-500 bg-indigo-500/10 scale-105" : "border-slate-600 hover:border-indigo-500/50 hover:bg-slate-800/50"
@@ -170,7 +177,7 @@ export function FileUpload({ onUpload }: FileUploadProps) {
                 >
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-                    <div className="flex flex-col items-center gap-6 relative z-10">
+                    <div className="flex flex-col items-center gap-6 relative z-10 drop-zone-content">
                         <div className={clsx(
                             "p-6 rounded-2xl transition-all duration-300",
                             isDragging ? "bg-indigo-500 scale-110 shadow-lg shadow-indigo-500/50" : "bg-gradient-to-br from-slate-800 to-slate-900 group-hover:scale-105"
@@ -186,7 +193,10 @@ export function FileUpload({ onUpload }: FileUploadProps) {
                     <div className="grid md:grid-cols-2 gap-6 mt-10">
                         {/* Text File */}
                         <div
-                            onClick={() => textInputRef.current?.click()}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                textInputRef.current?.click();
+                            }}
                             className={clsx(
                                 "p-6 rounded-2xl border-2 flex items-center gap-4 cursor-pointer transition-all duration-300 group/card",
                                 textFile ? "bg-indigo-500/10 border-indigo-500 glow" : "bg-slate-900/50 border-slate-700 hover:border-indigo-500/50 hover:bg-slate-800/50"
@@ -304,7 +314,10 @@ export function FileUpload({ onUpload }: FileUploadProps) {
                     {/* Upload Voice File */}
                     {voiceMode === 'upload' && (
                         <div
-                            onClick={() => audioInputRef.current?.click()}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                audioInputRef.current?.click();
+                            }}
                             className={clsx(
                                 "p-6 rounded-2xl border-2 flex items-center gap-4 cursor-pointer transition-all duration-300 group/card animate-fade-in",
                                 audioFile ? "bg-emerald-500/10 border-emerald-500 glow" : "bg-slate-900/50 border-slate-700 hover:border-emerald-500/50 hover:bg-slate-800/50"

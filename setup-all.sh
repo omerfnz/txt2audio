@@ -12,8 +12,10 @@ echo "AI Audiobook Studio - Unified Setup (Linux/Lightning AI)"
 echo "========================================"
 echo ""
 
-# 1. System Dependencies (espeak-ng)
+# 1. System Dependencies (espeak-ng & ffmpeg)
 echo "[1/4] Checking system dependencies..."
+
+# Check espeak-ng
 if ! command -v espeak-ng &> /dev/null; then
     echo -e "${YELLOW}espeak-ng not found. Attempting to install...${NC}"
     if [ -f /etc/debian_version ]; then
@@ -29,6 +31,26 @@ if ! command -v espeak-ng &> /dev/null; then
     fi
 else
     echo -e "${GREEN}✓ espeak-ng found${NC}"
+fi
+
+# Check ffmpeg
+if ! command -v ffmpeg &> /dev/null; then
+    echo -e "${YELLOW}ffmpeg not found. Attempting to install...${NC}"
+    if [ -f /etc/debian_version ]; then
+        if command -v sudo &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y ffmpeg
+        else
+            echo -e "${YELLOW}sudo not found. Trying to install without sudo (might fail)...${NC}"
+            apt-get update && apt-get install -y ffmpeg
+        fi
+    else
+        echo -e "${RED}Please install ffmpeg manually for your OS.${NC}"
+        echo "  Ubuntu/Debian: sudo apt-get install ffmpeg"
+        echo "  macOS: brew install ffmpeg"
+        echo "  CentOS/RHEL: sudo yum install ffmpeg"
+    fi
+else
+    echo -e "${GREEN}✓ ffmpeg found${NC}"
 fi
 echo ""
 

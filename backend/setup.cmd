@@ -86,14 +86,29 @@ if errorlevel 1 (
 echo.
 
 REM Adım 7: espeak-ng kontrol
-echo [7/7] Checking espeak-ng...
+echo [7/8] Checking espeak-ng...
 where espeak-ng >nul 2>&1
 if errorlevel 1 (
     echo WARNING: espeak-ng not found!
-    echo Please install: winget install eSpeak.eSpeak-NG
+    echo Please install: winget install eSpeak-NG.eSpeak-NG
     echo Or download from: http://espeak.sourceforge.net/
 ) else (
     echo ✓ espeak-ng found
+)
+echo.
+
+REM Adım 8: ffmpeg kontrol
+echo [8/8] Checking ffmpeg...
+where ffmpeg >nul 2>&1
+if errorlevel 1 (
+    echo WARNING: ffmpeg not found!
+    echo ffmpeg is required for audio merging. Please install:
+    echo   winget install Gyan.FFmpeg
+    echo Or download from: https://ffmpeg.org/download.html
+    echo.
+    echo WARNING: Audio merging will fail without ffmpeg!
+) else (
+    echo ✓ ffmpeg found
 )
 echo.
 

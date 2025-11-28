@@ -57,7 +57,7 @@ echo -e "${GREEN}✓ Spacy model setup complete${NC}"
 echo ""
 
 # Adım 7: espeak-ng check
-echo "[7/7] Checking espeak-ng..."
+echo "[7/8] Checking espeak-ng..."
 if ! command -v espeak-ng &> /dev/null; then
     echo -e "${YELLOW}⚠ espeak-ng not found!${NC}"
     echo "Please install:"
@@ -65,6 +65,21 @@ if ! command -v espeak-ng &> /dev/null; then
     echo "  macOS: brew install espeak-ng"
 else
     echo -e "${GREEN}✓ espeak-ng found${NC}"
+fi
+echo ""
+
+# Adım 8: ffmpeg check
+echo "[8/8] Checking ffmpeg..."
+if ! command -v ffmpeg &> /dev/null; then
+    echo -e "${YELLOW}⚠ ffmpeg not found!${NC}"
+    echo "ffmpeg is required for audio merging. Please install:"
+    echo "  Ubuntu/Debian: sudo apt-get install ffmpeg"
+    echo "  macOS: brew install ffmpeg"
+    echo "  CentOS/RHEL: sudo yum install ffmpeg"
+    echo ""
+    echo -e "${RED}⚠ Audio merging will fail without ffmpeg!${NC}"
+else
+    echo -e "${GREEN}✓ ffmpeg found${NC}"
 fi
 echo ""
 
