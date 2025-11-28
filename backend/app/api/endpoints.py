@@ -223,8 +223,12 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
             if chunk.is_processed:
                 continue
                 
-            output_filename = f"proj_{project_id}_chunk_{chunk.index}.wav"
-            output_path = os.path.join(OUTPUT_DIR, output_filename)
+            # Create project-specific output directory
+            project_output_dir = os.path.join(OUTPUT_DIR, str(project_id))
+            os.makedirs(project_output_dir, exist_ok=True)
+            
+            output_filename = f"chunk_{chunk.index}.wav"
+            output_path = os.path.join(project_output_dir, output_filename)
             
             print(f"Processing chunk {chunk.index}/{total_chunks-1}")
             
@@ -442,19 +446,31 @@ async def download_merged_audio(project_id: int, db: Session = Depends(get_db)):
                 # Add 350ms silence between chunks
                 combined += audio + AudioSegment.silent(duration=350)
         
-        # Save merged file
+        # Save merged file in project-specific directory
+        project_output_dir = os.path.join(OUTPUT_DIR, str(project_id))
+        os.makedirs(project_output_dir, exist_ok=True)
         output_filename = f"{project.name}_final.wav"
-        output_path = os.path.join(OUTPUT_DIR, output_filename)
+        output_path = os.path.join(project_output_dir, output_filename)
         combined.export(output_path, format="wav")
         
         # Update project
         project.audio_path = output_path
         db.commit()
         
-        return FileResponse(
-            output_path,
+        # Use StreamingResponse for faster downloads (larger chunks)
+        def iterfile():
+            with open(output_path, mode="rb") as file_like:
+                while chunk := file_like.read(1024 * 1024):  # 1MB chunks
+                    yield chunk
+        
+        from fastapi.responses import StreamingResponse
+        return StreamingResponse(
+            iterfile(),
             media_type="audio/wav",
-            filename=output_filename
+            headers={
+                "Content-Disposition": f"attachment; filename={output_filename}",
+                "Content-Length": str(os.path.getsize(output_path))
+            }
         )
         
     except Exception as e:
