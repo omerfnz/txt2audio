@@ -30,9 +30,10 @@ class TextProcessor:
             print(f"✗ Unexpected error loading model: {e}")
             raise
 
-    def split_into_chunks(self, text: str, max_chars: int = 250) -> List[str]:
+    def split_into_chunks(self, text: str, max_chars: int = 800) -> List[str]:
         """
         Metni mantıklı cümlelere böler ve her parçanın max_chars sınırını aşmamasını sağlar.
+        Optimized: Increased from 250 to 800 for better performance (fewer chunks, faster processing).
         """
         if not self.nlp:
             raise RuntimeError("NLP model not loaded")

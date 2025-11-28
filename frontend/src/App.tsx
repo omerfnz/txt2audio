@@ -181,9 +181,22 @@ function App() {
 
   const handlePlayChunk = (chunkIndex: number) => {
     if (!projectId) return;
+    // Chunk playback only works during processing (before merge deletes chunk files)
+    if (status === 'completed') {
+      // If processing is complete, play the final merged file instead
+      handlePlayFinal();
+      return;
+    }
     const audioUrl = `${getApiBase()}/audio/chunk/${projectId}/${chunkIndex}`;
     setCurrentAudioUrl(audioUrl);
     setCurrentChunkIndex(chunkIndex);
+  };
+
+  const handlePlayFinal = () => {
+    if (!projectId) return;
+    const audioUrl = `${getApiBase()}/audio/download/${projectId}`;
+    setCurrentAudioUrl(audioUrl);
+    setCurrentChunkIndex(null);
   };
 
   const handleNextChunk = () => {
@@ -229,11 +242,21 @@ function App() {
                       <span className="uppercase text-indigo-400">{status}</span>
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-indigo-400">
-                      {progress.toFixed(1)}%
-                    </p>
-                    <p className="text-xs text-slate-400">Completed</p>
+                  <div className="flex items-center gap-4">
+                    {status === 'completed' && (
+                      <button
+                        onClick={handlePlayFinal}
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors text-sm font-semibold"
+                      >
+                        Play Final Audio (MP3)
+                      </button>
+                    )}
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-indigo-400">
+                        {progress.toFixed(1)}%
+                      </p>
+                      <p className="text-xs text-slate-400">Completed</p>
+                    </div>
                   </div>
                 </div>
 
@@ -273,7 +296,7 @@ function App() {
                               Chunk #{idx + 1}
                             </span>
                           </div>
-                          {chunk.isProcessed && (
+                          {chunk.isProcessed && status !== 'completed' && (
                             <button
                               onClick={() => handlePlayChunk(idx)}
                               className={clsx(

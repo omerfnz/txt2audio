@@ -194,6 +194,103 @@ async def process_project(
     
     return {"message": "Processing started in background."}
 
+async def merge_audio_files(project_id: int, db: Session):
+    """
+    Merge all chunk audio files into a single MP3 file.
+    Deletes individual chunk files after merging to save disk space.
+    """
+    from pydub import AudioSegment
+    import subprocess
+    
+    # Check if ffmpeg is available
+    try:
+        subprocess.run(['ffmpeg', '-version'], capture_output=True, check=True)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print("⚠ ffmpeg not found, skipping merge")
+        return
+    
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        return
+    
+    chunks = db.query(Chunk).filter(
+        Chunk.project_id == project_id,
+        Chunk.is_processed == True
+    ).order_by(Chunk.index).all()
+    
+    if not chunks:
+        return
+    
+    project_output_dir = os.path.join(OUTPUT_DIR, str(project_id))
+    os.makedirs(project_output_dir, exist_ok=True)
+    
+    # Check if merged file already exists
+    output_filename_mp3 = f"{project.name}_final.mp3"
+    output_path_mp3 = os.path.join(project_output_dir, output_filename_mp3)
+    
+    if os.path.exists(output_path_mp3):
+        print(f"✓ Merged file already exists for project {project_id}")
+        project.audio_path = output_path_mp3
+        db.commit()
+        return
+    
+    print(f"🔄 Merging {len(chunks)} chunks for project {project_id}...")
+    
+    # Merge audio files
+    combined = AudioSegment.empty()
+    chunk_files_to_delete = []
+    
+    for chunk in chunks:
+        if chunk.chunk_audio_path and os.path.exists(chunk.chunk_audio_path):
+            try:
+                audio = AudioSegment.from_wav(chunk.chunk_audio_path)
+                # Add 350ms silence between chunks
+                combined += audio + AudioSegment.silent(duration=350)
+                chunk_files_to_delete.append(chunk.chunk_audio_path)
+            except Exception as e:
+                print(f"⚠ Warning: Could not load chunk {chunk.index}: {e}")
+                continue
+    
+    if len(combined) == 0:
+        print(f"⚠ No valid audio chunks found to merge for project {project_id}")
+        return
+    
+    # Export as MP3 (much smaller file size)
+    try:
+        print(f"💾 Exporting merged audio as MP3...")
+        combined.export(
+            output_path_mp3, 
+            format="mp3",
+            bitrate="192k"  # Good quality, reasonable file size
+        )
+        print(f"✓ Merged audio saved: {output_path_mp3}")
+    except Exception as e:
+        print(f"❌ Error exporting merged audio: {e}")
+        return
+    
+    # Delete individual chunk files to save disk space
+    deleted_count = 0
+    for chunk_file in chunk_files_to_delete:
+        try:
+            if os.path.exists(chunk_file):
+                os.remove(chunk_file)
+                deleted_count += 1
+        except Exception as e:
+            print(f"⚠ Could not delete chunk file {chunk_file}: {e}")
+    
+    print(f"🗑️ Deleted {deleted_count} chunk files")
+    
+    # Update project with merged file path
+    project.audio_path = output_path_mp3
+    db.commit()
+    
+    # Clear chunk_audio_path in database (files are deleted)
+    for chunk in chunks:
+        chunk.chunk_audio_path = None
+    db.commit()
+    
+    print(f"✅ Merge completed for project {project_id}")
+
 async def process_audio_task(project_id: int, use_gpu: bool = False):
     from ..db.session import SessionLocal
     db = SessionLocal()
@@ -306,6 +403,15 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
             "status": "completed",
             "progress": 100
         })
+        
+        # Automatically merge audio files after processing completes
+        print(f"🔄 Starting automatic merge for project {project_id}...")
+        try:
+            await merge_audio_files(project_id, db)
+            print(f"✓ Merge completed for project {project_id}")
+        except Exception as merge_error:
+            print(f"⚠ Merge failed for project {project_id}: {merge_error}")
+            # Don't fail the whole process if merge fails
         
     except Exception as e:
         print(f"Error processing project {project_id}: {e}")
@@ -471,7 +577,7 @@ async def serve_chunk_audio(project_id: int, chunk_index: int, db: Session = Dep
 
 @router.get("/audio/download/{project_id}")
 async def download_merged_audio(project_id: int, db: Session = Depends(get_db)):
-    """Download merged final audio"""
+    """Download merged final audio (MP3 format)"""
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -484,76 +590,40 @@ async def download_merged_audio(project_id: int, db: Session = Depends(get_db)):
     if not chunks:
         raise HTTPException(status_code=404, detail="No processed chunks found")
     
-    # Merge audio files
-    try:
-        from pydub import AudioSegment
-        import subprocess
+    project_output_dir = os.path.join(OUTPUT_DIR, str(project_id))
+    output_filename = f"{project.name}_final.mp3"
+    output_path = os.path.join(project_output_dir, output_filename)
+    
+    # Check if merged file already exists (from automatic merge)
+    if project.audio_path and os.path.exists(project.audio_path):
+        output_path = project.audio_path
+        output_filename = os.path.basename(output_path)
+        print(f"✓ Using existing merged file: {output_path}")
+    else:
+        # Fallback: merge on-demand if file doesn't exist
+        print(f"⚠ Merged file not found, merging on-demand...")
+        await merge_audio_files(project_id, db)
+        db.refresh(project)
         
-        # Check if ffmpeg is available
-        try:
-            subprocess.run(['ffmpeg', '-version'], capture_output=True, check=True)
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            raise HTTPException(
-                status_code=500, 
-                detail="ffmpeg is not installed. Please install ffmpeg to merge audio files. "
-                       "Ubuntu/Debian: sudo apt-get install ffmpeg | "
-                       "macOS: brew install ffmpeg | "
-                       "CentOS/RHEL: sudo yum install ffmpeg"
-            )
-        
-        combined = AudioSegment.empty()
-        for chunk in chunks:
-            if chunk.chunk_audio_path and os.path.exists(chunk.chunk_audio_path):
-                try:
-                    audio = AudioSegment.from_wav(chunk.chunk_audio_path)
-                    # Add 350ms silence between chunks
-                    combined += audio + AudioSegment.silent(duration=350)
-                except Exception as e:
-                    print(f"Warning: Could not load chunk {chunk.index}: {e}")
-                    continue
-        
-        if len(combined) == 0:
-            raise HTTPException(status_code=500, detail="No valid audio chunks found to merge")
-        
-        # Save merged file in project-specific directory
-        project_output_dir = os.path.join(OUTPUT_DIR, str(project_id))
-        os.makedirs(project_output_dir, exist_ok=True)
-        output_filename = f"{project.name}_final.wav"
-        output_path = os.path.join(project_output_dir, output_filename)
-        
-        try:
-            combined.export(output_path, format="wav")
-        except Exception as e:
-            raise HTTPException(
-                status_code=500, 
-                detail=f"Error exporting merged audio. Make sure ffmpeg is properly installed: {str(e)}"
-            )
-        
-        # Update project
-        project.audio_path = output_path
-        db.commit()
-        
-        # Use StreamingResponse for faster downloads (larger chunks)
-        def iterfile():
-            with open(output_path, mode="rb") as file_like:
-                while chunk := file_like.read(1024 * 1024):  # 1MB chunks
-                    yield chunk
-        
-        from fastapi.responses import StreamingResponse
-        return StreamingResponse(
-            iterfile(),
-            media_type="audio/wav",
-            headers={
-                "Content-Disposition": f"attachment; filename={output_filename}",
-                "Content-Length": str(os.path.getsize(output_path))
-            }
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error merging audio: {e}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error merging audio: {str(e)}")
+        if project.audio_path and os.path.exists(project.audio_path):
+            output_path = project.audio_path
+            output_filename = os.path.basename(output_path)
+        else:
+            raise HTTPException(status_code=500, detail="Failed to create merged audio file")
+    
+    # Use StreamingResponse for faster downloads (larger chunks)
+    def iterfile():
+        with open(output_path, mode="rb") as file_like:
+            while chunk := file_like.read(4 * 1024 * 1024):  # 4MB chunks (increased from 1MB)
+                yield chunk
+    
+    from fastapi.responses import StreamingResponse
+    return StreamingResponse(
+        iterfile(),
+        media_type="audio/mpeg",
+        headers={
+            "Content-Disposition": f"attachment; filename={output_filename}",
+            "Content-Length": str(os.path.getsize(output_path))
+        }
+    )
 

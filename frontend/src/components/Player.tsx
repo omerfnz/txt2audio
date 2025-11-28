@@ -110,7 +110,7 @@ export function Player({ audioUrl, projectId, onNext, onPrevious }: PlayerProps)
             const url = `${apiBase}/audio/download/${projectId}`;
             const link = document.createElement('a');
             link.href = url;
-            link.download = `audiobook_${projectId}.wav`;
+            link.download = `audiobook_${projectId}.mp3`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
