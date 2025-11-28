@@ -23,6 +23,11 @@ interface ChunkData {
   isProcessed: boolean;
 }
 
+interface LogEntry {
+  message: string;
+  timestamp: Date;
+}
+
 interface Message {
   type: 'status_update' | 'progress_update';
   status?: string;
@@ -35,30 +40,54 @@ interface Message {
 function App() {
   const [view, setView] = useState<'upload' | 'project'>('upload');
   const [projectId, setProjectId] = useState<number | null>(null);
-  const [logs, setLogs] = useState<string[]>([]);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const [chunks, setChunks] = useState<ChunkData[]>([]);
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState('idle');
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string | null>(null);
   const [currentChunkIndex, setCurrentChunkIndex] = useState<number | null>(null);
+  const [processingStartTime, setProcessingStartTime] = useState<Date | null>(null);
+  const [estimatedEndTime, setEstimatedEndTime] = useState<Date | null>(null);
 
   const lastMessage = useWebSocket() as Message | null;
+
+  // Helper function to add log with timestamp
+  const addLog = useCallback((message: string) => {
+    setLogs(prev => [...prev, { message, timestamp: new Date() }]);
+  }, []);
+
+  // Calculate estimated end time based on progress
+  useEffect(() => {
+    if (status === 'processing' && processingStartTime && progress > 0 && progress < 100) {
+      const elapsed = Date.now() - processingStartTime.getTime();
+      const estimatedTotal = (elapsed / progress) * 100;
+      const remaining = estimatedTotal - elapsed;
+      const estimatedEnd = new Date(Date.now() + remaining);
+      setEstimatedEndTime(estimatedEnd);
+    } else if (status === 'completed' || status === 'failed') {
+      setEstimatedEndTime(null);
+    }
+  }, [status, progress, processingStartTime]);
 
   // Handle WebSocket messages
   useEffect(() => {
     if (!lastMessage) return;
 
     if (lastMessage.type === 'status_update') {
-      setStatus(lastMessage.status || 'unknown');
+      const newStatus = lastMessage.status || 'unknown';
+      setStatus(newStatus);
       if (lastMessage.progress !== undefined) {
         setProgress(lastMessage.progress);
       }
-      setLogs(prev => [
-        ...prev,
-        `Status: ${lastMessage.status} (${lastMessage.progress}%)`
-      ]);
+      
+      if (newStatus === 'processing' && !processingStartTime) {
+        setProcessingStartTime(new Date());
+      }
+      
+      addLog(`Status: ${newStatus} (${lastMessage.progress || 0}%)`);
     } else if (lastMessage.type === 'progress_update') {
-      setProgress(lastMessage.progress || 0);
+      const newProgress = lastMessage.progress || 0;
+      setProgress(newProgress);
 
       if (lastMessage.chunk_index !== undefined) {
         setChunks(prev => {
@@ -73,10 +102,10 @@ function App() {
           }
           return newChunks;
         });
-        setLogs(prev => [...prev, `Processed chunk ${lastMessage.chunk_index} `]);
+        addLog(`Processed chunk ${lastMessage.chunk_index}`);
       }
     }
-  }, [lastMessage]);
+  }, [lastMessage, addLog, processingStartTime]);
 
   const handleNewProject = useCallback(() => {
     setView('upload');
@@ -87,11 +116,16 @@ function App() {
     setStatus('idle');
     setCurrentAudioUrl(null);
     setCurrentChunkIndex(null);
+    setProcessingStartTime(null);
+    setEstimatedEndTime(null);
   }, []);
 
   const handleProjectClick = useCallback(async (id: number) => {
     try {
-      setLogs(prev => [...prev, `Loading project ${id}...`]);
+      setLogs([]);
+      setProcessingStartTime(null);
+      setEstimatedEndTime(null);
+      addLog(`Loading project ${id}...`);
 
       // Get project status
       const projectData = await getProjectStatus(id);
@@ -109,12 +143,13 @@ function App() {
       })));
 
       setView('project');
-      setLogs(prev => [...prev, `Project loaded: ${projectData.name}`, `Chunks: ${chunksData.length}`]);
+      addLog(`Project loaded: ${projectData.name}`);
+      addLog(`Chunks: ${chunksData.length}`);
     } catch (error) {
       console.error('Failed to load project:', error);
-      setLogs(prev => [...prev, `Error loading project: ${error}`]);
+      addLog(`Error loading project: ${error}`);
     }
-  }, []);
+  }, [addLog]);
 
   const handleUpload = useCallback(async (data: {
     text: File;
@@ -131,7 +166,10 @@ function App() {
     repetitionPenalty: number;
   }) => {
     try {
-      setLogs(prev => [...prev, "Uploading files..."]);
+      setLogs([]);
+      setProcessingStartTime(null);
+      setEstimatedEndTime(null);
+      addLog("Uploading files...");
 
       const formData = new FormData();
       formData.append('name', data.name);
@@ -153,11 +191,8 @@ function App() {
 
       const res = await createProject(formData);
       setProjectId(res.project_id);
-      setLogs(prev => [
-        ...prev,
-        `Project created: ${res.project_id}`,
-        `Total chunks: ${res.total_chunks}`
-      ]);
+      addLog(`Project created: ${res.project_id}`);
+      addLog(`Total chunks: ${res.total_chunks}`);
 
       // Initialize chunks
       setChunks(new Array(res.total_chunks).fill(null).map((_, i) => ({
@@ -168,16 +203,17 @@ function App() {
       setView('project');
       setStatus('processing');
       setProgress(0);
+      setProcessingStartTime(new Date());
 
-      setLogs(prev => [...prev, "Starting processing..."]);
+      addLog("Starting processing...");
       await startProcessing(res.project_id, data.useGpu);
 
     } catch (error) {
       console.error(error);
-      setLogs(prev => [...prev, `Error: ${error instanceof Error ? error.message : 'Unknown error'}`]);
+      addLog(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setStatus('failed');
     }
-  }, []);
+  }, [addLog]);
 
   const handlePlayChunk = (chunkIndex: number) => {
     if (!projectId) return;
@@ -250,6 +286,18 @@ function App() {
                       >
                         Play Final Audio (MP3)
                       </button>
+                    )}
+                    {status === 'processing' && processingStartTime && (
+                      <div className="text-right">
+                        <p className="text-xs text-slate-400">
+                          Started: {processingStartTime.toLocaleTimeString()}
+                        </p>
+                        {estimatedEndTime && (
+                          <p className="text-xs text-emerald-400">
+                            Est. finish: {estimatedEndTime.toLocaleTimeString()}
+                          </p>
+                        )}
+                      </div>
                     )}
                     <div className="text-right">
                       <p className="text-2xl font-bold text-indigo-400">
@@ -324,9 +372,9 @@ function App() {
                       {logs.map((log, i) => (
                         <div key={i}>
                           <span className="text-slate-500">
-                            [{new Date().toLocaleTimeString()}]
+                            [{log.timestamp.toLocaleTimeString()}]
                           </span>{' '}
-                          {log}
+                          {log.message}
                         </div>
                       ))}
                     </div>
