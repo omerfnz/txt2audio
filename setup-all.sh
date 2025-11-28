@@ -17,10 +17,15 @@ echo "[1/4] Checking system dependencies..."
 if ! command -v espeak-ng &> /dev/null; then
     echo -e "${YELLOW}espeak-ng not found. Attempting to install...${NC}"
     if [ -f /etc/debian_version ]; then
-        sudo apt-get update && sudo apt-get install -y espeak-ng
+        # Check if we have sudo
+        if command -v sudo &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y espeak-ng
+        else
+            echo -e "${YELLOW}sudo not found. Trying to install without sudo (might fail)...${NC}"
+            apt-get update && apt-get install -y espeak-ng
+        fi
     else
         echo -e "${RED}Please install espeak-ng manually for your OS.${NC}"
-        # Lightning AI'da sudo gerekebilir, hata verirse devam etmeyelim
     fi
 else
     echo -e "${GREEN}✓ espeak-ng found${NC}"
@@ -30,30 +35,42 @@ echo ""
 # 2. Backend Setup
 echo "[2/4] Setting up Backend..."
 cd backend
+
+# Venv Handling
+USE_VENV=true
+echo "Attempting to create virtual environment..."
+
+# Remove old venv if exists
 if [ -d "venv" ]; then
-    echo "Removing old venv..."
     rm -rf venv
 fi
-python3 -m venv venv
-source venv/bin/activate
+
+# Try to create venv, if fails, use system python
+if python3 -m venv venv 2>/dev/null; then
+    echo -e "${GREEN}✓ Virtual environment created.${NC}"
+    source venv/bin/activate
+else
+    echo -e "${YELLOW}⚠ Virtual environment creation failed or restricted.${NC}"
+    echo -e "${YELLOW}ℹ Using system Python environment (Conda/System Default).${NC}"
+    USE_VENV=false
+fi
+
 pip install --upgrade pip setuptools wheel
 
 # PyTorch Installation - FORCE GPU (CUDA 12.1)
-# Lightning AI ve modern sunucular için varsayılan olarak GPU versiyonunu kuruyoruz.
-# CPU olsa bile bu çalışır (sadece boyutu büyüktür), ama GPU varsa direkt görür.
 echo "Installing PyTorch (CUDA 12.1 Enabled)..."
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
-# Diğer gereksinimler
+# Other requirements
 pip install -r requirements.txt
 python -m spacy download en_core_web_sm
 
-# Model Kontrolü
+# Model Check
 MODEL_DIR="$(pwd)/storage/models"
 if [ -d "$MODEL_DIR" ] && [ "$(ls -A $MODEL_DIR)" ]; then
-    echo -e "${GREEN}✓ Models directory exists and is not empty. Skipping download check.${NC}"
+    echo -e "${GREEN}✓ Models directory exists and is not empty.${NC}"
 else
-    echo -e "${YELLOW}ℹ Models will be downloaded on first run automatically.${NC}"
+    echo -e "${YELLOW}ℹ Models will be downloaded on first run.${NC}"
 fi
 
 cd ..
@@ -71,12 +88,20 @@ echo ""
 
 # 4. Create Start Script
 echo "[4/4] Creating start script..."
-cat > start.sh << 'EOF'
-#!/bin/bash
-# Start Backend
-cd backend
-source venv/bin/activate
-# Modelleri tekrar indirmeyi engellemek için environment variable
+
+# Start building start.sh
+echo "#!/bin/bash" > start.sh
+echo "# Start Backend" >> start.sh
+echo "cd backend" >> start.sh
+
+# Only activate venv if we created one
+if [ "$USE_VENV" = true ]; then
+    echo "source venv/bin/activate" >> start.sh
+fi
+
+# Continue building start.sh
+cat >> start.sh << 'EOF'
+# Prevent re-downloading models
 export TTS_HOME="$(pwd)/storage/models"
 uvicorn app.main:app --host 0.0.0.0 --port 8000 &
 BACKEND_PID=$!
@@ -93,6 +118,7 @@ echo "Frontend: http://localhost:4173"
 trap "kill $BACKEND_PID $FRONTEND_PID" EXIT
 wait
 EOF
+
 chmod +x start.sh
 
 echo "========================================"
