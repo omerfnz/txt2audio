@@ -1,7 +1,10 @@
 import type { AxiosInstance } from "axios";
 import axios from "axios";
 
-const API_BASE = "http://localhost:8000/api";
+// Lightning AI ve localhost uyumlu dinamik API URL
+const API_BASE = window.location.hostname === 'localhost' 
+  ? "http://localhost:8000/api"
+  : `${window.location.protocol}//${window.location.hostname.replace('4173', '8000')}/api`;
 
 interface ReferenceVoicesResponse {
   voices: Record<

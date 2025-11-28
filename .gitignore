@@ -29,7 +29,8 @@ storage/outputs/
 # Backend storage (models, uploads, outputs, cache, etc.)
 backend/storage/models/
 backend/storage/uploads/
-backend/storage/*
+backend/storage/outputs/
+!backend/storage/reference_voices/
 !backend/storage/.gitkeep
 
 # Frontend

@@ -9,7 +9,19 @@ interface WebSocketMessage {
   error?: string;
 }
 
-const WS_URL = "ws://localhost:8000/api/ws";
+// Lightning AI ve localhost uyumlu dinamik WebSocket URL
+const getWsUrl = () => {
+  const isLocalhost = window.location.hostname === 'localhost';
+  if (isLocalhost) {
+    return "ws://localhost:8000/api/ws";
+  }
+  // Lightning AI için wss:// kullan ve portu değiştir
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsHost = window.location.hostname.replace('4173', '8000');
+  return `${wsProtocol}//${wsHost}/api/ws`;
+};
+
+const WS_URL = getWsUrl();
 
 export function useWebSocket(): WebSocketMessage | null {
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
