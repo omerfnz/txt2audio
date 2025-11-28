@@ -1,6 +1,6 @@
-import { Plus, BookOpen, Sparkles, Clock, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Plus, BookOpen, Sparkles, Clock, CheckCircle, AlertCircle, Loader2, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getAllProjects } from '../api/client';
+import { getAllProjects, deleteProject } from '../api/client';
 import { clsx } from 'clsx';
 
 interface Project {
@@ -34,6 +34,19 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
             console.error('Failed to load projects:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDelete = async (projectId: number, e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent project click
+        if (!confirm('Are you sure you want to delete this project?')) return;
+
+        try {
+            await deleteProject(projectId);
+            await loadProjects(); // Refresh list
+        } catch (error) {
+            console.error('Failed to delete project:', error);
+            alert('Failed to delete project');
         }
     };
 
@@ -143,7 +156,16 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
                                             </span>
                                         </div>
                                     </div>
-                                    <span className="text-xs text-slate-500">#{project.id}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs text-slate-500">#{project.id}</span>
+                                        <button
+                                            onClick={(e) => handleDelete(project.id, e)}
+                                            className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                                            title="Delete project"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))

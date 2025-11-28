@@ -49,6 +49,7 @@ export function FileUpload({ onUpload }: FileUploadProps) {
     const [topK, setTopK] = useState(50);
     const [topP, setTopP] = useState(0.85);
     const [repetitionPenalty, setRepetitionPenalty] = useState(2.0);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const textInputRef = useRef<HTMLInputElement>(null);
     const audioInputRef = useRef<HTMLInputElement>(null);
@@ -107,11 +108,13 @@ export function FileUpload({ onUpload }: FileUploadProps) {
     }, [referenceVoices]);
 
     const handleSubmit = useCallback(() => {
+        if (isSubmitting) return; // Prevent double-click
         if (!textFile || !projectName) return;
 
         if (voiceMode === 'upload' && !audioFile) return;
         if (voiceMode === 'reference' && !selectedVoice) return;
 
+        setIsSubmitting(true);
         onUpload({
             text: textFile,
             audio: voiceMode === 'upload' ? audioFile : null,
@@ -125,7 +128,8 @@ export function FileUpload({ onUpload }: FileUploadProps) {
             topP,
             repetitionPenalty
         });
-    }, [textFile, projectName, voiceMode, audioFile, selectedVoice, useGpu, language, speed, temperature, topK, topP, repetitionPenalty, onUpload]);
+        // Note: Parent component should reset form or navigate away
+    }, [isSubmitting, textFile, projectName, voiceMode, audioFile, selectedVoice, useGpu, language, speed, temperature, topK, topP, repetitionPenalty, onUpload]);
 
     const canSubmit = textFile && projectName && (
         (voiceMode === 'upload' && audioFile) ||
@@ -488,10 +492,10 @@ export function FileUpload({ onUpload }: FileUploadProps) {
                 {/* Submit Button */}
                 <button
                     onClick={handleSubmit}
-                    disabled={!canSubmit}
+                    disabled={!canSubmit || isSubmitting}
                     className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white py-4 px-6 rounded-2xl font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-indigo-500/50 disabled:shadow-none transform hover:scale-[1.02] disabled:scale-100"
                 >
-                    Start Processing
+                    {isSubmitting ? 'Creating Project...' : 'Start Processing'}
                 </button>
             </div>
         </div>

@@ -89,3 +89,8 @@ export async function getAllProjects(): Promise<{
   const response = await api.get("/projects");
   return response.data;
 }
+
+export async function deleteProject(projectId: number): Promise<{ message: string }> {
+  const response = await api.delete(`/projects/${projectId}`);
+  return response.data;
+}

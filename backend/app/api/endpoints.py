@@ -248,8 +248,28 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
                     repetition_penalty=project.repetition_penalty or 2.0
                 )
             except RuntimeError as e:
-                print(f"Critical error: {e}")
-                raise
+                error_msg = str(e)
+                if "CUDA" in error_msg or "device-side assert" in error_msg:
+                    print(f"❌ CUDA Error on chunk {chunk.index}: {e}")
+                    print("🔄 Attempting to recover: clearing GPU and reloading model...")
+                    
+                    # Force cleanup
+                    engine.release_memory()
+                    del engine
+                    import gc
+                    gc.collect()
+                    
+                    # Reload model
+                    try:
+                        engine = get_tts_engine(use_gpu=use_gpu)
+                        print("✓ Model reloaded successfully")
+                        success = False  # Skip this chunk for now
+                    except Exception as reload_error:
+                        print(f"❌ Failed to reload model: {reload_error}")
+                        raise  # Critical failure
+                else:
+                    print(f"Critical error: {e}")
+                    raise
             except Exception as e:
                 print(f"Error processing chunk {chunk.index}: {e}")
                 success = False
@@ -272,9 +292,8 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
                     "progress": progress
                 })
 
-                # Daha sık memory cleanup (her 3 chunk'ta bir - düşük VRAM için)
-                if chunk.index % 3 == 0 and chunk.index > 0:
-                    engine.release_memory()
+                # Aggressive memory cleanup AFTER EVERY CHUNK (for large projects)
+                engine.release_memory()
             else:
                 print(f"Failed to process chunk {chunk.index}")
         
@@ -359,6 +378,36 @@ def get_all_projects(db: Session = Depends(get_db)) -> Dict[str, Any]:
             for project in projects
         ]
     }
+
+@router.delete("/projects/{project_id}")
+def delete_project(project_id: int, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """Delete a project and all its associated data"""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    try:
+        # Delete audio files from filesystem
+        project_output_dir = os.path.join(OUTPUT_DIR, str(project_id))
+        if os.path.exists(project_output_dir):
+            shutil.rmtree(project_output_dir)
+            print(f"✓ Deleted output directory: {project_output_dir}")
+        
+        # Delete uploaded files
+        if project.text_path and os.path.exists(project.text_path):
+            os.remove(project.text_path)
+        
+        # Delete chunks (cascade should handle this, but being explicit)
+        db.query(Chunk).filter(Chunk.project_id == project_id).delete()
+        
+        # Delete project
+        db.delete(project)
+        db.commit()
+        
+        return {"message": f"Project {project_id} deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete project: {str(e)}")
 
 @router.get("/projects/{project_id}")
 def get_project_status(project_id: int, db: Session = Depends(get_db)) -> Dict[str, Any]:
