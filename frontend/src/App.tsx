@@ -51,6 +51,15 @@ function App() {
 
   const lastMessage = useWebSocket() as Message | null;
 
+  // Save processingStartTime to localStorage whenever it changes
+  useEffect(() => {
+    if (processingStartTime && projectId) {
+      localStorage.setItem(`processingStartTime_${projectId}`, processingStartTime.toISOString());
+    } else if (!processingStartTime && projectId) {
+      localStorage.removeItem(`processingStartTime_${projectId}`);
+    }
+  }, [processingStartTime, projectId]);
+
   // Helper function to add log with timestamp
   const addLog = useCallback((message: string) => {
     setLogs(prev => [...prev, { message, timestamp: new Date() }]);
@@ -60,14 +69,24 @@ function App() {
   useEffect(() => {
     if (status === 'processing' && processingStartTime && progress > 0 && progress < 100) {
       const elapsed = Date.now() - processingStartTime.getTime();
-      const estimatedTotal = (elapsed / progress) * 100;
-      const remaining = estimatedTotal - elapsed;
-      const estimatedEnd = new Date(Date.now() + remaining);
-      setEstimatedEndTime(estimatedEnd);
+      if (elapsed > 0) {
+        const estimatedTotal = (elapsed / progress) * 100;
+        const remaining = estimatedTotal - elapsed;
+        if (remaining > 0) {
+          const estimatedEnd = new Date(Date.now() + remaining);
+          setEstimatedEndTime(estimatedEnd);
+        } else {
+          setEstimatedEndTime(null);
+        }
+      }
     } else if (status === 'completed' || status === 'failed') {
       setEstimatedEndTime(null);
+      // Clean up localStorage when processing completes
+      if (projectId) {
+        localStorage.removeItem(`processingStartTime_${projectId}`);
+      }
     }
-  }, [status, progress, processingStartTime]);
+  }, [status, progress, processingStartTime, projectId]);
 
   // Handle WebSocket messages
   useEffect(() => {
@@ -108,6 +127,7 @@ function App() {
   }, [lastMessage, addLog, processingStartTime]);
 
   const handleNewProject = useCallback(() => {
+    const currentId = projectId;
     setView('upload');
     setProjectId(null);
     setLogs([]);
@@ -118,12 +138,15 @@ function App() {
     setCurrentChunkIndex(null);
     setProcessingStartTime(null);
     setEstimatedEndTime(null);
-  }, []);
+    // Clean up localStorage for previous project
+    if (currentId) {
+      localStorage.removeItem(`processingStartTime_${currentId}`);
+    }
+  }, [projectId]);
 
   const handleProjectClick = useCallback(async (id: number) => {
     try {
       setLogs([]);
-      setProcessingStartTime(null);
       setEstimatedEndTime(null);
       addLog(`Loading project ${id}...`);
 
@@ -132,6 +155,25 @@ function App() {
       setProjectId(id);
       setStatus(projectData.status);
       setProgress(projectData.progress);
+
+      // Load processingStartTime from localStorage if project is processing
+      if (projectData.status === 'processing') {
+        const savedStartTime = localStorage.getItem(`processingStartTime_${id}`);
+        if (savedStartTime) {
+          setProcessingStartTime(new Date(savedStartTime));
+        } else if (projectData.progress > 0) {
+          // If no saved time but progress > 0, estimate start time based on progress
+          // Assume average processing rate to estimate start time
+          const estimatedElapsed = (projectData.progress / 100) * 3600000; // Rough estimate: 1 hour for 100%
+          const estimatedStart = new Date(Date.now() - estimatedElapsed);
+          setProcessingStartTime(estimatedStart);
+          localStorage.setItem(`processingStartTime_${id}`, estimatedStart.toISOString());
+        }
+      } else {
+        // Clear processingStartTime for non-processing projects
+        setProcessingStartTime(null);
+        localStorage.removeItem(`processingStartTime_${id}`);
+      }
 
       // Get chunks
       const chunksResponse = await axios.get<{ chunks: Array<{ index: number; is_processed: boolean }> }>(`${getApiBase()}/projects/${id}/chunks`);
@@ -287,14 +329,27 @@ function App() {
                         Play Final Audio (MP3)
                       </button>
                     )}
-                    {status === 'processing' && processingStartTime && (
+                    {status === 'processing' && (
                       <div className="text-right">
-                        <p className="text-xs text-slate-400">
-                          Started: {processingStartTime.toLocaleTimeString()}
-                        </p>
-                        {estimatedEndTime && (
-                          <p className="text-xs text-emerald-400">
-                            Est. finish: {estimatedEndTime.toLocaleTimeString()}
+                        {processingStartTime ? (
+                          <>
+                            <p className="text-xs text-slate-400">
+                              Started: {processingStartTime.toLocaleTimeString()}
+                            </p>
+                            {estimatedEndTime && (
+                              <p className="text-xs text-emerald-400">
+                                Est. finish: {estimatedEndTime.toLocaleTimeString()}
+                              </p>
+                            )}
+                            {progress > 0 && processingStartTime && (
+                              <p className="text-xs text-slate-500 mt-1">
+                                Elapsed: {Math.floor((Date.now() - processingStartTime.getTime()) / 1000 / 60)} min
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-xs text-slate-500">
+                            Processing...
                           </p>
                         )}
                       </div>
