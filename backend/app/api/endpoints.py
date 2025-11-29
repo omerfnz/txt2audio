@@ -198,6 +198,7 @@ async def merge_audio_files(project_id: int, db: Session):
     """
     Merge all chunk audio files into a single MP3 file.
     Deletes individual chunk files after merging to save disk space.
+    Sends progress updates via WebSocket.
     """
     from pydub import AudioSegment
     import subprocess
@@ -234,28 +235,60 @@ async def merge_audio_files(project_id: int, db: Session):
         db.commit()
         return
     
+    # Update status to merging
+    project.status = "merging"
+    db.commit()
+    
+    # Broadcast merging status
+    await manager.broadcast({
+        "type": "status_update",
+        "project_id": project_id,
+        "status": "merging",
+        "progress": 99.0  # Start at 99% (processing was 100%)
+    })
+    
     print(f"🔄 Merging {len(chunks)} chunks for project {project_id}...")
     
     # Merge audio files
     combined = AudioSegment.empty()
     chunk_files_to_delete = []
     
-    for chunk in chunks:
-        if chunk.chunk_audio_path and os.path.exists(chunk.chunk_audio_path):
-            try:
-                audio = AudioSegment.from_wav(chunk.chunk_audio_path)
-                # Add 350ms silence between chunks
-                combined += audio + AudioSegment.silent(duration=350)
-                chunk_files_to_delete.append(chunk.chunk_audio_path)
-            except Exception as e:
-                print(f"⚠ Warning: Could not load chunk {chunk.index}: {e}")
-                continue
+    # Phase 1: Load and combine chunks (99% to 99.5% of total progress)
+    valid_chunks = [chunk for chunk in chunks if chunk.chunk_audio_path and os.path.exists(chunk.chunk_audio_path)]
+    total_valid = len(valid_chunks)
+    
+    for idx, chunk in enumerate(valid_chunks):
+        try:
+            audio = AudioSegment.from_wav(chunk.chunk_audio_path)
+            # Add 350ms silence between chunks
+            combined += audio + AudioSegment.silent(duration=350)
+            chunk_files_to_delete.append(chunk.chunk_audio_path)
+            
+            # Update progress: 99% + (idx/total_valid * 0.5) = 99% to 99.5%
+            if total_valid > 0:
+                merge_progress = 99.0 + (idx / total_valid) * 0.5
+                await manager.broadcast({
+                    "type": "progress_update",
+                    "project_id": project_id,
+                    "progress": merge_progress
+                })
+        except Exception as e:
+            print(f"⚠ Warning: Could not load chunk {chunk.index}: {e}")
+            continue
     
     if len(combined) == 0:
         print(f"⚠ No valid audio chunks found to merge for project {project_id}")
+        project.status = "completed"
+        db.commit()
         return
     
-    # Export as MP3 (much smaller file size)
+    # Phase 2: Export as MP3 (99.5% to 99.8% of total progress)
+    await manager.broadcast({
+        "type": "progress_update",
+        "project_id": project_id,
+        "progress": 99.5
+    })
+    
     try:
         print(f"💾 Exporting merged audio as MP3...")
         combined.export(
@@ -264,17 +297,41 @@ async def merge_audio_files(project_id: int, db: Session):
             bitrate="192k"  # Good quality, reasonable file size
         )
         print(f"✓ Merged audio saved: {output_path_mp3}")
+        
+        await manager.broadcast({
+            "type": "progress_update",
+            "project_id": project_id,
+            "progress": 99.8
+        })
     except Exception as e:
         print(f"❌ Error exporting merged audio: {e}")
+        project.status = "failed"
+        db.commit()
+        await manager.broadcast({
+            "type": "status_update",
+            "project_id": project_id,
+            "status": "failed",
+            "error": str(e)
+        })
         return
     
-    # Delete individual chunk files to save disk space
+    # Phase 3: Delete chunk files (99.8% to 100% of total progress)
     deleted_count = 0
-    for chunk_file in chunk_files_to_delete:
+    total_to_delete = len(chunk_files_to_delete)
+    for idx, chunk_file in enumerate(chunk_files_to_delete):
         try:
             if os.path.exists(chunk_file):
                 os.remove(chunk_file)
                 deleted_count += 1
+                
+                # Update progress: 99.8% + (idx/total_to_delete * 0.2) = 99.8% to 100%
+                if total_to_delete > 0:
+                    delete_progress = 99.8 + (idx / total_to_delete) * 0.2
+                    await manager.broadcast({
+                        "type": "progress_update",
+                        "project_id": project_id,
+                        "progress": delete_progress
+                    })
         except Exception as e:
             print(f"⚠ Could not delete chunk file {chunk_file}: {e}")
     
@@ -282,12 +339,21 @@ async def merge_audio_files(project_id: int, db: Session):
     
     # Update project with merged file path
     project.audio_path = output_path_mp3
+    project.status = "completed"
     db.commit()
     
     # Clear chunk_audio_path in database (files are deleted)
     for chunk in chunks:
         chunk.chunk_audio_path = None
     db.commit()
+    
+    # Broadcast completion
+    await manager.broadcast({
+        "type": "status_update",
+        "project_id": project_id,
+        "status": "completed",
+        "progress": 100
+    })
     
     print(f"✅ Merge completed for project {project_id}")
 

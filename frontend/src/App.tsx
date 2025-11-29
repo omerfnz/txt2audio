@@ -67,7 +67,7 @@ function App() {
 
   // Calculate estimated end time based on progress
   useEffect(() => {
-    if (status === 'processing' && processingStartTime && progress > 0 && progress < 100) {
+    if ((status === 'processing' || status === 'merging') && processingStartTime && progress > 0 && progress < 100) {
       const elapsed = Date.now() - processingStartTime.getTime();
       if (elapsed > 0) {
         const estimatedTotal = (elapsed / progress) * 100;
@@ -99,8 +99,19 @@ function App() {
         setProgress(lastMessage.progress);
       }
       
-      if (newStatus === 'processing' && !processingStartTime) {
+      if ((newStatus === 'processing' || newStatus === 'merging') && !processingStartTime) {
         setProcessingStartTime(new Date());
+      }
+      
+      // If status changed to merging, keep the processingStartTime
+      if (newStatus === 'merging' && !processingStartTime) {
+        // Try to load from localStorage
+        const saved = localStorage.getItem(`processingStartTime_${projectId}`);
+        if (saved) {
+          setProcessingStartTime(new Date(saved));
+        } else {
+          setProcessingStartTime(new Date());
+        }
       }
       
       addLog(`Status: ${newStatus} (${lastMessage.progress || 0}%)`);
@@ -122,9 +133,12 @@ function App() {
           return newChunks;
         });
         addLog(`Processed chunk ${lastMessage.chunk_index}`);
+      } else if (status === 'merging') {
+        // Log merge progress updates
+        addLog(`Merging progress: ${newProgress.toFixed(1)}%`);
       }
     }
-  }, [lastMessage, addLog, processingStartTime]);
+  }, [lastMessage, addLog, processingStartTime, status, projectId]);
 
   const handleNewProject = useCallback(() => {
     const currentId = projectId;
@@ -156,8 +170,8 @@ function App() {
       setStatus(projectData.status);
       setProgress(projectData.progress);
 
-      // Load processingStartTime from localStorage if project is processing
-      if (projectData.status === 'processing') {
+      // Load processingStartTime from localStorage if project is processing or merging
+      if (projectData.status === 'processing' || projectData.status === 'merging') {
         const savedStartTime = localStorage.getItem(`processingStartTime_${id}`);
         if (savedStartTime) {
           setProcessingStartTime(new Date(savedStartTime));
@@ -317,7 +331,15 @@ function App() {
                     <h1 className="text-3xl font-bold">Project View</h1>
                     <p className="text-slate-400">
                       ID: {projectId} • Status:{' '}
-                      <span className="uppercase text-indigo-400">{status}</span>
+                      <span className={clsx(
+                        "uppercase",
+                        status === 'merging' ? 'text-purple-400' : 
+                        status === 'processing' ? 'text-indigo-400' :
+                        status === 'completed' ? 'text-emerald-400' :
+                        status === 'failed' ? 'text-red-400' : 'text-slate-400'
+                      )}>
+                        {status === 'merging' ? 'Merging' : status}
+                      </span>
                     </p>
                   </div>
                   <div className="flex items-center gap-4">
@@ -329,7 +351,7 @@ function App() {
                         Play Final Audio (MP3)
                       </button>
                     )}
-                    {status === 'processing' && (
+                    {(status === 'processing' || status === 'merging') && (
                       <div className="text-right">
                         {processingStartTime ? (
                           <>
@@ -346,10 +368,15 @@ function App() {
                                 Elapsed: {Math.floor((Date.now() - processingStartTime.getTime()) / 1000 / 60)} min
                               </p>
                             )}
+                            {status === 'merging' && (
+                              <p className="text-xs text-purple-400 mt-1 font-semibold">
+                                Merging audio files...
+                              </p>
+                            )}
                           </>
                         ) : (
                           <p className="text-xs text-slate-500">
-                            Processing...
+                            {status === 'merging' ? 'Merging...' : 'Processing...'}
                           </p>
                         )}
                       </div>

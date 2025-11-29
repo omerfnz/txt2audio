@@ -83,6 +83,8 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
         }
         
         switch (status) {
+            case 'merging':
+                return <Merge className="w-4 h-4 text-purple-500 animate-pulse" />;
             case 'completed':
                 return <CheckCircle className="w-4 h-4 text-emerald-500" />;
             case 'processing':
@@ -101,6 +103,8 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
         }
         
         switch (status) {
+            case 'merging':
+                return 'text-purple-400';
             case 'completed':
                 return 'text-emerald-400';
             case 'processing':
