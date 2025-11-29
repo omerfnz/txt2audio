@@ -30,10 +30,12 @@ class TextProcessor:
             print(f"✗ Unexpected error loading model: {e}")
             raise
 
-    def split_into_chunks(self, text: str, max_chars: int = 800) -> List[str]:
+    def split_into_chunks(self, text: str, max_chars: int = 400) -> List[str]:
         """
         Metni mantıklı cümlelere böler ve her parçanın max_chars sınırını aşmamasını sağlar.
-        Optimized: Increased from 250 to 800 for better performance (fewer chunks, faster processing).
+        Optimized: Set to 400 to stay within XTTS token limit (402 tokens max).
+        XTTS can only generate text with a maximum of 400 tokens, so we use 400 chars
+        as a safe limit (approximately 100-150 tokens depending on text complexity).
         """
         if not self.nlp:
             raise RuntimeError("NLP model not loaded")
