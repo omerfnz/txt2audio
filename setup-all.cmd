@@ -41,17 +41,43 @@ echo.
 :: 2. Backend Setup
 echo [2/4] Setting up Backend...
 cd backend
-if exist venv rmdir /s /q venv
-python -m venv venv
+if not exist venv (
+    echo Creating Python virtual environment...
+    python -m venv venv
+) else (
+    echo Virtual environment already exists, using existing...
+)
 call venv\Scripts\activate
 python -m pip install --upgrade pip setuptools wheel
 
-echo Installing PyTorch (CUDA 12.1 Enabled)...
-:: Windows'ta da varsayılan olarak GPU versiyonunu deniyoruz
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+REM Check if PyTorch is already installed
+python -c "import torch; print('PyTorch already installed')" >nul 2>&1
+if errorlevel 1 (
+    echo Installing PyTorch (CUDA 12.1 Enabled)...
+    :: Windows'ta da varsayılan olarak GPU versiyonunu deniyoruz
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+) else (
+    echo PyTorch already installed, skipping...
+)
 
-pip install -r requirements.txt
-python -m spacy download en_core_web_sm
+REM Check if requirements are installed
+python -c "import fastapi; import sqlalchemy; print('Requirements check')" >nul 2>&1
+if errorlevel 1 (
+    echo Installing requirements...
+    pip install -r requirements.txt
+) else (
+    echo Requirements already installed, checking for updates...
+    pip install -r requirements.txt --upgrade --quiet
+)
+
+REM Check if Spacy model is installed
+python -c "import spacy; spacy.load('en_core_web_sm'); print('Spacy model ready')" >nul 2>&1
+if errorlevel 1 (
+    echo Downloading Spacy model...
+    python -m spacy download en_core_web_sm
+) else (
+    echo Spacy model already installed...
+)
 
 :: Model Check
 if exist "storage\models" (
@@ -78,7 +104,8 @@ echo [4/4] Creating start script...
 (
 echo @echo off
 echo set TTS_HOME=%%CD%%\backend\storage\models
-echo start "Backend" cmd /k "cd backend ^& venv\Scripts\activate ^& uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+echo set COQUI_TOS_AGREED=1
+echo start "Backend" cmd /k "cd backend ^& venv\Scripts\activate ^& set TTS_HOME=%%~dp0backend\storage\models ^& set COQUI_TOS_AGREED=1 ^& uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
 echo start "Frontend" cmd /k "cd frontend ^& npm run dev"
 echo echo App is starting...
 echo echo Backend: http://localhost:8000

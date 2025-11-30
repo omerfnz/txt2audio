@@ -36,7 +36,7 @@ echo.
 
 
 REM Start Backend in new window
-start "Backend - AI Audiobook Studio" cmd /k "cd backend && venv\Scripts\activate && set COQUI_TOS_AGREED=1 && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+start "Backend - AI Audiobook Studio" cmd /k "cd /d %~dp0backend && venv\Scripts\activate && set TTS_HOME=%~dp0backend\storage\models && set COQUI_TOS_AGREED=1 && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
 
 REM Start Frontend in new window
 start "Frontend - AI Audiobook Studio" cmd /k "cd frontend && npm run dev"
