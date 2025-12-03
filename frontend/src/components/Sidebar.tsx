@@ -149,8 +149,8 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
                 </button>
             </div>
 
-            {/* Projects List */}
-            <div className="flex-1 overflow-y-auto p-4 pt-0 custom-scrollbar min-h-0">
+            {/* Projects List - Scrollable Area */}
+            <div className="flex-1 p-4 pt-0 custom-scrollbar min-h-0">
                 <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                     <Sparkles className="w-3 h-3" />
                     <span>Recent Projects</span>
