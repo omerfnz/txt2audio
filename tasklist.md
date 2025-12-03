@@ -109,7 +109,10 @@ Bu dosya, projenin adım adım ilerleyişini takip etmek için oluşturulmuştur
 
 ### Tespit Edilen Kritik Sorunlar
 ✅ **Tamamı Çözüldü:**
-1. ✅ Sidebar scroll sorunu - DÜZELTİLDİ
+1. ✅ Sidebar scroll sorunu - TAMAMEN DÜZELTİLDİ (v2)
+   - **v1 (İlk Deneme):** Scrollbar görünür yaptık ama yapı yanlıştı
+   - **v2 (Final):** Recent Projects başlığı scroll container dışına taşındı
+   - **Sonuç:** Başlık sabit, sadece projeler scroll ediyor ✅
 
 ### Önerilen İyileştirmeler (Öncelikli)
 📋 **Detaylar için:** `KURUMSAL_ANALIZ_RAPORU.md` bakınız
@@ -118,6 +121,7 @@ Bu dosya, projenin adım adım ilerleyişini takip etmek için oluşturulmuştur
 - [ ] Database migration (Alembic) ekle
 - [ ] Windows script error handling iyileştir
 - [ ] TTS model download timeout ekle
+- [ ] Lazy loading/Virtual scrolling ekle (Sidebar için)
 
 **🚀 Orta Öncelik:**
 - [ ] Unit test infrastructure (pytest + Vitest)
@@ -132,6 +136,10 @@ Bu dosya, projenin adım adım ilerleyişini takip etmek için oluşturulmuştur
 ## 📝 Notlar
 - **VRAM Uyarısı:** GPU modunda 2.15 GB VRAM düşüktür. Büyük metinlerde sorun yaşanabilir. CPU modu önerilir.
 - **Model İndirme:** İlk çalıştırmada XTTS v2 modeli (~2 GB) indirilecektir, bu normaldir.
-- **Sidebar Scroll:** ✅ Düzeltildi! (2025-12-03)
+- **Sidebar Scroll:** ✅ %100 Düzeltildi! (2025-12-03 18:15)
+  - Recent Projects başlığı sabit kalıyor
+  - Sadece projeler listesi scroll ediyor
+  - Flexbox overflow pattern doğru uygulandı
+  - `min-height: 0` eklendi (kritik fix)
 - **Kod Kalitesi:** Genel olarak çok iyi, bazı iyileştirmeler önerilenler raporlandı.
 

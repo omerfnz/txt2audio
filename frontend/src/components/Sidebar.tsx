@@ -149,69 +149,76 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
                 </button>
             </div>
 
-            {/* Projects List - Scrollable Area */}
-            <div className="flex-1 p-4 pt-0 custom-scrollbar min-h-0">
-                <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <Sparkles className="w-3 h-3" />
-                    <span>Recent Projects</span>
-                    {projects.length > 0 && (
-                        <span className="ml-auto text-slate-500">({projects.length})</span>
-                    )}
-                </h2>
-                <div className="space-y-2">
-                    {loading ? (
-                        <div className="text-sm text-slate-400 text-center py-8 flex items-center justify-center gap-2">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>Loading...</span>
-                        </div>
-                    ) : projects.length === 0 ? (
-                        <div className="text-sm text-slate-400 text-center py-8 animate-pulse-soft">
-                            No projects yet.
-                        </div>
-                    ) : (
-                        projects.map((project) => (
-                            <div
-                                key={project.id}
-                                onClick={() => onProjectClick?.(project.id)}
-                                className={clsx(
-                                    'p-3 rounded-xl cursor-pointer transition-all duration-200 border group',
-                                    currentProjectId === project.id
-                                        ? 'bg-indigo-500/20 border-indigo-500/50'
-                                        : 'hover:bg-white/5 border-transparent hover:border-indigo-500/30'
-                                )}
-                            >
-                                <div className="flex items-start justify-between gap-2">
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            {getStatusIcon(project.status, project.audio_path)}
-                                            <p className="text-sm font-medium text-slate-200 truncate">
-                                                {project.name}
-                                            </p>
+            {/* Projects Section Container - FIX: Proper flex structure */}
+            <div className="flex-1 flex flex-col min-h-0 px-4 pb-4">
+                {/* Section Header - Fixed, doesn't scroll */}
+                <div className="flex-shrink-0 mb-3 pt-0">
+                    <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                        <Sparkles className="w-3 h-3" />
+                        <span>Recent Projects</span>
+                        {projects.length > 0 && (
+                            <span className="ml-auto text-slate-500">({projects.length})</span>
+                        )}
+                    </h2>
+                </div>
+
+                {/* Projects List - Scrollable area only */}
+                <div className="flex-1 custom-scrollbar min-h-0 pr-2">
+                    <div className="space-y-2">
+                        {loading ? (
+                            <div className="text-sm text-slate-400 text-center py-8 flex items-center justify-center gap-2">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <span>Loading...</span>
+                            </div>
+                        ) : projects.length === 0 ? (
+                            <div className="text-sm text-slate-400 text-center py-8 animate-pulse-soft">
+                                No projects yet.
+                            </div>
+                        ) : (
+                            projects.map((project) => (
+                                <div
+                                    key={project.id}
+                                    onClick={() => onProjectClick?.(project.id)}
+                                    className={clsx(
+                                        'p-3 rounded-xl cursor-pointer transition-all duration-200 border group',
+                                        currentProjectId === project.id
+                                            ? 'bg-indigo-500/20 border-indigo-500/50'
+                                            : 'hover:bg-white/5 border-transparent hover:border-indigo-500/30'
+                                    )}
+                                >
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                {getStatusIcon(project.status, project.audio_path)}
+                                                <p className="text-sm font-medium text-slate-200 truncate">
+                                                    {project.name}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-xs">
+                                                <span className={clsx('capitalize', getStatusColor(project.status, project.audio_path))}>
+                                                    {getStatusText(project.status, project.audio_path)}
+                                                </span>
+                                                <span className="text-slate-500">•</span>
+                                                <span className="text-slate-500">
+                                                    {formatDate(project.created_at)}
+                                                </span>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2 text-xs">
-                                            <span className={clsx('capitalize', getStatusColor(project.status, project.audio_path))}>
-                                                {getStatusText(project.status, project.audio_path)}
-                                            </span>
-                                            <span className="text-slate-500">•</span>
-                                            <span className="text-slate-500">
-                                                {formatDate(project.created_at)}
-                                            </span>
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                            <span className="text-xs text-slate-500">#{project.id}</span>
+                                            <button
+                                                onClick={(e) => handleDeleteClick(project.id, project.name, e)}
+                                                className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                                                title="Delete project"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs text-slate-500">#{project.id}</span>
-                                        <button
-                                            onClick={(e) => handleDeleteClick(project.id, project.name, e)}
-                                            className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                                            title="Delete project"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
                                     </div>
                                 </div>
-                            </div>
-                        ))
-                    )}
+                            ))
+                        )}
+                    </div>
                 </div>
             </div>
 
