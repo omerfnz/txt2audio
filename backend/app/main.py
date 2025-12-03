@@ -2,7 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .db.session import engine
 from .db import models
-from .api import endpoints
+from .routers import projects, audio, websocket
+from .core.logging import logger
+from .core.exceptions import global_exception_handler
 
 # Veritabanı tablolarını oluştur
 models.Base.metadata.create_all(bind=engine)
@@ -12,6 +14,11 @@ app = FastAPI(
     description="Convert text to professional audiobooks with AI voice cloning",
     version="1.0.0"
 )
+
+# Register Global Exception Handler
+app.add_exception_handler(Exception, global_exception_handler)
+
+logger.info("Application starting up...")
 
 # CORS Middleware - WEBSOCKER İÇİN KRITIK!
 app.add_middleware(
@@ -23,7 +30,9 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-app.include_router(endpoints.router, prefix="/api")
+app.include_router(projects.router, prefix="/api")
+app.include_router(audio.router, prefix="/api")
+app.include_router(websocket.router, prefix="/api")
 
 @app.get("/")
 def read_root():

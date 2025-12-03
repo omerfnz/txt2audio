@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { AlertTriangle, X } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -44,14 +45,14 @@ export function AlertDialog({
 
     const styles = variantStyles[variant];
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
             {/* Backdrop */}
-            <div 
+            <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                 onClick={onCancel}
             />
-            
+
             {/* Dialog */}
             <div className={clsx(
                 "relative glass rounded-2xl border-2 p-6 max-w-md w-full mx-4 shadow-2xl animate-slide-up",
@@ -101,7 +102,8 @@ export function AlertDialog({
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 

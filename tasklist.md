@@ -35,16 +35,40 @@ Bu dosya, projenin adım adım ilerleyişini takip etmek için oluşturulmuştur
 - [x] **Adım 4.4:** espeak-ng kurulumu tamamlandı.
 - [x] **Adım 4.5:** README ve sistem kontrol script'i oluşturuldu.
 
+## 🟠 Faz 5: Refactoring & Mimari İyileştirmeler (BAŞLIYORUZ)
+> **Hedef:** Kod tabanını modüler, test edilebilir ve bakımı kolay hale getirmek.
+
+### Backend Refactoring
+- [x] **Adım 5.1:** Konfigürasyon Yönetimi
+    - `backend/app/core/config.py` oluşturulacak.
+    - Hardcoded path'ler (`storage/`, `models/`) ve ayarlar buraya taşınacak.
+- [x] **Adım 5.2:** Service Layer Ayrımı
+    - `backend/app/services/` klasörü oluşturulacak.
+    - `audio_service.py`: Merge ve process mantığı buraya.
+    - `project_service.py`: DB işlemleri buraya.
+    - `websocket.py`: WebSocket manager buraya.
+- [x] **Adım 5.3:** Router Ayrımı
+    - `backend/app/routers/` klasörü oluşturulacak.
+    - `endpoints.py` parçalanacak: `projects.py`, `audio.py`, `websocket.py`.
+- [x] **Adım 5.4:** Global Hata Yönetimi & Loglama
+    - Global Exception Handler eklenecek.
+    - `print()` yerine `logging` modülü entegre edilecek.
+
+### Frontend Refactoring
+- [x] **Adım 5.5:** View Ayrımı
+    - `App.tsx` içindeki görünümler `views/UploadView.tsx` ve `views/ProjectView.tsx` olarak ayrılacak.
+- [x] **Adım 5.6:** Custom Hooks
+    - WebSocket ve proje durumu mantığı `hooks/useProjectStatus.ts` içine taşınacak.
+    - `types/index.ts` oluşturulacak.
+
 ## 🏁 Proje Durumu
 - [x] **Backend:** Çalışıyor ✅
 - [x] **Frontend:** Çalışıyor ✅
 - [x] **WebSocket:** Çalışıyor ✅
 - [x] **TTS Engine:** Optimize edildi ✅
+- [x] **Refactoring:** Tamamlandı ✅
 - [ ] **GPU Test:** Bekleniyor (kullanıcı testi gerekli)
-- [ ] **Tam Sesli Kitap Üretimi:** Test edilmeli
 
 ## 📝 Notlar
 - **VRAM Uyarısı:** GPU modunda 2.15 GB VRAM düşüktür. Büyük metinlerde sorun yaşanabilir. CPU modu önerilir.
 - **Model İndirme:** İlk çalıştırmada XTTS v2 modeli (~2 GB) indirilecektir, bu normaldir.
-- **espeak-ng:** Sistem PATH'inde bulunuyor, sorun yok.
-

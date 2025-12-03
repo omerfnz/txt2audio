@@ -90,8 +90,9 @@ npm run dev
 txt2audio/
 ├── backend/              # FastAPI + AI Logic
 │   ├── app/
-│   │   ├── ai/          # TTS Engine & Text Processor
-│   │   ├── api/         # REST & WebSocket Endpoints
+│   │   ├── core/        # Config & Logging
+│   │   ├── routers/     # API Routes (Projects, Audio, WS)
+│   │   ├── services/    # Business Logic (Audio, WS)
 │   │   ├── db/          # Database Models & Session
 │   │   └── main.py      # FastAPI App
 │   ├── storage/         # Uploads, Outputs, Models
@@ -100,7 +101,10 @@ txt2audio/
 ├── frontend/            # React + TypeScript
 │   ├── src/
 │   │   ├── components/  # UI Components
+│   │   │   └── upload/  # Upload Form Components
+│   │   ├── views/       # Page Views (Upload, Project)
 │   │   ├── hooks/       # Custom React Hooks
+│   │   ├── types/       # TypeScript Definitions
 │   │   ├── api/         # API Client
 │   │   └── App.tsx      # Main App
 │   └── package.json

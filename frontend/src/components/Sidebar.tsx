@@ -81,7 +81,7 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
         if (status === 'completed' && !audioPath) {
             return <Merge className="w-4 h-4 text-purple-500 animate-pulse" />;
         }
-        
+
         switch (status) {
             case 'merging':
                 return <Merge className="w-4 h-4 text-purple-500 animate-pulse" />;
@@ -101,7 +101,7 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
         if (status === 'completed' && !audioPath) {
             return 'text-purple-400';
         }
-        
+
         switch (status) {
             case 'merging':
                 return 'text-purple-400';
@@ -150,7 +150,7 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
             </div>
 
             {/* Projects List */}
-            <div className="flex-1 overflow-y-auto p-4 pt-0">
+            <div className="flex-1 overflow-y-auto p-4 pt-0 custom-scrollbar">
                 <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                     <Sparkles className="w-3 h-3" />
                     <span>Recent Projects</span>

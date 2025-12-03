@@ -1,100 +1,72 @@
-import { useEffect, useRef, useState } from "react";
+import { useState, useEffect, useCallback, useRef } from 'react';
+import type { WebSocketMessage } from '../types';
 
-interface WebSocketMessage {
-  type: "status_update" | "progress_update" | "ping" | "error";
-  status?: string;
-  progress?: number;
-  chunk_index?: number;
-  project_id?: number;
-  error?: string;
-}
+const RECONNECT_INTERVAL = 3000;
 
-// Lightning AI ve localhost uyumlu dinamik WebSocket URL
-const getWsUrl = () => {
-  const isLocalhost = window.location.hostname === 'localhost';
-  if (isLocalhost) {
-    return "ws://localhost:8000/api/ws";
-  }
-  // Lightning AI için wss:// kullan ve portu değiştir
-  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsHost = window.location.hostname.replace('4173', '8000');
-  return `${wsProtocol}//${wsHost}/api/ws`;
-};
-
-const WS_URL = getWsUrl();
-
-export function useWebSocket(): WebSocketMessage | null {
+export const useWebSocket = () => {
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
-  const ws = useRef<WebSocket | null>(null);
-  const reconnectAttempts = useRef(0);
-  const maxReconnectAttempts = 3;
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    const connect = () => {
-      try {
-        if (ws.current?.readyState === WebSocket.OPEN) {
-          return; // Already connected
+  const getWsUrl = () => {
+    if (window.location.hostname === 'localhost') {
+      return 'ws://localhost:8000/api/ws';
+    }
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.hostname.replace('4173', '8000');
+    return `${protocol}//${host}/api/ws`;
+  };
+
+  const connect = useCallback(() => {
+    try {
+      const ws = new WebSocket(getWsUrl());
+
+      ws.onopen = () => {
+        console.log('Connected to WebSocket');
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'ping') {
+            ws.send(JSON.stringify({ type: 'pong' }));
+            return;
+          }
+          setLastMessage(data);
+        } catch (e) {
+          console.error('Failed to parse WebSocket message:', e);
         }
+      };
 
-        console.log(`🔌 WebSocket connecting to ${WS_URL}...`);
-        ws.current = new WebSocket(WS_URL);
+      ws.onclose = () => {
+        console.log('WebSocket disconnected. Reconnecting...');
+        wsRef.current = null;
+        reconnectTimeoutRef.current = setTimeout(connect, RECONNECT_INTERVAL);
+      };
 
-        ws.current.onopen = () => {
-          console.log("✓ WebSocket Connected");
-          reconnectAttempts.current = 0;
-        };
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        ws.close();
+      };
 
-        ws.current.onmessage = (event: MessageEvent<string>) => {
-          try {
-            const message = JSON.parse(event.data) as WebSocketMessage;
-            if (message.type !== "ping") {
-              console.log("📨 WebSocket message:", message);
-            }
-            setLastMessage(message);
-          } catch (e) {
-            console.error("Error parsing WS message:", e);
-          }
-        };
-
-        ws.current.onerror = () => {
-          console.error("❌ WebSocket error");
-        };
-
-        ws.current.onclose = () => {
-          console.log("✗ WebSocket Disconnected");
-
-          // Otomatik reconnect
-          if (reconnectAttempts.current < maxReconnectAttempts) {
-            reconnectAttempts.current++;
-            console.log(
-              `🔄 Reconnecting... (${reconnectAttempts.current}/${maxReconnectAttempts})`
-            );
-            setTimeout(connect, 2000);
-          } else {
-            console.warn("⚠ WebSocket connection failed - polling fallback");
-            // Fallback: REST API ile poll et
-            setupPolling();
-          }
-        };
-      } catch (e) {
-        console.error("Failed to create WebSocket:", e);
-      }
-    };
-
-    const setupPolling = () => {
-      // WebSocket başarısız olursa REST API ile poll et
-      console.log("📡 Starting REST API polling...");
-      // Bu kısım opsiyonel - sonra implemente edilebilir
-    };
-
-    connect();
-
-    return () => {
-      if (ws.current?.readyState === WebSocket.OPEN) {
-        ws.current.close();
-      }
-    };
+      wsRef.current = ws;
+    } catch (error) {
+      console.error('WebSocket connection failed:', error);
+      reconnectTimeoutRef.current = setTimeout(connect, RECONNECT_INTERVAL);
+    }
   }, []);
 
+  useEffect(() => {
+    connect();
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+    };
+  }, [connect]);
+
   return lastMessage;
-}
+};

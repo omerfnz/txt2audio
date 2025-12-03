@@ -1,7 +1,7 @@
 # 📊 AI Audiobook Studio - Proje Analiz ve Geliştirme Raporu
 
-**Tarih:** 30.11.2025
-**Durum:** Fonksiyonel (Beta)
+**Tarih:** 03.12.2025
+**Durum:** Fonksiyonel (Beta) - Refactoring Başlıyor
 **Hedef:** Kurumsal, Ölçeklenebilir ve Hatasız Yapı
 
 Bu rapor, mevcut projenin kod tabanının incelenmesi sonucunda oluşturulmuş olup, projenin daha sağlam, bakımı kolay ve profesyonel bir yapıya kavuşturulması için gerekli adımları içermektedir.
@@ -12,7 +12,7 @@ Bu rapor, mevcut projenin kod tabanının incelenmesi sonucunda oluşturulmuş o
 
 Proje şu anda **çalışır durumda** ve temel fonksiyonlarını (metin yükleme, ses klonlama, ses birleştirme) başarıyla yerine getirmektedir. Ancak, kod yapısı "prototip" aşamasında kalmıştır. Kurumsal bir yapıya geçiş için **modülerleşme**, **hata yönetimi** ve **konfigürasyon yönetimi** konularında iyileştirmeler gerekmektedir.
 
-**Genel Sağlık Skoru:** 7/10
+**Genel Sağlık Skoru:** 6/10 (Kod kalitesi nedeniyle revize edildi)
 **Kritik Eksiklikler:** Test eksikliği, Monolitik dosya yapıları, Hardcoded konfigürasyonlar.
 
 ---
@@ -22,7 +22,8 @@ Proje şu anda **çalışır durumda** ve temel fonksiyonlarını (metin yüklem
 ### 🚨 Tespit Edilen Sorunlar
 
 1.  **Monolitik `endpoints.py`**:
-    *   Tüm API endpoint'leri, WebSocket mantığı, dosya işlemleri ve iş mantığı (merging, processing) tek bir dosyada (`backend/app/api/endpoints.py`) toplanmış. Bu dosya 700 satıra yaklaşmış ve bakımı zorlaşmıştır.
+    *   Tüm API endpoint'leri, WebSocket mantığı, dosya işlemleri ve iş mantığı (merging, processing) tek bir dosyada (`backend/app/api/endpoints.py`) toplanmış.
+    *   **Metrik:** Bu dosya **~700 satır** ve **26KB** boyutunda. Bakımı ve okunabilirliği zor.
 2.  **İş Mantığı ve API Karışıklığı**:
     *   `merge_audio_files` ve `process_audio_task` gibi ağır iş mantığı fonksiyonları API katmanında tanımlanmış.
 3.  **Konfigürasyon Yönetimi**:
@@ -55,6 +56,7 @@ Proje şu anda **çalışır durumda** ve temel fonksiyonlarını (metin yüklem
 
 1.  **Şişmiş `App.tsx`**:
     *   Ana bileşen (`App.tsx`) çok fazla sorumluluk yüklenmiş: Routing (basit state ile), WebSocket yönetimi, State yönetimi, UI Layout.
+    *   **Metrik:** Dosya **~480 satır** ve **18KB** boyutunda. UI ve Logic iç içe geçmiş durumda.
 2.  **State Yönetimi**:
     *   `useState` ve `useEffect` kullanımı karmaşıklaşmış. `Zustand` store'u var (`store.ts`) ancak `App.tsx` içinde hala çok fazla lokal state var.
 3.  **Tekrar Eden Kodlar**:
