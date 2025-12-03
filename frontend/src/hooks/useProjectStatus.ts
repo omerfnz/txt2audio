@@ -61,12 +61,19 @@ export const useProjectStatus = (projectId: number | null) => {
           const savedTime = localStorage.getItem(`processingStartTime_${projectId}`);
           if (savedTime) {
             setProcessingStartTime(new Date(savedTime));
-          } else if (projectData.progress && projectData.progress > 0) {
-             // Estimate start time
-             const estimatedElapsed = (projectData.progress / 100) * 3600000;
-             const estimatedStart = new Date(Date.now() - estimatedElapsed);
-             setProcessingStartTime(estimatedStart);
-             localStorage.setItem(`processingStartTime_${projectId}`, estimatedStart.toISOString());
+          } else {
+             // If no saved time but processing, set it to now (or estimate)
+             const now = new Date();
+             if (projectData.progress && projectData.progress > 0) {
+                 // Estimate start time based on progress
+                 const estimatedElapsed = (projectData.progress / 100) * 3600000; // Rough estimate
+                 const estimatedStart = new Date(now.getTime() - estimatedElapsed);
+                 setProcessingStartTime(estimatedStart);
+                 localStorage.setItem(`processingStartTime_${projectId}`, estimatedStart.toISOString());
+             } else {
+                 setProcessingStartTime(now);
+                 localStorage.setItem(`processingStartTime_${projectId}`, now.toISOString());
+             }
           }
         }
       } catch (error) {
