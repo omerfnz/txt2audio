@@ -29,7 +29,7 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
 
     useEffect(() => {
         loadProjects();
-        const interval = setInterval(loadProjects, 5000); // Refresh every 5 seconds
+        const interval = setInterval(loadProjects, 5000);
         return () => clearInterval(interval);
     }, []);
 
@@ -45,7 +45,7 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
     };
 
     const handleDeleteClick = (projectId: number, projectName: string, e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent project click
+        e.stopPropagation();
         setDeleteDialog({
             isOpen: true,
             projectId,
@@ -58,7 +58,7 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
 
         try {
             await deleteProject(deleteDialog.projectId);
-            await loadProjects(); // Refresh list
+            await loadProjects();
             setDeleteDialog({ isOpen: false, projectId: null, projectName: '' });
         } catch (error) {
             console.error('Failed to delete project:', error);
@@ -77,7 +77,6 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
     };
 
     const getStatusIcon = (status: string, audioPath: string | null | undefined) => {
-        // If status is completed but audio_path is null, it's merging
         if (status === 'completed' && !audioPath) {
             return <Merge className="w-4 h-4 text-purple-500 animate-pulse" />;
         }
@@ -97,7 +96,6 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
     };
 
     const getStatusColor = (status: string, audioPath: string | null | undefined) => {
-        // If status is completed but audio_path is null, it's merging
         if (status === 'completed' && !audioPath) {
             return 'text-purple-400';
         }
@@ -117,7 +115,6 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
     };
 
     const getStatusText = (status: string, audioPath: string | null | undefined) => {
-        // If status is completed but audio_path is null, it's merging
         if (status === 'completed' && !audioPath) {
             return 'merging';
         }
@@ -125,7 +122,7 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
     };
 
     return (
-        <div className={`w-80 h-screen glass border-r border-white/10 flex flex-col transition-all duration-300 lg:w-80 lg:block hidden md:flex overflow-hidden`}>
+        <div className="w-80 h-screen glass border-r border-white/10 flex flex-col">
             {/* Header */}
             <div className="p-6 border-b border-white/10 flex-shrink-0">
                 <div className="flex items-center justify-between">
@@ -149,10 +146,19 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
                 </button>
             </div>
 
-            {/* Projects Section Container - FIX: Proper flex structure */}
-            <div className="flex-1 flex flex-col min-h-0 px-4 pb-4">
-                {/* Section Header - Fixed, doesn't scroll */}
-                <div className="flex-shrink-0 mb-3 pt-0">
+            {/* Projects Section - INLINE STYLE FIX */}
+            <div
+                className="px-4 pb-4"
+                style={{
+                    flex: '1 1 0%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minHeight: 0,
+                    overflow: 'hidden'
+                }}
+            >
+                {/* Section Header - FIXED */}
+                <div className="flex-shrink-0 mb-3">
                     <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                         <Sparkles className="w-3 h-3" />
                         <span>Recent Projects</span>
@@ -162,8 +168,18 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
                     </h2>
                 </div>
 
-                {/* Projects List - Scrollable area only */}
-                <div className="flex-1 custom-scrollbar min-h-0 pr-2">
+                {/* Projects List - SCROLLABLE! */}
+                <div
+                    className="pr-2"
+                    style={{
+                        flex: '1 1 0%',
+                        minHeight: 0,
+                        overflowY: 'scroll',
+                        overflowX: 'hidden',
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: 'rgba(99, 102, 241, 0.6) rgba(15, 23, 42, 0.5)'
+                    }}
+                >
                     <div className="space-y-2">
                         {loading ? (
                             <div className="text-sm text-slate-400 text-center py-8 flex items-center justify-center gap-2">

@@ -94,29 +94,22 @@
   background: rgba(99, 102, 241, 0.7);
 }
 
-/* Custom scrollbar - Her zaman görünür */
-.custom-scrollbar {
-  overflow-y: scroll !important;
-  /* Scrollbar her zaman göster */
-  scrollbar-gutter: stable;
-  /* Scrollbar için alan ayır */
-}
-
-.custom-scrollbar::-webkit-scrollbar {
+/* Global scrollbar styling - backup */
+*::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.5);
+*::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.3);
   border-radius: 4px;
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.6);
+*::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.5);
   border-radius: 4px;
-  border: 2px solid rgba(15, 23, 42, 0.5);
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+*::-webkit-scrollbar-thumb:hover {
   background: rgba(99, 102, 241, 0.8);
 }
