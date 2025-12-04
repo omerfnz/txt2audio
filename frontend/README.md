@@ -1,6 +1,6 @@
 # 🎙️ AI Audiobook Studio - Frontend
 
-Modern, responsive, and user-friendly interface for the AI Audiobook Studio, built with React, TypeScript, and Tailwind CSS.
+Modern, responsive, and user-friendly interface for the AI Audiobook Studio, built with React, TypeScript, Tailwind CSS, and ShadCN UI.
 
 ## 🚀 Features
 
@@ -8,8 +8,11 @@ Modern, responsive, and user-friendly interface for the AI Audiobook Studio, bui
 - **Reference Voice Selection**: Upload custom voices or choose from pre-defined high-quality voices.
 - **Real-time Progress**: WebSocket integration for live progress updates during audio generation.
 - **Audio Player**: Integrated audio player to preview generated chunks and the final audiobook.
+- **ACX Quality Analysis**: Analyze and normalize audio for Audible ACX compliance.
+- **Chunk Quality Control**: Visual feedback for chunk processing status and retry attempts.
+- **Process Cancellation**: Cancel ongoing audio generation processes.
 - **Responsive Design**: Works seamlessly on different screen sizes.
-- **Dark/Light Mode**: (If applicable, otherwise just "Modern UI") Sleek and modern interface.
+- **Modern UI**: ShadCN UI components with TweakCN Cosmic Night theme.
 
 ## 🛠️ Tech Stack
 
@@ -17,6 +20,8 @@ Modern, responsive, and user-friendly interface for the AI Audiobook Studio, bui
 - **Build Tool**: [Vite](https://vitejs.dev/)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **UI Components**: [ShadCN UI](https://ui.shadcn.com/)
+- **Theme**: [TweakCN Cosmic Night](https://tweakcn.com/r/themes/cosmic-night.json)
 - **State Management**: [Zustand](https://github.com/pmndrs/zustand)
 - **API Client**: [Axios](https://axios-http.com/)
 - **Icons**: [Lucide React](https://lucide.dev/)
@@ -46,12 +51,17 @@ The application will be available at `http://localhost:5173`.
 src/
 ├── api/            # API client and types
 ├── components/     # Reusable UI components
+│   ├── upload/     # Upload form components
+│   └── ui/         # ShadCN UI components (lib/utils.ts, etc.)
 ├── hooks/          # Custom React hooks
-├── pages/          # Page components (if using routing)
+├── views/          # Page views (Upload, Project)
+├── types/          # TypeScript type definitions
 ├── App.tsx         # Main application component
-└── main.tsx        # Entry point
+└── main.tsx         # Entry point
 ```
 
 ## 🔧 Configuration
 
 - **API URL**: Configured in `src/api/client.ts` (defaults to `http://localhost:8000`).
+- **ShadCN UI**: Configured via `components.json` in the root directory.
+- **Theme**: Cosmic Night theme from TweakCN applied via Tailwind CSS configuration.

@@ -1,8 +1,12 @@
 import { Plus, BookOpen, Sparkles, Clock, CheckCircle, AlertCircle, Loader2, Trash2, Merge } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getAllProjects, deleteProject } from '../api/client';
-import { clsx } from 'clsx';
+import { cn } from '@/lib/utils';
 import { AlertDialog } from './AlertDialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface Project {
     id: number;
@@ -122,13 +126,13 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
     };
 
     return (
-        <div className="w-80 h-screen glass border-r border-white/10 flex flex-col">
+        <div className="w-80 h-screen bg-card border-r border-border flex flex-col">
             {/* Header */}
-            <div className="p-6 border-b border-white/10 flex-shrink-0">
+            <div className="p-6 border-b border-border flex-shrink-0">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent flex items-center gap-2">
-                        <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl glow">
-                            <BookOpen className="w-5 h-5 text-white" />
+                    <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary bg-clip-text text-transparent flex items-center gap-2">
+                        <div className="p-2 bg-primary rounded-xl">
+                            <BookOpen className="w-5 h-5 text-primary-foreground" />
                         </div>
                         <span>AudioStudio</span>
                     </h1>
@@ -137,105 +141,91 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
 
             {/* New Project Button */}
             <div className="p-4 flex-shrink-0">
-                <button
+                <Button
                     onClick={onNewProject}
-                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 font-medium shadow-lg hover:shadow-indigo-500/50 group"
+                    className="w-full flex items-center justify-center gap-2 group"
+                    size="lg"
                 >
                     <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
                     <span>New Project</span>
-                </button>
+                </Button>
             </div>
 
-            {/* Projects Section - INLINE STYLE FIX */}
-            <div
-                className="px-4 pb-4"
-                style={{
-                    flex: '1 1 0%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    minHeight: 0,
-                    overflow: 'hidden'
-                }}
-            >
-                {/* Section Header - FIXED */}
+            {/* Projects Section */}
+            <div className="flex-1 flex flex-col min-h-0 px-4 pb-4">
+                {/* Section Header */}
                 <div className="flex-shrink-0 mb-3">
-                    <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                    <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                         <Sparkles className="w-3 h-3" />
                         <span>Recent Projects</span>
                         {projects.length > 0 && (
-                            <span className="ml-auto text-slate-500">({projects.length})</span>
+                            <Badge variant="secondary" className="ml-auto">
+                                {projects.length}
+                            </Badge>
                         )}
                     </h2>
                 </div>
 
                 {/* Projects List - SCROLLABLE! */}
-                <div
-                    className="pr-2"
-                    style={{
-                        flex: '1 1 0%',
-                        minHeight: 0,
-                        overflowY: 'scroll',
-                        overflowX: 'hidden',
-                        scrollbarWidth: 'thin',
-                        scrollbarColor: 'rgba(99, 102, 241, 0.6) rgba(15, 23, 42, 0.5)'
-                    }}
-                >
-                    <div className="space-y-2">
+                <ScrollArea className="flex-1">
+                    <div className="space-y-2 pr-4">
                         {loading ? (
-                            <div className="text-sm text-slate-400 text-center py-8 flex items-center justify-center gap-2">
+                            <div className="text-sm text-muted-foreground text-center py-8 flex items-center justify-center gap-2">
                                 <Loader2 className="w-4 h-4 animate-spin" />
                                 <span>Loading...</span>
                             </div>
                         ) : projects.length === 0 ? (
-                            <div className="text-sm text-slate-400 text-center py-8 animate-pulse-soft">
+                            <div className="text-sm text-muted-foreground text-center py-8">
                                 No projects yet.
                             </div>
                         ) : (
                             projects.map((project) => (
-                                <div
+                                <Card
                                     key={project.id}
                                     onClick={() => onProjectClick?.(project.id)}
-                                    className={clsx(
-                                        'p-3 rounded-xl cursor-pointer transition-all duration-200 border group',
+                                    className={cn(
+                                        'p-3 cursor-pointer transition-all duration-200 group',
                                         currentProjectId === project.id
-                                            ? 'bg-indigo-500/20 border-indigo-500/50'
-                                            : 'hover:bg-white/5 border-transparent hover:border-indigo-500/30'
+                                            ? 'bg-primary/10 border-primary'
+                                            : 'hover:bg-accent/50'
                                     )}
                                 >
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-1">
                                                 {getStatusIcon(project.status, project.audio_path)}
-                                                <p className="text-sm font-medium text-slate-200 truncate">
+                                                <p className="text-sm font-medium text-foreground truncate">
                                                     {project.name}
                                                 </p>
                                             </div>
                                             <div className="flex items-center gap-2 text-xs">
-                                                <span className={clsx('capitalize', getStatusColor(project.status, project.audio_path))}>
+                                                <Badge variant="outline" className={cn('capitalize text-xs', getStatusColor(project.status, project.audio_path))}>
                                                     {getStatusText(project.status, project.audio_path)}
-                                                </span>
-                                                <span className="text-slate-500">•</span>
-                                                <span className="text-slate-500">
+                                                </Badge>
+                                                <span className="text-muted-foreground">•</span>
+                                                <span className="text-muted-foreground">
                                                     {formatDate(project.created_at)}
                                                 </span>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2 flex-shrink-0">
-                                            <span className="text-xs text-slate-500">#{project.id}</span>
-                                            <button
+                                            <span className="text-xs text-muted-foreground">#{project.id}</span>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
                                                 onClick={(e) => handleDeleteClick(project.id, project.name, e)}
-                                                className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                                                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                                                 title="Delete project"
                                             >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                                <Trash2 className="w-4 h-4 text-destructive" />
+                                            </Button>
                                         </div>
                                     </div>
-                                </div>
+                                </Card>
                             ))
                         )}
                     </div>
-                </div>
+                </ScrollArea>
             </div>
 
             {/* Delete Confirmation Dialog */}

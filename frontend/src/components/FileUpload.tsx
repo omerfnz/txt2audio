@@ -1,10 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Cpu, Zap } from 'lucide-react';
-import { clsx } from 'clsx';
+import { cn } from '@/lib/utils';
 import { getReferenceVoices } from '../api/client';
 import { DropZone } from './upload/DropZone';
 import { VoiceSelector } from './upload/VoiceSelector';
+import { PresetSelector } from './upload/PresetSelector';
 import { AdvancedSettings } from './upload/AdvancedSettings';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 
 interface ReferenceVoice {
     name: string;
@@ -23,6 +28,7 @@ interface FileUploadProps {
         referenceVoicePath: string | null;
         useGpu: boolean;
         name: string;
+        presetId: string;
         language: string;
         speed: number;
         temperature: number;
@@ -43,9 +49,12 @@ export function FileUpload({ onUpload }: FileUploadProps) {
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [selectedVoice, setSelectedVoice] = useState<string>('');
 
+    // TTS Preset State
+    const [selectedPresetId, setSelectedPresetId] = useState<string>('en_fiction');
+
     // Advanced Settings State
     const [language, setLanguage] = useState('en');
-    const [speed, setSpeed] = useState(1.0);
+    const [speed, setSpeed] = useState(0.9);
     const [temperature, setTemperature] = useState(0.75);
     const [topK, setTopK] = useState(50);
     const [topP, setTopP] = useState(0.85);
@@ -119,6 +128,7 @@ export function FileUpload({ onUpload }: FileUploadProps) {
             referenceVoicePath: voiceMode === 'reference' ? selectedVoice : null,
             useGpu,
             name: projectName,
+            presetId: selectedPresetId,
             language,
             speed,
             temperature,
@@ -126,7 +136,7 @@ export function FileUpload({ onUpload }: FileUploadProps) {
             topP,
             repetitionPenalty
         });
-    }, [isSubmitting, textFile, projectName, voiceMode, audioFile, selectedVoice, useGpu, language, speed, temperature, topK, topP, repetitionPenalty, onUpload]);
+    }, [isSubmitting, textFile, projectName, voiceMode, audioFile, selectedVoice, useGpu, selectedPresetId, language, speed, temperature, topK, topP, repetitionPenalty, onUpload]);
 
     const canSubmit = textFile && projectName && (
         (voiceMode === 'upload' && audioFile) ||
@@ -134,26 +144,27 @@ export function FileUpload({ onUpload }: FileUploadProps) {
     );
 
     return (
-        <div className="w-full max-w-4xl mx-auto p-8 glass rounded-3xl shadow-2xl animate-slide-up">
-            <h2 className="text-3xl font-bold mb-8 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Create New Audiobook
-            </h2>
+        <Card className="w-full max-w-4xl mx-auto p-8 animate-slide-up">
+            <CardContent className="p-0">
+                <h2 className="text-3xl font-bold mb-8 bg-gradient-to-r from-primary via-primary to-primary bg-clip-text text-transparent">
+                    Create New Audiobook
+                </h2>
 
-            <div className="space-y-8">
-                {/* Project Name */}
-                <div className="animate-fade-in">
-                    <label className="block text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                        Project Name
-                    </label>
-                    <input
-                        type="text"
-                        value={projectName}
-                        onChange={(e) => setProjectName(e.target.value)}
-                        className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-5 py-3 text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 placeholder:text-slate-500"
-                        placeholder="My Awesome Book"
-                    />
-                </div>
+                <div className="space-y-8">
+                    {/* Project Name */}
+                    <div className="animate-fade-in space-y-3">
+                        <Label className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                            Project Name
+                        </Label>
+                        <Input
+                            type="text"
+                            value={projectName}
+                            onChange={(e) => setProjectName(e.target.value)}
+                            placeholder="My Awesome Book"
+                            className="h-11"
+                        />
+                    </div>
 
                 {/* Drop Zone */}
                 <DropZone
@@ -178,32 +189,49 @@ export function FileUpload({ onUpload }: FileUploadProps) {
                     setAudioFile={setAudioFile}
                 />
 
-                {/* GPU/CPU Toggle */}
-                <div className="flex items-center justify-between p-5 glass rounded-2xl">
-                    <div className="flex items-center gap-4">
-                        {useGpu ? <Zap className="w-7 h-7 text-yellow-400" /> : <Cpu className="w-7 h-7 text-blue-400" />}
-                        <div>
-                            <p className="text-sm font-semibold text-slate-100">Processing Unit</p>
-                            <p className="text-xs text-slate-400">
-                                {useGpu ? "GPU (Faster)" : "CPU (Slower)"}
-                            </p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => setUseGpu(!useGpu)}
-                        className={clsx(
-                            "relative inline-flex h-7 w-14 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500",
-                            useGpu ? "bg-gradient-to-r from-indigo-600 to-purple-600" : "bg-slate-700"
-                        )}
-                    >
-                        <span
-                            className={clsx(
-                                "inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300 shadow-lg",
-                                useGpu ? "translate-x-8" : "translate-x-1"
-                            )}
-                        />
-                    </button>
-                </div>
+                {/* TTS Preset Selector */}
+                <PresetSelector
+                    selectedPresetId={selectedPresetId}
+                    setSelectedPresetId={setSelectedPresetId}
+                    language={language}
+                    onPresetChange={(params) => {
+                        setTemperature(params.temperature);
+                        setTopP(params.top_p);
+                        setRepetitionPenalty(params.repetition_penalty);
+                        setSpeed(params.speed);
+                    }}
+                />
+
+                    {/* GPU/CPU Toggle */}
+                    <Card className="p-5">
+                        <CardContent className="p-0">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    {useGpu ? <Zap className="w-7 h-7 text-primary" /> : <Cpu className="w-7 h-7 text-muted-foreground" />}
+                                    <div>
+                                        <p className="text-sm font-semibold text-foreground">Processing Unit</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {useGpu ? "GPU (Faster)" : "CPU (Slower)"}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setUseGpu(!useGpu)}
+                                    className={cn(
+                                        "relative inline-flex h-7 w-14 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-ring",
+                                        useGpu ? "bg-primary" : "bg-muted"
+                                    )}
+                                >
+                                    <span
+                                        className={cn(
+                                            "inline-block h-5 w-5 transform rounded-full bg-background transition-transform duration-300 shadow-lg",
+                                            useGpu ? "translate-x-8" : "translate-x-1"
+                                        )}
+                                    />
+                                </button>
+                            </div>
+                        </CardContent>
+                    </Card>
 
                 {/* Advanced Settings */}
                 <AdvancedSettings
@@ -215,16 +243,18 @@ export function FileUpload({ onUpload }: FileUploadProps) {
                     repetitionPenalty={repetitionPenalty} setRepetitionPenalty={setRepetitionPenalty}
                 />
 
-                {/* Submit Button */}
-                <button
-                    onClick={handleSubmit}
-                    disabled={!canSubmit || isSubmitting}
-                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white py-4 px-6 rounded-2xl font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-indigo-500/50 disabled:shadow-none transform hover:scale-[1.02] disabled:scale-100"
-                >
-                    {isSubmitting ? 'Creating Project...' : 'Start Processing'}
-                </button>
-            </div>
-        </div>
+                    {/* Submit Button */}
+                    <Button
+                        onClick={handleSubmit}
+                        disabled={!canSubmit || isSubmitting}
+                        size="lg"
+                        className="w-full text-lg font-bold"
+                    >
+                        {isSubmitting ? 'Creating Project...' : 'Start Processing'}
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
     );
 }
 

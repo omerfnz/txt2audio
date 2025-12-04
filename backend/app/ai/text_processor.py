@@ -2,9 +2,12 @@ import spacy
 from typing import List
 import sys
 
+from .text_normalizer import AdvancedTextNormalizer
+
 class TextProcessor:
     def __init__(self, model_name="en_core_web_sm"):
         self.nlp = None
+        self.normalizer = AdvancedTextNormalizer()
         self._load_model(model_name)
 
     def _load_model(self, model_name: str):
@@ -30,29 +33,53 @@ class TextProcessor:
             print(f"✗ Unexpected error loading model: {e}")
             raise
 
-    def split_into_chunks(self, text: str, max_chars: int = 400) -> List[str]:
+    def validate_chunk(self, chunk: str) -> str:
+        """Chunk'ın noktalama ile bittiğini garanti eder."""
+        chunk = chunk.strip()
+        
+        if not chunk:
+            return chunk
+        
+        # Cümle sonu noktalama kontrolü
+        if not chunk.endswith(('.', '!', '?', '...', '."', '!"', '?"', '."', '.)', '!)', '?)')):
+            # Son karakter alfanumerik ise nokta ekle
+            if chunk[-1].isalnum():
+                chunk += "."
+        
+        return chunk
+    
+    def split_into_chunks(self, text: str, max_chars: int = 280, language: str = "en", normalize: bool = True) -> List[str]:
         """
         Metni mantıklı cümlelere böler ve her parçanın max_chars sınırını aşmamasını sağlar.
-        Optimized: Set to 400 to stay within XTTS token limit (402 tokens max).
-        XTTS can only generate text with a maximum of 400 tokens, so we use 400 chars
-        as a safe limit (approximately 100-150 tokens depending on text complexity).
+
+        Not:
+            - XTTS v2, yaklaşık 400 token civarında bir üst limite sahiptir.
+            - Metin normalizasyonu (sayısal ifadelerin uzaması vb.) sonrası
+              gerçek token sayısı karakter sayısından çok daha yüksek olabilir.
+
+        Bu nedenle varsayılan olarak daha konservatif bir sınır kullanılır:
+            max_chars = 280 (özellikle İngilizce metinler için güvenli seviye).
         """
         if not self.nlp:
             raise RuntimeError("NLP model not loaded")
             
+        # Normalizasyon
+        if normalize:
+            text = self.normalizer.normalize(text, language)
+            
         doc = self.nlp(text)
         sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
         
-        chunks = []
-        current_chunk = ""
+        chunks: List[str] = []
 
         for sentence in sentences:
-            # Eğer tek bir cümle bile limitten büyükse, basit bölme yap
+            sentence = sentence.strip()
+            if not sentence:
+                continue
+
+            # Her cümleyi mümkün olduğunca kendi başına bir chunk olarak üret.
+            # Sadece tek bir cümle max_chars sınırını aşıyorsa word-wrap ile böl.
             if len(sentence) > max_chars:
-                if current_chunk:
-                    chunks.append(current_chunk.strip())
-                    current_chunk = ""
-                # Uzun cümleyi zorla böl (word-wrap stili)
                 words = sentence.split()
                 temp_chunk = ""
                 for word in words:
@@ -60,22 +87,13 @@ class TextProcessor:
                         temp_chunk += word + " "
                     else:
                         if temp_chunk:
-                            chunks.append(temp_chunk.strip())
+                            chunks.append(self.validate_chunk(temp_chunk.strip()))
                         temp_chunk = word + " "
                 if temp_chunk:
-                    chunks.append(temp_chunk.strip())
-                continue
-
-            if len(current_chunk) + len(sentence) + 1 <= max_chars:
-                current_chunk += sentence + " "
+                    chunks.append(self.validate_chunk(temp_chunk.strip()))
             else:
-                if current_chunk:
-                    chunks.append(current_chunk.strip())
-                current_chunk = sentence + " "
-        
-        if current_chunk.strip():
-            chunks.append(current_chunk.strip())
-            
+                chunks.append(self.validate_chunk(sentence))
+
         return chunks if chunks else [""] # En az 1 chunk döndür
 
 

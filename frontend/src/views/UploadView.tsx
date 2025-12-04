@@ -12,6 +12,7 @@ export const UploadView = ({ onProjectCreated }: UploadViewProps) => {
         referenceVoicePath: string | null;
         useGpu: boolean;
         name: string;
+        presetId: string;
         language: string;
         speed: number;
         temperature: number;
@@ -24,6 +25,7 @@ export const UploadView = ({ onProjectCreated }: UploadViewProps) => {
             formData.append('name', data.name);
             formData.append('text_file', data.text);
             formData.append('use_gpu', String(data.useGpu));
+            formData.append('preset_id', data.presetId);
             formData.append('language', data.language);
             formData.append('speed', String(data.speed));
             formData.append('temperature', String(data.temperature));
@@ -50,7 +52,7 @@ export const UploadView = ({ onProjectCreated }: UploadViewProps) => {
     };
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar">
+        <div className="h-full overflow-y-auto">
             <div className="min-h-full flex items-center justify-center p-6">
                 <FileUpload onUpload={handleUpload} />
             </div>

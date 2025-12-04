@@ -9,6 +9,15 @@ aiofiles>=23.2.0
 librosa>=0.10.0
 soundfile>=0.12.0
 
+# Text Processing & EPUB
+num2words>=0.5.12
+beautifulsoup4>=4.12.0
+ebooklib>=0.18
+lxml>=4.9.0
+
+# Audio Mastering (Optional - pydub fallback available)
+ffmpeg-normalize>=1.27.0
+
 # PyTorch - Platform-specific kurulum gerekir
 # CPU: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 # GPU (CUDA 12.1): pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121

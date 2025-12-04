@@ -133,9 +133,20 @@ txt2audio/
 - Model yüklendikten sonra otomatik cache temizleme
 - Düşük VRAM'li GPU'lar için optimize edildi
 
-### ✅ Frontend Lint Düzeltmeleri
+### ✅ Frontend İyileştirmeleri
 - Kullanılmayan değişkenler temizlendi (`isConnected`, `_error`)
 - TypeScript strict mode uyumluluğu sağlandı
+- Chunk kalite kontrolü ve retry mekanizması eklendi
+- ACX kalite analizi ve normalizasyon özellikleri eklendi
+- İşlem iptal etme (Cancel Processing) özelliği eklendi
+- WebSocket üzerinden chunk text preview gösterimi eklendi
+
+### ✅ Kalite Kontrolü ve ACX Uyumluluğu
+- Chunk çıkış kalitesi kontrolü (süre ve RMS kontrolü)
+- Başarısız chunk'lar için otomatik retry mekanizması (max 2 deneme)
+- ACX kalite analizi endpoint'i (`/api/projects/{id}/audio-quality`)
+- ACX normalizasyon endpoint'i (`/api/projects/{id}/normalize`)
+- Referans ses validasyonu (süre: 3-15s, RMS kontrolü)
 
 ## 🐛 Bilinen Sorunlar ve Çözümler
 
@@ -200,8 +211,11 @@ Backend çalışırken otomatik API dökümantasyonuna erişebilirsiniz:
 - **TypeScript**: Type-safe JavaScript
 - **Vite**: Build tool ve dev server
 - **Tailwind CSS**: Utility-first CSS
+- **ShadCN UI**: Modern, accessible component library
+- **TweakCN Cosmic Night**: Premium dark theme
 - **Zustand**: State management
 - **Axios**: HTTP client
+- **Lucide React**: Icon library
 
 ## 📝 Lisans
 

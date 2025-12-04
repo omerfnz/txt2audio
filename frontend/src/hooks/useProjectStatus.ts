@@ -47,13 +47,14 @@ export const useProjectStatus = (projectId: number | null) => {
         setProgress(projectData.progress || 0);
 
         // Load chunks
-        const chunksResponse = await axios.get<{ chunks: Array<{ index: number; is_processed: boolean }> }>(
+        const chunksResponse = await axios.get<{ chunks: Array<{ index: number; is_processed: boolean; text?: string }> }>(
           `${getApiBase()}/projects/${projectId}/chunks`
         );
         
         setChunks(chunksResponse.data.chunks.map(c => ({
           index: c.index,
-          isProcessed: c.is_processed
+          isProcessed: c.is_processed,
+          text: c.text,
         })));
 
         // Restore start time from local storage if processing
@@ -92,7 +93,7 @@ export const useProjectStatus = (projectId: number | null) => {
     // Filter messages for current project if project_id is present
     if (lastMessage.project_id && lastMessage.project_id !== projectId) return;
 
-    if (lastMessage.type === 'status_update') {
+      if (lastMessage.type === 'status_update') {
       const newStatus = lastMessage.status || 'unknown';
       setStatus(newStatus);
       if (lastMessage.progress !== undefined) {
@@ -106,19 +107,30 @@ export const useProjectStatus = (projectId: number | null) => {
       }
       
       addLog(`Status: ${newStatus} (${lastMessage.progress || 0}%)`);
-    } else if (lastMessage.type === 'progress_update') {
+      } else if (lastMessage.type === 'progress_update') {
       const newProgress = lastMessage.progress || 0;
       setProgress(newProgress);
 
       if (lastMessage.chunk_index !== undefined) {
+        const chunkIndex = lastMessage.chunk_index;
         setChunks(prev => {
           const newChunks = [...prev];
-          if (newChunks[lastMessage.chunk_index!]) {
-            newChunks[lastMessage.chunk_index!].isProcessed = true;
+          if (newChunks[chunkIndex]) {
+            newChunks[chunkIndex].isProcessed = true;
+            if (lastMessage.chunk_text_preview) {
+              newChunks[chunkIndex].text = lastMessage.chunk_text_preview;
+            }
           }
           return newChunks;
         });
-        addLog(`Processed chunk ${lastMessage.chunk_index}`);
+
+        if (lastMessage.chunk_text_preview) {
+          const preview = lastMessage.chunk_text_preview.replace(/\s+/g, ' ').trim();
+          const shortPreview = preview.length > 80 ? `${preview.slice(0, 80)}…` : preview;
+          addLog(`Processed chunk ${chunkIndex}: "${shortPreview}"`);
+        } else {
+          addLog(`Processed chunk ${chunkIndex}`);
+        }
       } else if (status === 'merging') {
         addLog(`Merging progress: ${newProgress.toFixed(1)}%`);
       }

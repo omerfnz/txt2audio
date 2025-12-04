@@ -1,5 +1,7 @@
 import { Play, Pause, SkipBack, SkipForward, Download, Volume2 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 
 interface PlayerProps {
     audioUrl?: string | null;
@@ -90,15 +92,6 @@ export function Player({ audioUrl, projectId, onNext, onPrevious }: PlayerProps)
         if (onNext) onNext();
     };
 
-    const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!audioRef.current) return;
-        const rect = e.currentTarget.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const percentage = x / rect.width;
-        const newTime = percentage * audioRef.current.duration;
-        audioRef.current.currentTime = newTime;
-    };
-
     const handleDownload = async () => {
         if (!projectId) return;
         try {
@@ -127,7 +120,7 @@ export function Player({ audioUrl, projectId, onNext, onPrevious }: PlayerProps)
     };
 
     return (
-        <div className="h-24 bg-slate-900 border-t border-slate-700 px-6 flex items-center justify-between shrink-0">
+        <div className="h-24 bg-card border-t border-border px-6 flex items-center justify-between shrink-0">
             <audio
                 ref={audioRef}
                 onTimeUpdate={handleTimeUpdate}
@@ -139,56 +132,62 @@ export function Player({ audioUrl, projectId, onNext, onPrevious }: PlayerProps)
             <div className="w-1/4">
                 {audioUrl ? (
                     <div>
-                        <p className="text-sm font-medium text-slate-100 truncate">
+                        <p className="text-sm font-medium text-foreground truncate">
                             {projectId ? `Project #${projectId}` : 'Audio Track'}
                         </p>
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs text-muted-foreground">
                             {isPlaying ? 'Playing...' : 'Paused'}
                         </p>
                     </div>
                 ) : (
-                    <p className="text-sm text-slate-400">No track selected</p>
+                    <p className="text-sm text-muted-foreground">No track selected</p>
                 )}
             </div>
 
             {/* Controls */}
             <div className="flex-1 flex flex-col items-center gap-2">
                 <div className="flex items-center gap-6">
-                    <button
+                    <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={onPrevious}
-                        className="text-slate-400 hover:text-slate-100 transition-colors disabled:opacity-30"
                         disabled={!onPrevious}
                     >
                         <SkipBack className="w-5 h-5" />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         onClick={handlePlayPause}
                         disabled={!audioUrl}
-                        className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex items-center justify-center hover:scale-105 transition-transform shadow-lg hover:shadow-indigo-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        size="icon"
+                        className="w-12 h-12 rounded-full"
                     >
                         {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-1" />}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={onNext}
-                        className="text-slate-400 hover:text-slate-100 transition-colors disabled:opacity-30"
                         disabled={!onNext}
                     >
                         <SkipForward className="w-5 h-5" />
-                    </button>
+                    </Button>
                 </div>
 
                 {/* Progress Bar */}
-                <div className="w-full max-w-md flex items-center gap-3 text-xs text-slate-400">
+                <div className="w-full max-w-md flex items-center gap-3 text-xs text-muted-foreground">
                     <span>{formatTime(currentTime)}</span>
-                    <div
-                        className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden cursor-pointer"
-                        onClick={handleProgressClick}
-                    >
-                        <div
-                            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
-                            style={{ width: `${progress}%` }}
-                        />
-                    </div>
+                    <Slider
+                        value={[progress]}
+                        onValueChange={(value) => {
+                            if (audioRef.current) {
+                                const newTime = (value[0] / 100) * audioRef.current.duration;
+                                audioRef.current.currentTime = newTime;
+                            }
+                        }}
+                        max={100}
+                        step={0.1}
+                        className="flex-1"
+                    />
                     <span>{formatTime(duration)}</span>
                 </div>
             </div>
@@ -196,29 +195,23 @@ export function Player({ audioUrl, projectId, onNext, onPrevious }: PlayerProps)
             {/* Volume & Actions */}
             <div className="w-1/4 flex items-center justify-end gap-4">
                 <div className="flex items-center gap-2 group">
-                    <Volume2 className="w-5 h-5 text-slate-400 group-hover:text-slate-100" />
-                    <div
-                        className="w-20 h-1.5 bg-slate-700 rounded-full overflow-hidden cursor-pointer"
-                        onClick={(e) => {
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            const x = e.clientX - rect.left;
-                            const percentage = (x / rect.width) * 100;
-                            setVolume(Math.min(100, Math.max(0, percentage)));
-                        }}
-                    >
-                        <div
-                            className="h-full bg-slate-400 group-hover:bg-indigo-500 transition-colors"
-                            style={{ width: `${volume}%` }}
-                        />
-                    </div>
+                    <Volume2 className="w-5 h-5 text-muted-foreground group-hover:text-foreground" />
+                    <Slider
+                        value={[volume]}
+                        onValueChange={(value) => setVolume(value[0])}
+                        max={100}
+                        step={1}
+                        className="w-20"
+                    />
                 </div>
-                <button
+                <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={handleDownload}
                     disabled={!projectId}
-                    className="p-2 hover:bg-slate-800 rounded-full text-slate-400 hover:text-emerald-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                     <Download className="w-5 h-5" />
-                </button>
+                </Button>
             </div>
         </div>
     );

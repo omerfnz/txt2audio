@@ -35,11 +35,46 @@ interface ProjectStatusResponse {
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE,
+  timeout: 10000, // 10 saniye timeout
 });
 
+// Retry logic helper
+async function retryRequest<T>(
+  requestFn: () => Promise<T>,
+  maxRetries: number = 3,
+  delay: number = 1000
+): Promise<T> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await requestFn();
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      
+      console.log(`Retry ${i + 1}/${maxRetries} after ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      delay *= 2; // Exponential backoff
+    }
+  }
+  throw new Error("Max retries exceeded");
+}
+
+// Backend health check
+export async function checkBackendHealth(): Promise<boolean> {
+  try {
+    const response = await axios.get(`${API_BASE.replace('/api', '')}/health`, {
+      timeout: 2000
+    });
+    return response.status === 200;
+  } catch {
+    return false;
+  }
+}
+
 export async function getReferenceVoices(): Promise<ReferenceVoicesResponse> {
-  const response = await api.get<ReferenceVoicesResponse>("/reference-voices");
-  return response.data;
+  return retryRequest(async () => {
+    const response = await api.get<ReferenceVoicesResponse>("/reference-voices");
+    return response.data;
+  });
 }
 
 export async function createProject(
@@ -93,5 +128,67 @@ export async function getAllProjects(): Promise<{
 
 export async function deleteProject(projectId: number): Promise<{ message: string }> {
   const response = await api.delete(`/projects/${projectId}`);
+  return response.data;
+}
+
+export async function getTTSPresets(): Promise<{ presets: Record<string, any> }> {
+  return retryRequest(async () => {
+    const response = await api.get("/tts-presets");
+    return response.data;
+  });
+}
+
+// ACX / Audio Quality
+export interface AudioQualityResponse {
+  project_id: number;
+  audio_path: string;
+  analysis: {
+    rms_db: number;
+    peak_db: number;
+    noise_floor_db: number;
+    acx_compliant: boolean;
+    duration_seconds: number;
+    sample_rate: number;
+    channels: number;
+  };
+  compliance_details: {
+    rms: {
+      value: number;
+      pass: boolean;
+      target: string;
+      description: string;
+    };
+    peak: {
+      value: number;
+      pass: boolean;
+      target: string;
+      description: string;
+    };
+    noise_floor: {
+      value: number;
+      pass: boolean;
+      target: string;
+      description: string;
+    };
+  };
+  overall_acx_compliant: boolean;
+}
+
+export async function getAudioQuality(projectId: number): Promise<AudioQualityResponse> {
+  const response = await api.get<AudioQualityResponse>(`/projects/${projectId}/audio-quality`);
+  return response.data;
+}
+
+export async function normalizeAudio(projectId: number): Promise<{ project_id: number; message: string; status: string }> {
+  const response = await api.post<{ project_id: number; message: string; status: string }>(
+    `/projects/${projectId}/normalize`
+  );
+  return response.data;
+}
+
+export async function cancelProcessing(projectId: number): Promise<{ project_id: number; status: string; message: string }> {
+  const response = await api.post<{ project_id: number; status: string; message: string }>(
+    `/projects/${projectId}/cancel`
+  );
   return response.data;
 }

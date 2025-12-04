@@ -187,15 +187,18 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
         if not project:
             print(f"Project {project_id} not found")
             return
-            
+
         chunks = db.query(Chunk).filter(Chunk.project_id == project_id).order_by(Chunk.index).all()
         total_chunks = len(chunks)
-        
+
         print(f"Processing project {project_id}: {total_chunks} chunks, use_gpu={use_gpu}")
-        
+
+        # Status ve cancellation bayrağı, process_project endpoint'inde de set ediliyor,
+        # ancak güvenlik için burada da doğruluyoruz.
         project.status = "processing"
+        project.is_cancelled = False
         db.commit()
-        
+
         await manager.broadcast({
             "type": "status_update",
             "project_id": project_id,
@@ -204,6 +207,23 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
         })
 
         for chunk in chunks:
+            # Her chunk öncesi iptal isteği var mı kontrol et
+            db.refresh(project)
+            if project.is_cancelled or project.status == "cancelled":
+                print(f"Project {project_id} cancelled. Stopping processing loop.")
+                await manager.broadcast({
+                    "type": "status_update",
+                    "project_id": project_id,
+                    "status": "cancelled",
+                    "progress": (db.query(Chunk)
+                                 .filter(Chunk.project_id == project_id,
+                                         Chunk.is_processed == True)
+                                 .count() / max(total_chunks, 1)) * 100,
+                })
+                project.status = "cancelled"
+                db.commit()
+                return
+
             if chunk.is_processed:
                 continue
                 
@@ -216,21 +236,54 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
             
             print(f"Processing chunk {chunk.index}/{total_chunks-1}")
             
+            # Log TTS parameters being used
+            print(f"   Using TTS parameters:")
+            print(f"   - Preset: {project.preset_id or 'default'}")
+            print(f"   - Language: {project.language}")
+            print(f"   - Temperature: {project.temperature}")
+            print(f"   - Top-P: {project.top_p}")
+            print(f"   - Repetition Penalty: {project.repetition_penalty}")
+            print(f"   - Speed: {project.speed}")
+            
             try:
                 engine = get_tts_engine(use_gpu=use_gpu)
-                
-                success = await asyncio.to_thread(
-                    engine.generate_audio,
-                    text=chunk.text_content,
-                    speaker_wav=project.voice_ref_path,
-                    output_path=str(output_path),
-                    language=project.language or settings.DEFAULT_LANGUAGE,
-                    speed=project.speed or settings.DEFAULT_SPEED,
-                    temperature=project.temperature or settings.DEFAULT_TEMPERATURE,
-                    top_k=project.top_k or settings.DEFAULT_TOP_K,
-                    top_p=project.top_p or settings.DEFAULT_TOP_P,
-                    repetition_penalty=project.repetition_penalty or settings.DEFAULT_REPETITION_PENALTY
-                )
+
+                # Generate audio with preset parameters from project
+                max_retries = 2
+                attempt = 0
+                success = False
+
+                while attempt <= max_retries and not success:
+                    if attempt > 0:
+                        print(f"🔁 Retry {attempt}/{max_retries} for chunk {chunk.index}")
+                        # Notify UI about retry attempt for this chunk
+                        await manager.broadcast({
+                            "type": "status_update",
+                            "project_id": project_id,
+                            "status": "retry",
+                            "chunk_index": chunk.index,
+                            "chunk_text_preview": (chunk.text_content or "")[:120],
+                        })
+
+                    success = await asyncio.to_thread(
+                        engine.generate_audio,
+                        text=chunk.text_content,
+                        speaker_wav=project.voice_ref_path,
+                        output_path=str(output_path),
+                        language=project.language or settings.DEFAULT_LANGUAGE,
+                        temperature=project.temperature or settings.DEFAULT_TEMPERATURE,
+                        top_p=project.top_p or settings.DEFAULT_TOP_P,
+                        repetition_penalty=(
+                            project.repetition_penalty 
+                            or settings.DEFAULT_REPETITION_PENALTY
+                        ),
+                        speed=project.speed or settings.DEFAULT_SPEED
+                    )
+
+                    if success:
+                        break
+
+                    attempt += 1
             except RuntimeError as e:
                 error_msg = str(e)
                 if "CUDA" in error_msg or "device-side assert" in error_msg:
@@ -268,37 +321,67 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
                     Chunk.is_processed == True
                 ).count()
                 progress = (processed_count / total_chunks) * 100
-                
+
+                # Broadcast successful processing for this chunk with text preview
                 await manager.broadcast({
                     "type": "progress_update",
                     "project_id": project_id,
                     "chunk_index": chunk.index,
-                    "progress": progress
+                    "chunk_text_preview": (chunk.text_content or "")[:120],
+                    "progress": progress,
                 })
 
                 # Aggressive memory cleanup AFTER EVERY CHUNK (for large projects)
                 engine.release_memory()
             else:
                 print(f"Failed to process chunk {chunk.index}")
-        
-        project.status = "completed"
-        db.commit()
-        
-        await manager.broadcast({
-            "type": "status_update",
-            "project_id": project_id,
-            "status": "completed",
-            "progress": 100
-        })
-        
-        # Automatically merge audio files after processing completes
-        print(f"🔄 Starting automatic merge for project {project_id}...")
-        try:
-            await merge_audio_files(project_id, db)
-            print(f"✓ Merge completed for project {project_id}")
-        except Exception as merge_error:
-            print(f"⚠ Merge failed for project {project_id}: {merge_error}")
-            # Don't fail the whole process if merge fails
+                # Notify UI that this chunk failed after retries
+                await manager.broadcast({
+                    "type": "status_update",
+                    "project_id": project_id,
+                    "status": "chunk_failed",
+                    "chunk_index": chunk.index,
+                    "chunk_text_preview": (chunk.text_content or "")[:120],
+                })
+
+            # Döngü sonunda tekrar iptal kontrolü
+            db.refresh(project)
+            if project.is_cancelled or project.status == "cancelled":
+                print(f"Project {project_id} cancelled after processing chunk {chunk.index}.")
+                await manager.broadcast({
+                    "type": "status_update",
+                    "project_id": project_id,
+                    "status": "cancelled",
+                    "progress": (db.query(Chunk)
+                                 .filter(Chunk.project_id == project_id,
+                                         Chunk.is_processed == True)
+                                 .count() / max(total_chunks, 1)) * 100,
+                })
+                project.status = "cancelled"
+                db.commit()
+                return
+
+        # Eğer iptal edilmediyse normal tamamlanma ve merge
+        db.refresh(project)
+        if not project.is_cancelled and project.status != "cancelled":
+            project.status = "completed"
+            db.commit()
+
+            await manager.broadcast({
+                "type": "status_update",
+                "project_id": project_id,
+                "status": "completed",
+                "progress": 100
+            })
+
+            # Automatically merge audio files after processing completes
+            print(f"🔄 Starting automatic merge for project {project_id}...")
+            try:
+                await merge_audio_files(project_id, db)
+                print(f"✓ Merge completed for project {project_id}")
+            except Exception as merge_error:
+                print(f"⚠ Merge failed for project {project_id}: {merge_error}")
+                # Don't fail the whole process if merge fails
         
     except Exception as e:
         print(f"Error processing project {project_id}: {e}")

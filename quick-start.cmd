@@ -27,6 +27,12 @@ if not exist "frontend\node_modules" (
 echo ✓ Backend ready
 echo ✓ Frontend ready
 echo.
+echo.
+echo Building frontend (npm run build)...
+cd frontend
+call npm run build
+cd ..
+echo.
 echo Starting both servers...
 echo.
 echo NOTE: Two new windows will open

@@ -18,7 +18,7 @@ class Settings:
     
     # TTS Defaults (XTTS v2)
     DEFAULT_LANGUAGE = "en"
-    DEFAULT_SPEED = 1.0
+    DEFAULT_SPEED = 0.9
     DEFAULT_TEMPERATURE = 0.75
     DEFAULT_TOP_K = 50
     DEFAULT_TOP_P = 0.85

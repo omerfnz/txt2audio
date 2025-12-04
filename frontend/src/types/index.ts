@@ -25,6 +25,7 @@ export interface WebSocketMessage {
   status?: string;
   progress?: number;
   chunk_index?: number;
+  chunk_text_preview?: string;
   project_id?: number;
   error?: string;
 }

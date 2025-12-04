@@ -30,6 +30,7 @@ storage/outputs/
 backend/storage/models/
 backend/storage/uploads/
 backend/storage/outputs/
+backend/logs/
 !backend/storage/reference_voices/
 !backend/storage/.gitkeep
 
