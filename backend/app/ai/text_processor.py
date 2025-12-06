@@ -65,14 +65,14 @@ class TextProcessor:
         
         return chunk
     
-    def split_into_chunks(self, text: str, max_chars: int = 800, min_chars: int = 100, language: str = "en", normalize: bool = True) -> List[str]:
+    def split_into_chunks(self, text: str, max_chars: int = 400, min_chars: int = 50, language: str = "en", normalize: bool = True) -> List[str]:
         """
         Metni mantıklı chunk'lara böler, birden fazla cümleyi birleştirir.
         CÜMLE SINIRLARINI KORUR - cümle ortasında bölme yapmaz.
         
         Args:
-            max_chars: Maksimum chunk uzunluğu (varsayılan: 800)
-            min_chars: Minimum chunk uzunluğu (varsayılan: 100)
+            max_chars: Maksimum chunk uzunluğu (varsayılan: 400)
+            min_chars: Minimum chunk uzunluğu (varsayılan: 50)
             language: Dil kodu
             normalize: Metin normalizasyonu yapılsın mı
             
@@ -80,7 +80,8 @@ class TextProcessor:
             - XTTS v2, yaklaşık 400 token civarında bir üst limite sahiptir.
             - Metin normalizasyonu (sayısal ifadelerin uzaması vb.) sonrası
               gerçek token sayısı karakter sayısından çok daha yüksek olabilir.
-            - 800 karakter güvenli bir üst sınır (normalizasyon sonrası ~350-400 token)
+            - 400 karakter güvenli bir üst sınır (normalizasyon sonrası ~200-250 token)
+            - Daha kısa chunk'lar TTS modelinde daha stabil çalışır
         """
         if not self.nlp:
             raise RuntimeError("NLP model not loaded")
