@@ -41,7 +41,7 @@ export function AdvancedSettings({
     const [showAdvanced, setShowAdvanced] = useState(false);
 
     return (
-        <Accordion type="single" collapsible value={showAdvanced ? "advanced" : ""} onValueChange={(value) => setShowAdvanced(value === "advanced")} className="border border-border rounded-2xl overflow-hidden">
+        <Accordion type="single" collapsible value={showAdvanced ? "advanced" : ""} onValueChange={(value: string) => setShowAdvanced(value === "advanced")} className="border border-border rounded-2xl overflow-hidden">
             <AccordionItem value="advanced" className="border-none">
                 <AccordionTrigger className="px-5 py-5 hover:no-underline">
                     <div className="flex items-center gap-3">
@@ -86,7 +86,7 @@ export function AdvancedSettings({
                                 </Label>
                                 <Slider
                                     value={[speed]}
-                                    onValueChange={(value) => setSpeed(value[0])}
+                                    onValueChange={(value: number[]) => setSpeed(value[0])}
                                     min={0.5}
                                     max={2.0}
                                     step={0.1}
@@ -100,7 +100,7 @@ export function AdvancedSettings({
                                 </Label>
                                 <Slider
                                     value={[temperature]}
-                                    onValueChange={(value) => setTemperature(value[0])}
+                                    onValueChange={(value: number[]) => setTemperature(value[0])}
                                     min={0.01}
                                     max={1.0}
                                     step={0.01}
@@ -114,7 +114,7 @@ export function AdvancedSettings({
                                 </Label>
                                 <Slider
                                     value={[topK]}
-                                    onValueChange={(value) => setTopK(value[0])}
+                                    onValueChange={(value: number[]) => setTopK(value[0])}
                                     min={1}
                                     max={100}
                                     step={1}
@@ -128,7 +128,7 @@ export function AdvancedSettings({
                                 </Label>
                                 <Slider
                                     value={[topP]}
-                                    onValueChange={(value) => setTopP(value[0])}
+                                    onValueChange={(value: number[]) => setTopP(value[0])}
                                     min={0.01}
                                     max={1.0}
                                     step={0.01}
@@ -143,7 +143,7 @@ export function AdvancedSettings({
                             </Label>
                             <Slider
                                 value={[repetitionPenalty]}
-                                onValueChange={(value) => setRepetitionPenalty(value[0])}
+                                onValueChange={(value: number[]) => setRepetitionPenalty(value[0])}
                                 min={1.0}
                                 max={3.0}
                                 step={0.1}

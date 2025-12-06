@@ -147,7 +147,7 @@ export function PresetSelector({
                         </p>
 
                         {/* Accordion for Parameter Details */}
-                        <Accordion type="single" collapsible value={showDetails ? "parameters" : ""} onValueChange={(value) => setShowDetails(value === "parameters")}>
+                        <Accordion type="single" collapsible value={showDetails ? "parameters" : ""} onValueChange={(value: string) => setShowDetails(value === "parameters")}>
                             <AccordionItem value="parameters" className="border-none">
                                 <AccordionTrigger className="py-0 text-xs font-medium hover:no-underline">
                                     <div className="flex items-center gap-2">

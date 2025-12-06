@@ -178,7 +178,7 @@ export function Player({ audioUrl, projectId, onNext, onPrevious }: PlayerProps)
                     <span>{formatTime(currentTime)}</span>
                     <Slider
                         value={[progress]}
-                        onValueChange={(value) => {
+                        onValueChange={(value: number[]) => {
                             if (audioRef.current) {
                                 const newTime = (value[0] / 100) * audioRef.current.duration;
                                 audioRef.current.currentTime = newTime;
@@ -198,7 +198,7 @@ export function Player({ audioUrl, projectId, onNext, onPrevious }: PlayerProps)
                     <Volume2 className="w-5 h-5 text-muted-foreground group-hover:text-foreground" />
                     <Slider
                         value={[volume]}
-                        onValueChange={(value) => setVolume(value[0])}
+                        onValueChange={(value: number[]) => setVolume(value[0])}
                         max={100}
                         step={1}
                         className="w-20"

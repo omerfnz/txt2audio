@@ -49,7 +49,7 @@ export function AlertDialog({
     const styles = variantStyles[variant];
 
     return (
-        <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
+        <Dialog open={isOpen} onOpenChange={(open: boolean) => !open && onCancel()}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <div className="flex items-start gap-4">

@@ -101,11 +101,24 @@ echo ""
 # 3. Frontend Setup
 echo "[3/4] Setting up Frontend..."
 cd frontend
-if [ ! -d "node_modules" ]; then
-    echo "Installing npm packages..."
+
+# node_modules kontrolü - paketlerin eksik olup olmadığını kontrol et
+if [ ! -d "node_modules" ] || [ ! -d "node_modules/@radix-ui" ] || [ ! -d "node_modules/class-variance-authority" ]; then
+    echo "Installing/Updating npm packages..."
+    if [ -d "node_modules" ]; then
+        echo "Cleaning old node_modules..."
+        rm -rf node_modules
+    fi
     npm install
 else
-    echo -e "${GREEN}✓ node_modules found. Skipping install (run 'npm install' manually if needed).${NC}"
+    echo -e "${GREEN}✓ node_modules found. Verifying packages...${NC}"
+    # Kritik paketlerin varlığını kontrol et
+    if [ ! -d "node_modules/@radix-ui/react-slot" ] || [ ! -d "node_modules/class-variance-authority" ]; then
+        echo -e "${YELLOW}⚠ Some packages missing. Reinstalling...${NC}"
+        npm install
+    else
+        echo -e "${GREEN}✓ All packages verified${NC}"
+    fi
 fi
 
 echo "Cleaning old build files..."

@@ -56,7 +56,7 @@ export function VoiceSelector({
 
             <RadioGroup
                 value={voiceMode}
-                onValueChange={(value) => setVoiceMode(value as 'upload' | 'reference')}
+                onValueChange={(value: string) => setVoiceMode(value as 'upload' | 'reference')}
                 className="grid grid-cols-2 gap-4"
             >
                 <Card
