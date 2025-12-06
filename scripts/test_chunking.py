@@ -11,7 +11,6 @@ backend_path = Path(__file__).parent.parent / "backend"
 sys.path.insert(0, str(backend_path))
 
 from app.ai.text_processor import TextProcessor
-from app.utils.gutenberg_cleaner import GutenbergCleaner
 
 
 def test_chunking(txt_file_path: str):
@@ -33,20 +32,8 @@ def test_chunking(txt_file_path: str):
         print(f"❌ TextProcessor başlatılamadı: {e}")
         return
     
-    # Gutenberg cleaner kontrolü
-    gutenberg_cleaner = GutenbergCleaner()
-    chunks = []
-    
     print("\n📝 Chunk'lar oluşturuluyor...")
-    if any(p.search(full_text) for p in gutenberg_cleaner.start_patterns):
-        print("   Gutenberg formatı tespit edildi")
-        special_chunks, cleaned_body = gutenberg_cleaner.prepare_chunks(full_text)
-        chunks.extend(special_chunks)
-        body_chunks = processor.split_into_chunks(cleaned_body, language="en")
-        chunks.extend(body_chunks)
-    else:
-        print("   Normal format - direkt chunk'lara ayırılıyor")
-        chunks = processor.split_into_chunks(full_text, language="en")
+    chunks = processor.split_into_chunks(full_text, language="en")
     
     # Analiz
     print(f"\n📊 CHUNK ANALİZİ:")

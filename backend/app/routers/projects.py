@@ -4,7 +4,6 @@ from ..db.session import get_db
 from ..db.models import Project, Chunk
 from ..ai.text_processor import TextProcessor
 from ..ai.tts_presets import get_all_presets, get_preset, validate_preset_params
-from ..utils.gutenberg_cleaner import GutenbergCleaner
 
 from ..core.config import settings
 from ..services.audio_service import process_audio_task
@@ -20,9 +19,7 @@ import os
 router = APIRouter()
 text_processor = TextProcessor()
 audio_analyzer = AudioAnalyzer()
-audio_analyzer = AudioAnalyzer()
 audio_mastering = AudioMastering()
-gutenberg_cleaner = GutenbergCleaner()
 
 
 @router.get("/tts-presets")
@@ -247,15 +244,8 @@ async def create_project(
         with open(text_path, "r", encoding="utf-8") as f:
             full_text = f.read()
 
-        # Check for Gutenberg content
-        chunks = []
-        if any(p.search(full_text) for p in gutenberg_cleaner.start_patterns):
-            special_chunks, cleaned_body = gutenberg_cleaner.prepare_chunks(full_text)
-            chunks.extend(special_chunks)
-            body_chunks = text_processor.split_into_chunks(cleaned_body, language=final_language)
-            chunks.extend(body_chunks)
-        else:
-            chunks = text_processor.split_into_chunks(full_text, language=final_language)
+        # Chunk text (Gutenberg cleaner artık gerekli değil - temiz txt dosyası kullanılıyor)
+        chunks = text_processor.split_into_chunks(full_text, language=final_language)
 
         # 9. Log chunk statistics for analysis
         if chunks:

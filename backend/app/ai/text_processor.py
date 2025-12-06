@@ -65,17 +65,22 @@ class TextProcessor:
         
         return chunk
     
-    def split_into_chunks(self, text: str, max_chars: int = 280, language: str = "en", normalize: bool = True) -> List[str]:
+    def split_into_chunks(self, text: str, max_chars: int = 800, min_chars: int = 100, language: str = "en", normalize: bool = True) -> List[str]:
         """
-        Metni mantıklı cümlelere böler ve her parçanın max_chars sınırını aşmamasını sağlar.
-
+        Metni mantıklı chunk'lara böler, birden fazla cümleyi birleştirir.
+        CÜMLE SINIRLARINI KORUR - cümle ortasında bölme yapmaz.
+        
+        Args:
+            max_chars: Maksimum chunk uzunluğu (varsayılan: 800)
+            min_chars: Minimum chunk uzunluğu (varsayılan: 100)
+            language: Dil kodu
+            normalize: Metin normalizasyonu yapılsın mı
+            
         Not:
             - XTTS v2, yaklaşık 400 token civarında bir üst limite sahiptir.
             - Metin normalizasyonu (sayısal ifadelerin uzaması vb.) sonrası
               gerçek token sayısı karakter sayısından çok daha yüksek olabilir.
-
-        Bu nedenle varsayılan olarak daha konservatif bir sınır kullanılır:
-            max_chars = 280 (özellikle İngilizce metinler için güvenli seviye).
+            - 800 karakter güvenli bir üst sınır (normalizasyon sonrası ~350-400 token)
         """
         if not self.nlp:
             raise RuntimeError("NLP model not loaded")
@@ -87,29 +92,53 @@ class TextProcessor:
         doc = self.nlp(text)
         sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
         
+        if not sentences:
+            return [""]
+        
         chunks: List[str] = []
+        current_chunk = ""
 
         for sentence in sentences:
             sentence = sentence.strip()
             if not sentence:
                 continue
 
-            # Her cümleyi mümkün olduğunca kendi başına bir chunk olarak üret.
-            # Sadece tek bir cümle max_chars sınırını aşıyorsa word-wrap ile böl.
+            # Tek bir cümle max_chars'ı aşıyorsa - cümle ortasında bölme yapma!
+            # Bu durumda cümleyi olduğu gibi bir chunk olarak al
             if len(sentence) > max_chars:
-                words = sentence.split()
-                temp_chunk = ""
-                for word in words:
-                    if len(temp_chunk) + len(word) + 1 <= max_chars:
-                        temp_chunk += word + " "
-                    else:
-                        if temp_chunk:
-                            chunks.append(self.validate_chunk(temp_chunk.strip()))
-                        temp_chunk = word + " "
-                if temp_chunk:
-                    chunks.append(self.validate_chunk(temp_chunk.strip()))
-            else:
+                # Mevcut chunk'ı kaydet
+                if current_chunk:
+                    chunks.append(self.validate_chunk(current_chunk.strip()))
+                    current_chunk = ""
+                
+                # Uzun cümleyi tek başına chunk olarak ekle
+                # Cümle ortasında bölme yapmıyoruz - cümle sınırlarını koruyoruz
                 chunks.append(self.validate_chunk(sentence))
+            else:
+                # Cümleyi mevcut chunk'a eklemeyi dene
+                potential_chunk = current_chunk + " " + sentence if current_chunk else sentence
+                
+                if len(potential_chunk) <= max_chars:
+                    # Ekle, hala limit içinde
+                    current_chunk = potential_chunk
+                else:
+                    # Mevcut chunk'ı kaydet ve yeni chunk başlat
+                    if current_chunk:
+                        chunks.append(self.validate_chunk(current_chunk.strip()))
+                    current_chunk = sentence
+        
+        # Son chunk'ı ekle (minimum uzunluk kontrolü ile)
+        if current_chunk:
+            current_chunk = current_chunk.strip()
+            if len(current_chunk) >= min_chars:
+                chunks.append(self.validate_chunk(current_chunk))
+            else:
+                # Çok kısa chunk'ı önceki chunk'a ekle (varsa)
+                if chunks:
+                    chunks[-1] = self.validate_chunk(chunks[-1] + " " + current_chunk)
+                else:
+                    # Hiç chunk yoksa, yine de ekle
+                    chunks.append(self.validate_chunk(current_chunk))
 
         return chunks if chunks else [""] # En az 1 chunk döndür
 
