@@ -34,16 +34,33 @@ class TextProcessor:
             raise
 
     def validate_chunk(self, chunk: str) -> str:
-        """Chunk'ın noktalama ile bittiğini garanti eder."""
+        """Chunk'ın noktalama ile bittiğini garanti eder ve özel karakterleri korur."""
         chunk = chunk.strip()
         
         if not chunk:
             return chunk
         
-        # Cümle sonu noktalama kontrolü
-        if not chunk.endswith(('.', '!', '?', '...', '."', '!"', '?"', '."', '.)', '!)', '?)')):
+        # Ellipsis (...) ve em-dash (—) gibi özel karakterleri koru
+        # Bu karakterler kitaplarda sıkça kullanılır ve anlamsal olarak önemlidir
+        
+        # Cümle sonu noktalama kontrolü - genişletilmiş
+        valid_endings = (
+            '.', '!', '?',           # Standart noktalama
+            '...', '…',              # Ellipsis (3 nokta veya Unicode)
+            '.\"', '!\"', '?\"',     # Tırnak içinde biten
+            '.\'', '!\'', '?\'',     # Tek tırnak ile biten
+            '.)', '!)', '?)',        # Parantez içinde biten
+            '."', '!"', '?"',        # Çift tırnak (farklı encoding)
+            '.—', '!—', '?—',        # Em-dash ile biten
+            '—', '–',                # Sadece dash (cümle kesilmesi)
+        )
+        
+        if not chunk.endswith(valid_endings):
             # Son karakter alfanumerik ise nokta ekle
             if chunk[-1].isalnum():
+                chunk += "."
+            # Virgül ile bitiyorsa (cümle ortası), nokta ekle
+            elif chunk[-1] == ',':
                 chunk += "."
         
         return chunk

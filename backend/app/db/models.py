@@ -2,7 +2,7 @@
 Database Models for AI Audiobook Studio
 
 This module defines SQLAlchemy ORM models for project management,
-including support for EPUB chapter-based processing and TTS presets.
+including support for TTS presets.
 """
 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float
@@ -37,7 +37,7 @@ class Project(Base):
     source_type = Column(
         String,
         default="txt",
-        comment="Source file type: txt or epub"
+        comment="Source file type: txt"
     )
     content_type = Column(
         String,
@@ -78,7 +78,7 @@ class Chunk(Base):
     Text chunk model for audio generation.
     
     Represents a segment of text to be converted to audio.
-    For EPUB files, each chunk typically represents a chapter or section.
+    Represents a segment of text to be converted to audio.
     """
     __tablename__ = "chunks"
 

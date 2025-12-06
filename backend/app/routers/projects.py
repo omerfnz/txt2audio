@@ -4,7 +4,8 @@ from ..db.session import get_db
 from ..db.models import Project, Chunk
 from ..ai.text_processor import TextProcessor
 from ..ai.tts_presets import get_all_presets, get_preset, validate_preset_params
-from ..utils.epub_parser import extract_text_from_epub
+from ..utils.gutenberg_cleaner import GutenbergCleaner
+
 from ..core.config import settings
 from ..services.audio_service import process_audio_task
 from ..services.audio_analyzer import AudioAnalyzer
@@ -19,7 +20,9 @@ import os
 router = APIRouter()
 text_processor = TextProcessor()
 audio_analyzer = AudioAnalyzer()
+audio_analyzer = AudioAnalyzer()
 audio_mastering = AudioMastering()
+gutenberg_cleaner = GutenbergCleaner()
 
 
 @router.get("/tts-presets")
@@ -119,7 +122,7 @@ async def create_project(
     """
     Create new audiobook project with TTS preset support.
     
-    Supports both TXT and EPUB file formats. Parameters can either
+    Supports ONLY TXT file format. Parameters can either
     use a preset configuration or be manually specified.
     """
     try:
@@ -131,9 +134,8 @@ async def create_project(
                 detail=f"Invalid preset_id: {preset_id}"
             )
         
-        # 2. Determine source type from file extension
-        file_extension = text_file.filename.split(".")[-1].lower()
-        source_type = "epub" if file_extension == "epub" else "txt"
+        # 2. Determine source type (Force TXT)
+        source_type = "txt"
         
         # 3. Use preset values or form overrides
         final_language = language or preset.language
@@ -242,14 +244,18 @@ async def create_project(
         db.refresh(project)
 
         # 8. Read and chunk text
-        if source_type == "epub":
-            # Gutenberg temizleme otomatik olarak yapılır (clean_gutenberg=True varsayılan)
-            full_text = extract_text_from_epub(text_path, clean_gutenberg=True)
+        with open(text_path, "r", encoding="utf-8") as f:
+            full_text = f.read()
+
+        # Check for Gutenberg content
+        chunks = []
+        if any(p.search(full_text) for p in gutenberg_cleaner.start_patterns):
+            special_chunks, cleaned_body = gutenberg_cleaner.prepare_chunks(full_text)
+            chunks.extend(special_chunks)
+            body_chunks = text_processor.split_into_chunks(cleaned_body, language=final_language)
+            chunks.extend(body_chunks)
         else:
-            with open(text_path, "r", encoding="utf-8") as f:
-                full_text = f.read()
-        
-        chunks = text_processor.split_into_chunks(full_text, language=final_language)
+            chunks = text_processor.split_into_chunks(full_text, language=final_language)
 
         # 9. Log chunk statistics for analysis
         if chunks:

@@ -97,7 +97,7 @@ export function FileUpload({ onUpload }: FileUploadProps) {
         setIsDragging(false);
 
         const files = Array.from(e.dataTransfer.files);
-        const txt = files.find(f => f.name.endsWith('.txt') || f.name.endsWith('.epub'));
+        const txt = files.find(f => f.name.endsWith('.txt'));
         const audio = files.find(f => f.type.startsWith('audio/'));
 
         if (txt) setTextFile(txt);
@@ -166,41 +166,41 @@ export function FileUpload({ onUpload }: FileUploadProps) {
                         />
                     </div>
 
-                {/* Drop Zone */}
-                <DropZone
-                    onFileSelect={setTextFile}
-                    selectedFile={textFile}
-                    isDragging={isDragging}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                />
+                    {/* Drop Zone */}
+                    <DropZone
+                        onFileSelect={setTextFile}
+                        selectedFile={textFile}
+                        isDragging={isDragging}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                    />
 
-                {/* Voice Selector */}
-                <VoiceSelector
-                    voiceMode={voiceMode}
-                    setVoiceMode={setVoiceMode}
-                    referenceVoices={referenceVoices}
-                    selectedCategory={selectedCategory}
-                    setSelectedCategory={handleCategoryChange}
-                    selectedVoice={selectedVoice}
-                    setSelectedVoice={setSelectedVoice}
-                    audioFile={audioFile}
-                    setAudioFile={setAudioFile}
-                />
+                    {/* Voice Selector */}
+                    <VoiceSelector
+                        voiceMode={voiceMode}
+                        setVoiceMode={setVoiceMode}
+                        referenceVoices={referenceVoices}
+                        selectedCategory={selectedCategory}
+                        setSelectedCategory={handleCategoryChange}
+                        selectedVoice={selectedVoice}
+                        setSelectedVoice={setSelectedVoice}
+                        audioFile={audioFile}
+                        setAudioFile={setAudioFile}
+                    />
 
-                {/* TTS Preset Selector */}
-                <PresetSelector
-                    selectedPresetId={selectedPresetId}
-                    setSelectedPresetId={setSelectedPresetId}
-                    language={language}
-                    onPresetChange={(params) => {
-                        setTemperature(params.temperature);
-                        setTopP(params.top_p);
-                        setRepetitionPenalty(params.repetition_penalty);
-                        setSpeed(params.speed);
-                    }}
-                />
+                    {/* TTS Preset Selector */}
+                    <PresetSelector
+                        selectedPresetId={selectedPresetId}
+                        setSelectedPresetId={setSelectedPresetId}
+                        language={language}
+                        onPresetChange={(params) => {
+                            setTemperature(params.temperature);
+                            setTopP(params.top_p);
+                            setRepetitionPenalty(params.repetition_penalty);
+                            setSpeed(params.speed);
+                        }}
+                    />
 
                     {/* GPU/CPU Toggle */}
                     <Card className="p-5">
@@ -233,15 +233,15 @@ export function FileUpload({ onUpload }: FileUploadProps) {
                         </CardContent>
                     </Card>
 
-                {/* Advanced Settings */}
-                <AdvancedSettings
-                    language={language} setLanguage={setLanguage}
-                    speed={speed} setSpeed={setSpeed}
-                    temperature={temperature} setTemperature={setTemperature}
-                    topK={topK} setTopK={setTopK}
-                    topP={topP} setTopP={setTopP}
-                    repetitionPenalty={repetitionPenalty} setRepetitionPenalty={setRepetitionPenalty}
-                />
+                    {/* Advanced Settings */}
+                    <AdvancedSettings
+                        language={language} setLanguage={setLanguage}
+                        speed={speed} setSpeed={setSpeed}
+                        temperature={temperature} setTemperature={setTemperature}
+                        topK={topK} setTopK={setTopK}
+                        topP={topP} setTopP={setTopP}
+                        repetitionPenalty={repetitionPenalty} setRepetitionPenalty={setRepetitionPenalty}
+                    />
 
                     {/* Submit Button */}
                     <Button

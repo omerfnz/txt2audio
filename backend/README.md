@@ -75,14 +75,11 @@ app/
 ├── db/             # Database models and session
 │   ├── models.py          # SQLAlchemy models
 │   └── session.py          # Database session management
-├── utils/          # Utility functions
-│   ├── epub_parser.py     # EPUB file parsing
-│   ├── epub_cleaner.py    # EPUB content cleaning
-│   └── gutenberg.py       # Project Gutenberg integration
+
 └── main.py         # Application entry point
 storage/            # Generated files and models
 ├── models/         # TTS model cache
-├── uploads/         # Uploaded text/epub files
+├── uploads/         # Uploaded text files
 ├── outputs/        # Generated audio files
 └── reference_voices/ # Reference voice samples
 ```

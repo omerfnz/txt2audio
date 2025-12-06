@@ -72,13 +72,13 @@ export function DropZone({
                             <p className="text-sm font-semibold text-foreground truncate mb-1">
                                 {selectedFile ? selectedFile.name : "Select Text File"}
                             </p>
-                            <p className="text-xs text-muted-foreground">.txt, .epub</p>
+                            <p className="text-xs text-muted-foreground">.txt</p>
                         </div>
                         <input
                             type="file"
                             ref={textInputRef}
                             className="hidden"
-                            accept=".txt,.epub"
+                            accept=".txt"
                             onChange={(e) => e.target.files?.[0] && onFileSelect(e.target.files[0])}
                         />
                     </Card>

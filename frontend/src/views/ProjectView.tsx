@@ -215,11 +215,6 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
                             <ScrollArea className="h-full">
                                 <div className="space-y-2 pr-4">
                                     {chunks.map((chunk, idx) => {
-                                        const preview =
-                                            chunk.text && chunk.text.length > 0
-                                                ? (chunk.text.length > 120 ? `${chunk.text.slice(0, 120)}…` : chunk.text)
-                                                : null;
-
                                         return (
                                             <Card
                                                 key={idx}
@@ -231,20 +226,20 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
                                                     currentChunkIndex === idx && 'ring-2 ring-primary'
                                                 )}
                                             >
-                                                <div className="flex flex-col gap-1 max-w-xs">
+                                                <div className="flex flex-col gap-1 flex-1 mr-4">
                                                     <div className="flex items-center gap-3">
                                                         {chunk.isProcessed ? (
-                                                            <CheckCircle className="w-5 h-5 text-primary" />
+                                                            <CheckCircle className="w-5 h-5 text-primary shrink-0" />
                                                         ) : (
-                                                            <Circle className="w-5 h-5 text-muted-foreground" />
+                                                            <Circle className="w-5 h-5 text-muted-foreground shrink-0" />
                                                         )}
-                                                        <span className="text-sm font-medium text-foreground">
+                                                        <span className="text-sm font-medium text-foreground whitespace-nowrap">
                                                             Chunk #{idx + 1}
                                                         </span>
                                                     </div>
-                                                    {preview && (
-                                                        <p className="text-xs text-muted-foreground truncate">
-                                                            {preview}
+                                                    {chunk.text && (
+                                                        <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+                                                            {chunk.text}
                                                         </p>
                                                     )}
                                                 </div>
@@ -253,6 +248,7 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
                                                         onClick={() => handlePlayChunk(idx)}
                                                         variant={currentChunkIndex === idx ? "default" : "outline"}
                                                         size="sm"
+                                                        className="shrink-0"
                                                     >
                                                         {currentChunkIndex === idx ? 'Playing' : 'Play'}
                                                     </Button>

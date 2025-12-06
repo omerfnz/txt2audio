@@ -9,10 +9,9 @@ aiofiles>=23.2.0
 librosa>=0.10.0
 soundfile>=0.12.0
 
-# Text Processing & EPUB
+# Text Processing
 num2words>=0.5.12
 beautifulsoup4>=4.12.0
-ebooklib>=0.18
 lxml>=4.9.0
 
 # Audio Mastering (Optional - pydub fallback available)
