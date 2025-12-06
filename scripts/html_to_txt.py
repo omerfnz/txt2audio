@@ -260,6 +260,160 @@ class HTMLToTXTConverter:
                     if hasattr(element, 'decompose'):
                         element.decompose()
     
+    def _fix_initial_letters(self, body):
+        """Initial letter görsellerini (div.initial içindeki img'ler) düzeltir."""
+        # div.initial içindeki img taglarını bul
+        for initial_div in body.find_all('div', class_=re.compile(r'initial', re.I)):
+            # İçindeki img tagını bul
+            img = initial_div.find('img')
+            if img:
+                # Alt text veya title'dan harfi al
+                letter = img.get('alt', '') or img.get('title', '')
+                if not letter:
+                    # Dosya adından harfi çıkar (örn: "initial_i.jpg" -> "I")
+                    src = img.get('src', '')
+                    match = re.search(r'initial_([a-z])', src, re.I)
+                    if match:
+                        letter = match.group(1).upper()
+                
+                if letter:
+                    # Sonraki paragraftaki firstwords span'ini bul
+                    next_p = initial_div.find_next_sibling('p')
+                    if next_p:
+                        firstwords = next_p.find('span', class_=re.compile(r'firstwords', re.I))
+                        if firstwords:
+                            # firstwords içindeki metni al ve birleştir
+                            firstwords_text = firstwords.get_text(strip=True)
+                            # firstwords span'ini letter + text ile değiştir
+                            firstwords.replace_with(letter + firstwords_text)
+                        else:
+                            # firstwords yoksa, paragrafın başına letter ekle
+                            # Paragrafın ilk text node'unu bul
+                            if next_p.string:
+                                next_p.string = letter + next_p.string
+                            elif next_p.contents:
+                                # İlk child bir NavigableString ise
+                                first_content = next_p.contents[0]
+                                if isinstance(first_content, str):
+                                    next_p.contents[0].replace_with(letter + first_content)
+                                else:
+                                    # Tag ise, başına ekle
+                                    next_p.insert(0, letter)
+                            else:
+                                # Hiç içerik yoksa, başa ekle
+                                next_p.string = letter
+                
+                # Initial div'i kaldır (artık gerek yok)
+                initial_div.decompose()
+    
+    def _fix_dropcap_and_firstwords(self, body):
+        """Dropcap, letra ve firstwords span'lerini düzeltir."""
+        # Dropcap span'lerini bul (örn: <span class="dropcap">M</span>y)
+        for dropcap in body.find_all('span', class_=re.compile(r'dropcap', re.I)):
+            dropcap_text = dropcap.get_text(strip=True)
+            if dropcap_text:
+                # Parent paragrafın ilk metnini bul
+                parent = dropcap.parent
+                if parent:
+                    # Dropcap'ten sonraki metni al
+                    next_sibling = dropcap.next_sibling
+                    if next_sibling:
+                        if hasattr(next_sibling, 'string') and next_sibling.string:
+                            # Dropcap harfini ve sonraki metni birleştir
+                            combined = dropcap_text + next_sibling.string
+                            dropcap.replace_with(combined)
+                            next_sibling.decompose()
+                        else:
+                            # String değilse, sadece dropcap'i metin olarak bırak
+                            dropcap.replace_with(dropcap_text)
+                    else:
+                        # Sonraki sibling yoksa, sadece dropcap'i metin olarak bırak
+                        dropcap.replace_with(dropcap_text)
+        
+        # Letra span'lerini bul (örn: <span class="letra">I</span>T veya <span class="letra"><img alt="M"></span>R)
+        for letra in body.find_all('span', class_=re.compile(r'letra', re.I)):
+            # İçindeki img var mı kontrol et
+            img = letra.find('img')
+            if img:
+                # Alt text veya title'dan harfi al
+                letter = img.get('alt', '') or img.get('title', '')
+                if not letter:
+                    # Dosya adından harfi çıkar (örn: "i_035_b.png" -> "M")
+                    src = img.get('src', '')
+                    # Dosya adından harfi çıkarmaya çalış (genellikle alt text'te var)
+                    pass
+                
+                if letter:
+                    # Sonraki sibling'i bul (boş satırları atla)
+                    next_sibling = letra.next_sibling
+                    while next_sibling and isinstance(next_sibling, str) and not next_sibling.strip():
+                        next_sibling = next_sibling.next_sibling if hasattr(next_sibling, 'next_sibling') else None
+                    
+                    if next_sibling:
+                        if isinstance(next_sibling, str):
+                            # String ise birleştir
+                            letra.replace_with(letter + next_sibling.strip())
+                        elif hasattr(next_sibling, 'string') and next_sibling.string:
+                            # Tag ise içindeki string'i al ve birleştir
+                            combined = letter + next_sibling.string
+                            letra.replace_with(combined)
+                            next_sibling.decompose()
+                        elif hasattr(next_sibling, 'get_text'):
+                            # Tag ise içindeki metni al ve birleştir
+                            next_text = next_sibling.get_text(strip=True)
+                            combined = letter + next_text
+                            letra.replace_with(combined)
+                            next_sibling.decompose()
+                        else:
+                            # Başka bir tag ise, sadece letter'ı bırak
+                            letra.replace_with(letter)
+                    else:
+                        # Sonraki sibling yoksa, sadece letter'ı bırak
+                        letra.replace_with(letter)
+            else:
+                # İçinde img yoksa, sadece metni al
+                letra_text = letra.get_text(strip=True)
+                if letra_text:
+                    # Sonraki sibling'i bul (hemen sonraki, boş satırları atlama)
+                    next_sibling = letra.next_sibling
+                    
+                    if next_sibling:
+                        if isinstance(next_sibling, str):
+                            # String ise birleştir (strip yapmadan, çünkü paragrafın devamı olabilir)
+                            # Sadece başındaki boşlukları temizle
+                            next_text = next_sibling.lstrip()
+                            if next_text:
+                                # Letra span'ini kaldır ve birleştirilmiş metni ekle
+                                letra.replace_with(letra_text + next_text)
+                                # Sonraki string'i kaldır (artık birleştirildi)
+                                next_sibling.replace_with('')
+                            else:
+                                # Boş string ise, sadece letra_text'i bırak
+                                letra.replace_with(letra_text)
+                        elif hasattr(next_sibling, 'string') and next_sibling.string:
+                            # Tag ise içindeki string'i al ve birleştir
+                            combined = letra_text + next_sibling.string
+                            letra.replace_with(combined)
+                            next_sibling.decompose()
+                        elif hasattr(next_sibling, 'get_text'):
+                            # Tag ise içindeki metni al ve birleştir
+                            next_text = next_sibling.get_text(strip=True)
+                            combined = letra_text + next_text
+                            letra.replace_with(combined)
+                            next_sibling.decompose()
+                        else:
+                            # Başka bir tag ise, sadece letra_text'i bırak
+                            letra.replace_with(letra_text)
+                    else:
+                        # Sonraki sibling yoksa, sadece letra_text'i bırak
+                        letra.replace_with(letra_text)
+        
+        # Firstwords span'lerini bul (zaten initial_letters'da işlendi ama yine de kontrol et)
+        for firstwords in body.find_all('span', class_=re.compile(r'firstwords', re.I)):
+            # Eğer hala firstwords varsa, sadece unwrap et
+            firstwords_text = firstwords.get_text(strip=True)
+            firstwords.replace_with(firstwords_text)
+    
     def _process_title_page(self, body):
         """Başlık sayfasındaki (title page) öğeleri özel işler."""
         # Başlık sayfası genellikle ilk birkaç paragraf veya div içinde
@@ -309,6 +463,12 @@ class HTMLToTXTConverter:
         
         # Önsöz ve başlık sayfasını kaldır, sadece asıl hikayeyi bırak
         self.remove_preface_and_intro(body)
+        
+        # Initial letter görsellerini işle (div.initial içindeki img'ler)
+        self._fix_initial_letters(body)
+        
+        # Dropcap ve firstwords span'lerini işle
+        self._fix_dropcap_and_firstwords(body)
         
         # Başlık sayfasını özel işle (eğer kaldırılmadıysa)
         self._process_title_page(body)

@@ -108,6 +108,8 @@ else
     echo -e "${GREEN}✓ node_modules found. Skipping install (run 'npm install' manually if needed).${NC}"
 fi
 
+echo "Cleaning old build files..."
+rm -rf dist
 echo "Building frontend..."
 npm run build
 cd ..
@@ -141,6 +143,8 @@ BACKEND_PID=$!
 cd ../frontend
 echo "Ensuring frontend dependencies..."
 npm install
+echo "Cleaning old build files..."
+rm -rf dist
 echo "Building frontend..."
 npm run build
 echo "Starting Frontend Server..."

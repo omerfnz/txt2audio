@@ -35,6 +35,8 @@ echo ""
 
 # Adım 3: build kontrol
 echo "[3/3] Testing build..."
+echo "Cleaning old build files..."
+rm -rf dist
 npm run build || echo -e "${YELLOW}⚠ Build had warnings${NC}"
 echo -e "${GREEN}✓ Build test completed${NC}"
 echo ""
