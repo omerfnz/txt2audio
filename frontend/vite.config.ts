@@ -18,6 +18,11 @@ export default defineConfig({
     host: true, // Lightning AI gibi external hostları kabul et
     strictPort: false,
     allowedHosts: ['.litng.ai', '.lightning.ai', 'localhost'], // Lightning AI domainlerini allow et
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    },
   },
   build: {
     // Cache busting için her build'de yeni hash'ler oluştur
@@ -33,5 +38,7 @@ export default defineConfig({
     emptyOutDir: true,
     // Source map'leri production'da kapat (opsiyonel, performans için)
     sourcemap: false,
+    // Manifest dosyası oluştur (cache busting için)
+    manifest: true,
   },
 })
