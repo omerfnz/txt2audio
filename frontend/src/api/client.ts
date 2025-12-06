@@ -35,7 +35,7 @@ interface ProjectStatusResponse {
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE,
-  timeout: 10000, // 10 saniye timeout
+  timeout: 300000, // 5 dakika timeout (büyük dosyalar için)
 });
 
 // Retry logic helper
@@ -80,10 +80,13 @@ export async function getReferenceVoices(): Promise<ReferenceVoicesResponse> {
 export async function createProject(
   formData: FormData
 ): Promise<ProjectResponse> {
+  // Proje oluşturma işlemi uzun sürebilir (chunking, DB kayıtları)
+  // Özellikle büyük dosyalar için daha uzun timeout
   const response = await api.post<ProjectResponse>("/projects/", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },
+    timeout: 300000, // 5 dakika (büyük dosyalar için)
   });
   return response.data;
 }
