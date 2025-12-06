@@ -51,3 +51,6 @@ build/
 # OS
 Thumbs.db
 .DS_Store
+
+# Text files
+txt/
