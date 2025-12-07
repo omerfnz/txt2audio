@@ -30,10 +30,10 @@ class Settings:
     EXPORT_FORMAT = "mp3"
     
     # GPU Optimization Settings
-    # FP16: Test için AÇ - T4 GPU (16GB) ile test edilecek
-    # NOT: Eğer ses kalitesi sorunu olursa False yapın
+    # FP16: KAPATILDI - Coqui TTS uyumsuzluk (Input FP32 vs Model FP16)
+    # Hata: "Input type (FloatTensor) and weight type (HalfTensor) should be the same"
     FP16_MIN_VRAM_GB = 8.0  # Bu değerin üzerindeki GPU'larda FP16 aktif
-    USE_FP16_AUTO = True    # ✅ TEST - %40-50 hızlanma bekleniyor
+    USE_FP16_AUTO = False    # ❌ KAPALI - Coqui TTS uyumsuz
     
     # torch.compile (PyTorch 2.0+)
     # KAPATILDI - XTTS v2 ile uyumluluk sorunları var
@@ -45,8 +45,8 @@ class Settings:
     WARMUP_TEXT = "Hello, this is a warm-up test for the text to speech engine."
     
     # Speaker Embedding Cache
-    # ŞİMDİLİK KAPALI - Single-chunk modunda test edildikten sonra açılabilir
-    USE_SPEAKER_CACHE = False  # ❌ KAPALI - İleride açılabilir
+    # Single-chunk modunda GÜVENLİ - Aynı ses projelerinde %10-15 hızlanma
+    USE_SPEAKER_CACHE = True  # ✅ AÇ - Concurrent=1'de güvenli
     SPEAKER_CACHE_MAX_SIZE = 10  # Maximum cache'lenecek speaker sayısı (LRU)
     
     # Concurrent Processing
