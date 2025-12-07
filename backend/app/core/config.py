@@ -45,14 +45,15 @@ class Settings:
     WARMUP_TEXT = "Hello, this is a warm-up test for the text to speech engine."
     
     # Speaker Embedding Cache
-    # Aynı ses dosyası için embedding'i tekrar hesaplamamak için cache
-    USE_SPEAKER_CACHE = True  # ✅ AÇIK - %10-20 hızlanma (güvenli)
+    # KAPATILDI - CUDA hata durumunda corrupt cache riski
+    USE_SPEAKER_CACHE = False  # ❌ KAPALI - Stability için
     SPEAKER_CACHE_MAX_SIZE = 10  # Maximum cache'lenecek speaker sayısı (LRU)
     
     # Concurrent Processing
-    # 2 chunk paralel işleme - T4 GPU için test edilecek
-    USE_CONCURRENT_PROCESSING = True  # ✅ AÇIK - %50 hızlanma potansiyeli
-    MAX_CONCURRENT_CHUNKS = 2  # T4 GPU (16GB) için 2 chunk dene
+    # KAPATILDI - İki model instance GPU çakışması yapıyor
+    # XTTS v2 single-threaded çalışmalı
+    USE_CONCURRENT_PROCESSING = False  # ❌ KAPALI - GPU çakışması
+    MAX_CONCURRENT_CHUNKS = 1  # Tek chunk
     CONCURRENT_MIN_VRAM_GB = 12.0  # Bu değerin altında concurrent=1'e düş
     
     # GPU Monitoring
