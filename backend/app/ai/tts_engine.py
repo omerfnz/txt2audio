@@ -427,6 +427,26 @@ class TTSEngine:
                         pass
                     return False
 
+                # Yarıda kesik ses kontrolü 2: Dosya sonu sessizliği
+                # Eğer dosyanın son %25'i (veya son 5 saniyesi) tamamen sessizse, model cümleyi bitirememiştir.
+                check_duration_ms = min(duration_ms * 0.25, 5000)  # Son %25 veya max 5sn
+                if check_duration_ms > 1000:  # En az 1sn analiz et
+                    last_segment = audio[-check_duration_ms:]
+                    last_segment_rms = last_segment.dBFS
+                    
+                    # -60dB sessizlik olarak kabul edilir, biraz toleransla -50dB diyelim
+                    if last_segment_rms < -50.0:
+                        print(
+                            f"⚠ END-OF-FILE SILENCE DETECTED! "
+                            f"Last {check_duration_ms/1000:.1f}s is silent ({last_segment_rms:.1f}dB). "
+                            f"Model likely stopped early."
+                        )
+                        try:
+                            os.remove(output_path)
+                        except OSError:
+                            pass
+                        return False
+
                 # Task 1.3.3: Cümle sonlarına sessizlik ekle (halüsinasyon önleme)
                 audio_with_pause = audio + AudioSegment.silent(duration=350)
                 audio_with_pause.export(output_path, format="wav")

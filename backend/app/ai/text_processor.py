@@ -103,17 +103,31 @@ class TextProcessor:
             if not sentence:
                 continue
 
-            # Tek bir cümle max_chars'ı aşıyorsa - cümle ortasında bölme yapma!
-            # Bu durumda cümleyi olduğu gibi bir chunk olarak al
+            # Tek bir cümle max_chars'ı aşıyorsa - ZORUNLU BÖLME (HARD SPLIT)
+            # XTTS limiti aşılmaması için cümle bütünlüğü feda edilir
             if len(sentence) > max_chars:
                 # Mevcut chunk'ı kaydet
                 if current_chunk:
                     chunks.append(self.validate_chunk(current_chunk.strip()))
                     current_chunk = ""
                 
-                # Uzun cümleyi tek başına chunk olarak ekle
-                # Cümle ortasında bölme yapmıyoruz - cümle sınırlarını koruyoruz
-                chunks.append(self.validate_chunk(sentence))
+                # Uzun cümleyi parçalara ayır
+                words = sentence.split(' ')
+                temp_chunk = ""
+                
+                for word in words:
+                    if len(temp_chunk) + len(word) + 1 <= max_chars:
+                        temp_chunk += (word + " ")
+                    else:
+                        # Chunk doldu, kaydet
+                        if temp_chunk:
+                            chunks.append(self.validate_chunk(temp_chunk.strip()))
+                        temp_chunk = word + " "
+                
+                # Kalan son parçayı current_chunk yap
+                if temp_chunk:
+                    current_chunk = temp_chunk.strip()
+
             else:
                 # Cümleyi mevcut chunk'a eklemeyi dene
                 potential_chunk = current_chunk + " " + sentence if current_chunk else sentence

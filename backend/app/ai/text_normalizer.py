@@ -38,6 +38,12 @@ class AdvancedTextNormalizer:
         if not text:
             return ""
             
+        # 0. Satır sonu iyileştirmesi: Paragraf boşluklarını cümle sonu olarak işaretle
+        # Bu, nokta konulmadan alt satıra geçilen metinlerde Spacy'nin cümleyi tanımasını sağlar
+        text = text.replace('\r\n', '\n').replace('\r', '\n')
+        # Eğer bir satır harf/rakam ile bitip çift enter ile ayrılıyorsa, nokta ekle
+        text = re.sub(r'(?<=[a-zA-Z0-9])\n\n+', '.\n', text)
+            
         # 1. Fazla boşlukları temizle
         text = re.sub(r'\s+', ' ', text).strip()
         
@@ -98,6 +104,10 @@ class AdvancedTextNormalizer:
         """Türkçe metin normalizasyonu."""
         if not text:
             return ""
+            
+        # 0. Satır sonu iyileştirmesi
+        text = text.replace('\r\n', '\n').replace('\r', '\n')
+        text = re.sub(r'(?<=[a-zA-Z0-9])\n\n+', '.\n', text)
             
         # 1. Fazla boşlukları temizle
         text = re.sub(r'\s+', ' ', text).strip()
