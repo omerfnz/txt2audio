@@ -195,3 +195,35 @@ export async function cancelProcessing(projectId: number): Promise<{ project_id:
   );
   return response.data;
 }
+
+// Resume project response type
+export interface ResumeProjectResponse {
+  project_id: number;
+  status: string;
+  resume_count: number;
+  total_chunks: number;
+  processed_chunks: number;
+  remaining_chunks: number;
+  progress: number;
+  message: string;
+}
+
+/**
+ * Resume a cancelled or failed project.
+ * Continues processing from where it left off.
+ */
+export async function resumeProject(
+  projectId: number,
+  useGpu: boolean = false
+): Promise<ResumeProjectResponse> {
+  const response = await api.post<ResumeProjectResponse>(
+    `/projects/${projectId}/resume`,
+    null,
+    {
+      params: {
+        use_gpu: useGpu,
+      },
+    }
+  );
+  return response.data;
+}

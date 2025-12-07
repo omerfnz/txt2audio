@@ -358,6 +358,115 @@ async def cancel_project(
         "message": "Project cancellation requested."
     }
 
+
+@router.post("/projects/{project_id}/resume")
+async def resume_project(
+    project_id: int,
+    background_tasks: BackgroundTasks,
+    use_gpu: bool = Query(default=False),
+    db: Session = Depends(get_db),
+) -> Dict[str, Any]:
+    """
+    Yarıda kalan veya başarısız olan projeyi devam ettirir.
+    
+    Resume yapılabilir durumlar:
+    - failed: İşlem sırasında hata oluşmuş
+    - cancelled: Kullanıcı tarafından iptal edilmiş
+    - processing: Sunucu çökmesi/yeniden başlatma durumu
+    - created: Henüz başlatılmamış (ilk process gibi davranır)
+    
+    Resume yapılamaz durumlar:
+    - completed: Zaten tamamlanmış
+    - merging: Merge işlemi devam ediyor
+    - Merge edilmiş ve chunk dosyaları silinmiş projeler
+    
+    Args:
+        project_id: Devam ettirilecek proje ID
+        use_gpu: GPU kullanılsın mı
+        
+    Returns:
+        Resume durumu ve bilgileri
+    """
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Status kontrolü - completed ve merging durumlarında resume yapılamaz
+    if project.status == "completed":
+        raise HTTPException(
+            status_code=400,
+            detail="Project is already completed. Resume not needed."
+        )
+    
+    if project.status == "merging":
+        raise HTTPException(
+            status_code=400,
+            detail="Project is currently merging. Please wait for completion."
+        )
+    
+    # Merge edilmiş proje kontrolü - audio_path varsa chunk dosyaları silinmiş olabilir
+    if project.audio_path and os.path.exists(project.audio_path):
+        raise HTTPException(
+            status_code=400,
+            detail="Project has been merged. Chunk files are deleted, resume not possible."
+        )
+    
+    # Chunk'ları kontrol et
+    chunks = db.query(Chunk).filter(Chunk.project_id == project_id).all()
+    if not chunks:
+        raise HTTPException(
+            status_code=400,
+            detail="No chunks found for this project."
+        )
+    
+    # İşlenmemiş chunk sayısını hesapla
+    unprocessed_chunks = [c for c in chunks if not c.is_processed]
+    processed_chunks = [c for c in chunks if c.is_processed]
+    
+    if not unprocessed_chunks:
+        # Tüm chunk'lar işlenmiş ama proje completed değil - merge yapılabilir
+        raise HTTPException(
+            status_code=400,
+            detail="All chunks are processed. Project should be merged, not resumed."
+        )
+    
+    # Resume count'u artır
+    project.resume_count = (project.resume_count or 0) + 1
+    
+    # İptal bayrağını temizle ve durumu güncelle
+    project.is_cancelled = False
+    project.status = "processing"
+    project.last_error = None  # Önceki hatayı temizle
+    
+    db.commit()
+    
+    # Mevcut ilerlemeyi hesapla (kaldığı yerden devam)
+    current_progress = (len(processed_chunks) / len(chunks)) * 100
+    
+    # WebSocket ile resume başladı bildirimi
+    await manager.broadcast({
+        "type": "status_update",
+        "project_id": project_id,
+        "status": "processing",
+        "progress": current_progress,
+        "message": f"Resumed from {len(processed_chunks)}/{len(chunks)} chunks"
+    })
+    
+    # Background task olarak işlemi başlat
+    background_tasks.add_task(process_audio_task, project_id, use_gpu)
+    
+    return {
+        "project_id": project_id,
+        "status": "resumed",
+        "resume_count": project.resume_count,
+        "total_chunks": len(chunks),
+        "processed_chunks": len(processed_chunks),
+        "remaining_chunks": len(unprocessed_chunks),
+        "progress": current_progress,
+        "message": f"Project resumed. Processing {len(unprocessed_chunks)} remaining chunks."
+    }
+
+
 @router.get("/projects")
 def get_all_projects(db: Session = Depends(get_db)) -> Dict[str, Any]:
     """Get all projects"""

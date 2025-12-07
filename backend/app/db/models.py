@@ -65,6 +65,23 @@ class Project(Base):
     # When True, background processing should stop as soon as possible.
     is_cancelled = Column(Boolean, default=False)
     
+    # Resume tracking
+    resume_count = Column(
+        Integer,
+        default=0,
+        comment="Number of times the project has been resumed"
+    )
+    last_error = Column(
+        String,
+        nullable=True,
+        comment="Last error message encountered during processing"
+    )
+    failed_chunks = Column(
+        String,
+        nullable=True,
+        comment="JSON array of chunk indices that failed after max retries (e.g., '[1, 5, 23]')"
+    )
+    
     # Relationships
     chunks = relationship(
         "Chunk",

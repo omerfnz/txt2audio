@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Player } from '../components/Player';
 import { useProjectStatus } from '../hooks/useProjectStatus';
 import { Terminal, CheckCircle, Circle } from 'lucide-react';
-import { getAudioQuality, normalizeAudio, cancelProcessing, type AudioQualityResponse } from '../api/client';
+import { getAudioQuality, normalizeAudio, cancelProcessing, resumeProject, type AudioQualityResponse } from '../api/client';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +33,10 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
     const [normalizeLoading, setNormalizeLoading] = useState(false);
     const [qualityError, setQualityError] = useState<string | null>(null);
     const [cancelLoading, setCancelLoading] = useState(false);
+    const [resumeLoading, setResumeLoading] = useState(false);
+
+    // Check if project can be resumed
+    const canResume = status === 'cancelled' || status === 'failed' || status === 'created';
 
     const handlePlayChunk = (chunkIndex: number) => {
         if (status === 'completed') {
@@ -98,6 +102,22 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
         }
     };
 
+    const handleResume = async () => {
+        try {
+            setResumeLoading(true);
+            // GPU kullanımını varsayılan olarak aktif ediyoruz (sunucu tarafında kontrol edilecek)
+            const result = await resumeProject(projectId, true);
+            console.log('Resume started:', result);
+            // Durum, WebSocket üzerinden güncellenecek (status: 'processing')
+        } catch (error) {
+            console.error('Resume processing failed:', error);
+            // Kullanıcıya hata göster
+            alert(error instanceof Error ? error.message : 'Resume failed. Please try again.');
+        } finally {
+            setResumeLoading(false);
+        }
+    };
+
     const handleNextChunk = () => {
         if (currentChunkIndex === null) return;
         const nextIndex = currentChunkIndex + 1;
@@ -158,6 +178,17 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
                                     {normalizeLoading ? 'Normalizing…' : 'Normalize for ACX'}
                                 </Button>
                             </div>
+                        )}
+                        {canResume && (
+                            <Button
+                                onClick={handleResume}
+                                disabled={resumeLoading}
+                                variant="default"
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-700"
+                            >
+                                {resumeLoading ? 'Resuming…' : '▶ Resume Processing'}
+                            </Button>
                         )}
                         {(status === 'processing' || status === 'merging') && (
                             <div className="flex items-center gap-4">

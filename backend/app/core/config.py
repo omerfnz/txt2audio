@@ -28,6 +28,37 @@ class Settings:
     CHUNK_SILENCE_DURATION = 350  # ms
     EXPORT_BITRATE = "192k"
     EXPORT_FORMAT = "mp3"
+    
+    # GPU Optimization Settings
+    # FP16: GPU VRAM'e göre otomatik karar (8GB+ için açık)
+    FP16_MIN_VRAM_GB = 8.0  # Bu değerin üzerindeki GPU'larda FP16 aktif
+    USE_FP16_AUTO = True     # True: VRAM'e göre otomatik, False: her zaman kapalı
+    
+    # torch.compile (PyTorch 2.0+)
+    # Sadece Linux + GPU ortamında aktif (Windows'ta uyumluluk sorunları var)
+    USE_TORCH_COMPILE = True  # GPU + Linux'ta otomatik aktif
+    TORCH_COMPILE_MODE = "reduce-overhead"  # "reduce-overhead" veya "max-autotune"
+    
+    # Model Warm-up
+    WARMUP_ON_LOAD = True  # Model yüklendikten sonra warm-up yap
+    WARMUP_TEXT = "Hello, this is a warm-up test for the text to speech engine."
+    
+    # Speaker Embedding Cache
+    # Aynı referans ses dosyası için embedding'i tekrar hesaplamamak için cache
+    USE_SPEAKER_CACHE = True  # Speaker embedding cache aktif
+    SPEAKER_CACHE_MAX_SIZE = 10  # Maximum cache'lenecek speaker sayısı (LRU)
+    
+    # Concurrent Processing
+    # Birden fazla chunk'ı aynı anda işleme (GPU memory'e dikkat!)
+    USE_CONCURRENT_PROCESSING = True  # Concurrent processing aktif
+    MAX_CONCURRENT_CHUNKS = 2  # T4 GPU (16GB) için güvenli değer
+    CONCURRENT_MIN_VRAM_GB = 12.0  # Bu değerin altında concurrent=1'e düş
+    
+    # GPU Monitoring
+    GPU_MONITOR_ENABLED = True  # GPU izleme aktif
+    GPU_TEMP_WARNING_C = 80  # Bu sıcaklığın üzerinde uyarı
+    GPU_TEMP_CRITICAL_C = 90  # Bu sıcaklığın üzerinde işlemi yavaşlat
+    GPU_VRAM_WARNING_PERCENT = 85  # VRAM %85'in üzerinde uyarı
 
     def __init__(self):
         # Ensure directories exist

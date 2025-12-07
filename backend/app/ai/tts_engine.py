@@ -3,16 +3,96 @@ import sys
 import torch
 import gc
 import platform
-from typing import Optional
+from typing import Optional, Dict, Any, Tuple
+from collections import OrderedDict
 import shutil
 
+# Config import
+from ..core.config import settings
+
+
+class LRUCache:
+    """
+    Simple LRU (Least Recently Used) cache implementation.
+    
+    Used for caching speaker embeddings to avoid recomputing
+    them for the same reference audio file.
+    """
+    
+    def __init__(self, max_size: int = 10):
+        self.max_size = max_size
+        self._cache: OrderedDict[str, Any] = OrderedDict()
+        self._hits = 0
+        self._misses = 0
+    
+    def get(self, key: str) -> Optional[Any]:
+        """Get item from cache, moving it to end (most recently used)."""
+        if key in self._cache:
+            self._cache.move_to_end(key)
+            self._hits += 1
+            return self._cache[key]
+        self._misses += 1
+        return None
+    
+    def put(self, key: str, value: Any) -> None:
+        """Add item to cache, removing oldest if at capacity."""
+        if key in self._cache:
+            self._cache.move_to_end(key)
+        else:
+            if len(self._cache) >= self.max_size:
+                # Remove oldest item (first in OrderedDict)
+                oldest_key = next(iter(self._cache))
+                del self._cache[oldest_key]
+            self._cache[key] = value
+    
+    def clear(self) -> None:
+        """Clear all cached items."""
+        self._cache.clear()
+    
+    def stats(self) -> Dict[str, int]:
+        """Return cache statistics."""
+        total = self._hits + self._misses
+        hit_rate = (self._hits / total * 100) if total > 0 else 0
+        return {
+            "size": len(self._cache),
+            "max_size": self.max_size,
+            "hits": self._hits,
+            "misses": self._misses,
+            "hit_rate": f"{hit_rate:.1f}%"
+        }
+
+
 class TTSEngine:
+    """
+    XTTS v2 Text-to-Speech Engine with GPU optimizations.
+    
+    Features:
+    - Automatic FP16 (Half Precision) based on GPU VRAM
+    - DeepSpeed support on Linux
+    - Memory management and cleanup
+    """
+    
     def __init__(self, use_gpu: bool = False):
         self.use_gpu = use_gpu and torch.cuda.is_available()
         self.device = "cuda" if self.use_gpu else "cpu"
         self.model_name = "tts_models/multilingual/multi-dataset/xtts_v2"
         self.tts: Optional[object] = None
         self.use_deepspeed = False
+        
+        # FP16 optimization flag
+        self.use_fp16 = False
+        self.vram_gb = 0.0
+        
+        # torch.compile flag (PyTorch 2.0+ only, Linux only)
+        self.use_torch_compile = False
+        self.model_compiled = False
+        
+        # Speaker embedding cache
+        self.use_speaker_cache = settings.USE_SPEAKER_CACHE
+        self._speaker_cache: Optional[LRUCache] = None
+        if self.use_speaker_cache:
+            self._speaker_cache = LRUCache(max_size=settings.SPEAKER_CACHE_MAX_SIZE)
+            print(f"✓ Speaker Embedding Cache aktif (max {settings.SPEAKER_CACHE_MAX_SIZE} speaker)")
 
         # Quality thresholds for individual chunks (to detect silent/invalid outputs)
         # Duration in milliseconds and RMS level in dBFS
@@ -27,14 +107,24 @@ class TTSEngine:
         # espeak-ng pathini bul ve ayarla
         self._setup_espeak()
 
-        # GPU / DeepSpeed bilgisi
+        # GPU / DeepSpeed / FP16 bilgisi
         if self.use_gpu:
             gpu_name = torch.cuda.get_device_name(0)
-            vram_gb = torch.cuda.get_device_properties(0).total_memory / 1e9
+            self.vram_gb = torch.cuda.get_device_properties(0).total_memory / 1e9
             print(f"✓ GPU Modu: {gpu_name}")
-            print(f"  VRAM: {vram_gb:.2f} GB")
+            print(f"  VRAM: {self.vram_gb:.2f} GB")
+            
+            # FP16 kararı: VRAM'e göre otomatik
+            if settings.USE_FP16_AUTO and self.vram_gb >= settings.FP16_MIN_VRAM_GB:
+                self.use_fp16 = True
+                print(f"  ✓ FP16 (Half Precision) aktif edilecek (VRAM >= {settings.FP16_MIN_VRAM_GB}GB)")
+            elif settings.USE_FP16_AUTO:
+                print(f"  ℹ FP16 devre dışı (VRAM < {settings.FP16_MIN_VRAM_GB}GB)")
+            else:
+                print("  ℹ FP16 config'de devre dışı")
+            
             # Düşük VRAM uyarısı
-            if vram_gb < 4:
+            if self.vram_gb < 4:
                 print("  ⚠ VRAM düşük! Büyük metinlerde sorun yaşanabilir.")
 
             # DeepSpeed sadece Linux/WSL + GPU için denenir
@@ -42,11 +132,22 @@ class TTSEngine:
                 try:
                     import deepspeed  # type: ignore  # noqa: F401
                     self.use_deepspeed = True
-                    print("✓ DeepSpeed kurulu ve GPU ortamında kullanılabilir.")
+                    print("  ✓ DeepSpeed kurulu ve GPU ortamında kullanılabilir.")
                 except Exception:
-                    print("ℹ DeepSpeed bulunamadı veya yüklenemedi. Standart PyTorch ile devam edilecek.")
+                    print("  ℹ DeepSpeed bulunamadı veya yüklenemedi. Standart PyTorch ile devam edilecek.")
             else:
-                print("ℹ DeepSpeed Windows ortamında otomatik olarak devre dışı bırakıldı.")
+                print("  ℹ DeepSpeed Windows ortamında otomatik olarak devre dışı bırakıldı.")
+            
+            # torch.compile kararı (PyTorch 2.0+ ve Linux gerekli)
+            if settings.USE_TORCH_COMPILE:
+                pytorch_version = tuple(map(int, torch.__version__.split('.')[:2]))
+                if pytorch_version >= (2, 0) and platform.system() != "Windows":
+                    self.use_torch_compile = True
+                    print(f"  ✓ torch.compile aktif edilecek (PyTorch {torch.__version__}, mode={settings.TORCH_COMPILE_MODE})")
+                elif platform.system() == "Windows":
+                    print("  ℹ torch.compile Windows'ta devre dışı (uyumluluk sorunları)")
+                else:
+                    print(f"  ℹ torch.compile devre dışı (PyTorch {torch.__version__} < 2.0)")
         else:
             print("✓ CPU Modu")
 
@@ -84,27 +185,47 @@ class TTSEngine:
             print("  If installed, it will still be found by the system")
 
     def load_model(self):
+        """
+        Load XTTS v2 model with optional FP16 optimization.
+        
+        FP16 (Half Precision) reduces VRAM usage by ~50% and
+        increases inference speed by ~40-50% on compatible GPUs.
+        """
         if self.tts is None:
             try:
                 from TTS.api import TTS
                 print(f"📦 Loading XTTS v2 model on {self.device.upper()}...")
                 
-                # Model yükle - FIX: deprecated gpu parametresi kaldırıldı
+                # Model yükle
                 self.tts = TTS(
                     self.model_name,
-                    progress_bar=True  # Progress göster
+                    progress_bar=True
                 )
                 
                 # GPU'ya taşı (eğer istenmişse)
                 if self.use_gpu:
                     print(f"🔄 Moving model to {self.device.upper()}...")
                     self.tts = self.tts.to(self.device)
+                    
+                    # FP16 (Half Precision) optimizasyonu
+                    if self.use_fp16:
+                        self._apply_fp16_optimization()
+                    
+                    # torch.compile optimizasyonu (FP16'dan sonra)
+                    if self.use_torch_compile and not self.model_compiled:
+                        self._apply_torch_compile()
                 
                 print("✓ Model loaded successfully.")
                 
-                # Düşük VRAM için optimize et
+                # VRAM temizliği
                 if self.use_gpu:
                     torch.cuda.empty_cache()
+                    self._log_gpu_memory("After model load")
+                
+                # Model Warm-up (CUDA kernel'larını önceden yükle)
+                # torch.compile sonrası warm-up daha önemli (derleme tetiklenir)
+                if settings.WARMUP_ON_LOAD:
+                    self._warmup_model()
                     
             except TypeError as e:
                 if "unsupported operand type(s) for |" in str(e):
@@ -120,6 +241,201 @@ class TTSEngine:
                 print(f"❌ Model yükleme hatası: {type(e).__name__}")
                 print(f"   Detay: {str(e)}")
                 raise
+    
+    def _apply_fp16_optimization(self):
+        """
+        Apply FP16 (Half Precision) to the TTS model.
+        
+        This converts model weights from FP32 to FP16, reducing
+        memory usage and increasing inference speed on GPUs with
+        Tensor Cores (Pascal and newer).
+        """
+        try:
+            print("🔄 Applying FP16 optimization...")
+            
+            # XTTS v2 model'in synthesizer'ına erişim
+            if hasattr(self.tts, 'synthesizer') and hasattr(self.tts.synthesizer, 'tts_model'):
+                # Ana TTS modelini half precision'a çevir
+                self.tts.synthesizer.tts_model = self.tts.synthesizer.tts_model.half()
+                print("  ✓ TTS model converted to FP16")
+                
+                # Vocoder varsa onu da çevir
+                if hasattr(self.tts.synthesizer, 'vocoder_model') and self.tts.synthesizer.vocoder_model is not None:
+                    self.tts.synthesizer.vocoder_model = self.tts.synthesizer.vocoder_model.half()
+                    print("  ✓ Vocoder model converted to FP16")
+            else:
+                # Fallback: direkt model üzerinde dene
+                if hasattr(self.tts, 'model'):
+                    self.tts.model = self.tts.model.half()
+                    print("  ✓ Model converted to FP16 (fallback)")
+            
+            # VRAM tasarrufunu logla
+            torch.cuda.empty_cache()
+            self._log_gpu_memory("After FP16 conversion")
+            print("✓ FP16 optimization applied successfully")
+            
+        except Exception as e:
+            print(f"⚠ FP16 optimization failed: {e}")
+            print("  Continuing with FP32 (standard precision)")
+            self.use_fp16 = False  # Fallback to FP32
+    
+    def _apply_torch_compile(self):
+        """
+        Apply torch.compile() JIT optimization to the TTS model.
+        
+        torch.compile (PyTorch 2.0+) optimizes the model by:
+        - Fusing operations (kernel fusion)
+        - Optimizing memory access patterns
+        - Generating optimized CUDA kernels
+        
+        Note: First inference will be slower due to compilation,
+        but subsequent inferences will be 15-30% faster.
+        """
+        import time
+        
+        try:
+            print(f"🔄 Applying torch.compile optimization (mode={settings.TORCH_COMPILE_MODE})...")
+            print("  ⏳ İlk inference'ta derleme yapılacak, bu ~30-60 saniye sürebilir")
+            start_time = time.time()
+            
+            # XTTS v2 model'in synthesizer'ına erişim
+            if hasattr(self.tts, 'synthesizer') and hasattr(self.tts.synthesizer, 'tts_model'):
+                # Ana TTS modelini compile et
+                self.tts.synthesizer.tts_model = torch.compile(
+                    self.tts.synthesizer.tts_model,
+                    mode=settings.TORCH_COMPILE_MODE,
+                    fullgraph=False  # Dynamic shapes için False
+                )
+                self.model_compiled = True
+                elapsed = time.time() - start_time
+                print(f"  ✓ torch.compile uygulandı ({elapsed:.2f}s)")
+                print("  ℹ Not: Gerçek derleme ilk inference sırasında yapılacak")
+            else:
+                print("  ⚠ Model yapısı torch.compile için uygun değil")
+                self.use_torch_compile = False
+                
+        except Exception as e:
+            print(f"  ⚠ torch.compile başarısız: {e}")
+            print("  Continuing without torch.compile")
+            self.use_torch_compile = False
+            self.model_compiled = False
+    
+    def _log_gpu_memory(self, context: str = ""):
+        """Log current GPU memory usage."""
+        if self.use_gpu:
+            allocated = torch.cuda.memory_allocated(0) / 1e9
+            reserved = torch.cuda.memory_reserved(0) / 1e9
+            print(f"  📊 GPU Memory {context}: {allocated:.2f}GB allocated, {reserved:.2f}GB reserved")
+    
+    def _warmup_model(self):
+        """
+        Perform model warm-up to preload CUDA kernels.
+        
+        This reduces latency on the first actual inference by
+        running a dummy inference during model loading.
+        """
+        import tempfile
+        import time
+        
+        print("🔄 Model warm-up başlatılıyor...")
+        start_time = time.time()
+        
+        # Varsayılan referans ses dosyası bul
+        ref_voice_dir = os.path.join(os.getcwd(), "storage", "reference_voices")
+        ref_wav = None
+        
+        # adult/male klasöründen bir ses dosyası bul
+        male_dir = os.path.join(ref_voice_dir, "adult", "male")
+        if os.path.exists(male_dir):
+            wav_files = [f for f in os.listdir(male_dir) if f.endswith('.wav')]
+            if wav_files:
+                ref_wav = os.path.join(male_dir, wav_files[0])
+        
+        # Bulunamadıysa adult/female dene
+        if not ref_wav:
+            female_dir = os.path.join(ref_voice_dir, "adult", "female")
+            if os.path.exists(female_dir):
+                wav_files = [f for f in os.listdir(female_dir) if f.endswith('.wav')]
+                if wav_files:
+                    ref_wav = os.path.join(female_dir, wav_files[0])
+        
+        if not ref_wav:
+            print("  ⚠ Warm-up için referans ses bulunamadı, atlanıyor")
+            return
+        
+        # Geçici dosya ile warm-up inference
+        try:
+            with tempfile.NamedTemporaryFile(suffix='.wav', delete=True) as tmp:
+                self.tts.tts_to_file(
+                    text=settings.WARMUP_TEXT,
+                    speaker_wav=ref_wav,
+                    language="en",
+                    file_path=tmp.name
+                )
+            
+            elapsed = time.time() - start_time
+            print(f"  ✓ Model warm-up tamamlandı ({elapsed:.2f}s)")
+            
+            # Warm-up sonrası bellek temizliği
+            if self.use_gpu:
+                torch.cuda.empty_cache()
+                
+        except Exception as e:
+            print(f"  ⚠ Warm-up hatası (kritik değil): {e}")
+    
+    def _get_speaker_embedding(self, speaker_wav: str) -> Optional[Tuple[Any, Any]]:
+        """
+        Get speaker embedding from cache or compute it.
+        
+        Args:
+            speaker_wav: Path to reference audio file
+            
+        Returns:
+            Tuple of (gpt_cond_latent, speaker_embedding) or None if failed
+        """
+        if not self.use_speaker_cache or self._speaker_cache is None:
+            return None
+        
+        # Cache key: absolute path of the reference audio
+        cache_key = os.path.abspath(speaker_wav)
+        
+        # Check cache first
+        cached = self._speaker_cache.get(cache_key)
+        if cached is not None:
+            print(f"  📦 Speaker embedding cache HIT")
+            return cached
+        
+        # Compute embedding
+        try:
+            if hasattr(self.tts, 'synthesizer') and hasattr(self.tts.synthesizer, 'tts_model'):
+                tts_model = self.tts.synthesizer.tts_model
+                if hasattr(tts_model, 'get_conditioning_latents'):
+                    print(f"  🔄 Computing speaker embedding...")
+                    gpt_cond_latent, speaker_embedding = tts_model.get_conditioning_latents(
+                        audio_path=speaker_wav
+                    )
+                    
+                    # Cache the result
+                    self._speaker_cache.put(cache_key, (gpt_cond_latent, speaker_embedding))
+                    print(f"  ✓ Speaker embedding cached")
+                    
+                    return (gpt_cond_latent, speaker_embedding)
+        except Exception as e:
+            print(f"  ⚠ Speaker embedding hesaplanamadı: {e}")
+        
+        return None
+    
+    def get_speaker_cache_stats(self) -> Dict[str, Any]:
+        """Get speaker cache statistics."""
+        if self._speaker_cache:
+            return self._speaker_cache.stats()
+        return {"enabled": False}
+    
+    def clear_speaker_cache(self) -> None:
+        """Clear the speaker embedding cache."""
+        if self._speaker_cache:
+            self._speaker_cache.clear()
+            print("🧹 Speaker cache cleared")
 
     def generate_audio(
         self,
@@ -158,6 +474,10 @@ class TTSEngine:
             print(f"   Text: {text[:50]}...")
             print(f"   Parameters: T={temperature}, TopP={top_p}, "
                   f"RepPen={repetition_penalty}, Speed={speed}")
+            
+            # Speaker embedding cache check (precompute for future optimization)
+            if self.use_speaker_cache:
+                _ = self._get_speaker_embedding(speaker_wav)
             
             # Output dizini kontrol et
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -227,10 +547,128 @@ class TTSEngine:
         try:
             if self.use_gpu:
                 torch.cuda.empty_cache()
-                print("🧹 GPU memory cleared")
             gc.collect()
         except Exception as e:
             print(f"⚠ Memory cleanup error: {e}")
+    
+    def print_stats(self):
+        """Print engine statistics including cache stats."""
+        print("\n📊 TTS Engine Stats:")
+        print(f"  Device: {self.device.upper()}")
+        print(f"  FP16: {self.use_fp16}")
+        print(f"  torch.compile: {self.model_compiled}")
+        if self._speaker_cache:
+            stats = self._speaker_cache.stats()
+            print(f"  Speaker Cache: {stats['size']}/{stats['max_size']} "
+                  f"(hits: {stats['hits']}, misses: {stats['misses']}, rate: {stats['hit_rate']})")
+        
+        # GPU stats
+        if self.use_gpu:
+            gpu_stats = self.get_gpu_stats()
+            if gpu_stats:
+                print(f"  GPU: {gpu_stats.get('name', 'Unknown')}")
+                print(f"  VRAM: {gpu_stats.get('vram_used_gb', 0):.2f}/{gpu_stats.get('vram_total_gb', 0):.2f} GB "
+                      f"({gpu_stats.get('vram_percent', 0):.1f}%)")
+                if 'temperature' in gpu_stats:
+                    print(f"  Temperature: {gpu_stats['temperature']}°C")
+    
+    # ==================== GPU MONITORING ====================
+    
+    def get_gpu_stats(self) -> Dict[str, Any]:
+        """
+        Get current GPU statistics.
+        
+        Returns:
+            Dictionary with GPU stats (name, vram, temperature, utilization)
+        """
+        if not self.use_gpu or not torch.cuda.is_available():
+            return {}
+        
+        try:
+            device = torch.cuda.current_device()
+            props = torch.cuda.get_device_properties(device)
+            
+            # Memory stats
+            vram_total = props.total_memory / 1e9
+            vram_allocated = torch.cuda.memory_allocated(device) / 1e9
+            vram_reserved = torch.cuda.memory_reserved(device) / 1e9
+            vram_percent = (vram_allocated / vram_total) * 100 if vram_total > 0 else 0
+            
+            stats = {
+                "name": props.name,
+                "vram_total_gb": vram_total,
+                "vram_allocated_gb": vram_allocated,
+                "vram_reserved_gb": vram_reserved,
+                "vram_used_gb": vram_allocated,
+                "vram_percent": vram_percent,
+                "compute_capability": f"{props.major}.{props.minor}",
+            }
+            
+            # Try to get temperature via nvidia-smi (optional)
+            try:
+                import subprocess
+                result = subprocess.run(
+                    ['nvidia-smi', '--query-gpu=temperature.gpu,utilization.gpu', 
+                     '--format=csv,noheader,nounits'],
+                    capture_output=True, text=True, timeout=5
+                )
+                if result.returncode == 0:
+                    parts = result.stdout.strip().split(', ')
+                    if len(parts) >= 2:
+                        stats['temperature'] = int(parts[0])
+                        stats['utilization'] = int(parts[1])
+            except Exception:
+                pass  # nvidia-smi not available or failed
+            
+            return stats
+            
+        except Exception as e:
+            print(f"⚠ GPU stats error: {e}")
+            return {}
+    
+    def check_gpu_health(self) -> Tuple[bool, str]:
+        """
+        Check GPU health status.
+        
+        Returns:
+            Tuple of (is_healthy, message)
+        """
+        if not self.use_gpu:
+            return True, "CPU mode"
+        
+        stats = self.get_gpu_stats()
+        if not stats:
+            return True, "Could not get GPU stats"
+        
+        warnings = []
+        
+        # Temperature check
+        temp = stats.get('temperature')
+        if temp:
+            if temp >= settings.GPU_TEMP_CRITICAL_C:
+                warnings.append(f"🔴 CRITICAL: GPU temperature {temp}°C >= {settings.GPU_TEMP_CRITICAL_C}°C")
+            elif temp >= settings.GPU_TEMP_WARNING_C:
+                warnings.append(f"🟡 WARNING: GPU temperature {temp}°C >= {settings.GPU_TEMP_WARNING_C}°C")
+        
+        # VRAM check
+        vram_percent = stats.get('vram_percent', 0)
+        if vram_percent >= settings.GPU_VRAM_WARNING_PERCENT:
+            warnings.append(f"🟡 WARNING: VRAM usage {vram_percent:.1f}% >= {settings.GPU_VRAM_WARNING_PERCENT}%")
+        
+        if warnings:
+            return False, "; ".join(warnings)
+        
+        return True, f"GPU healthy (Temp: {temp}°C, VRAM: {vram_percent:.1f}%)" if temp else "GPU healthy"
+    
+    def monitor_and_log(self):
+        """Monitor GPU and log stats. Call periodically during processing."""
+        if not self.use_gpu or not settings.GPU_MONITOR_ENABLED:
+            return
+        
+        is_healthy, message = self.check_gpu_health()
+        if not is_healthy:
+            print(f"⚠ GPU Health: {message}")
+
 
 if __name__ == "__main__":
     try:

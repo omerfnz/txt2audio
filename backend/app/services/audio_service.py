@@ -1,14 +1,34 @@
 import os
+import json
 import asyncio
 import subprocess
+import torch
+from typing import List, Tuple, Optional
+from dataclasses import dataclass
 from sqlalchemy.orm import Session
 from pydub import AudioSegment
 from ..db.models import Project, Chunk
 from ..core.config import settings
 from .websocket import manager
 
+# Retry configuration
+MAX_CHUNK_RETRIES = 3  # 3 kez deneme, başarısız olursa atla
+
 # Global instance for lazy loading
 tts_engine = None
+
+# Concurrent processing state
+_current_concurrent_limit = settings.MAX_CONCURRENT_CHUNKS
+
+
+@dataclass
+class ChunkResult:
+    """Result of processing a single chunk."""
+    chunk_index: int
+    success: bool
+    error: Optional[str] = None
+    output_path: Optional[str] = None
+
 
 def get_tts_engine(use_gpu: bool = False):
     """Lazy loading for TTS engine"""
@@ -17,6 +37,118 @@ def get_tts_engine(use_gpu: bool = False):
         from ..ai.tts_engine import TTSEngine
         tts_engine = TTSEngine(use_gpu=use_gpu)
     return tts_engine
+
+
+def _check_vram_for_concurrent() -> int:
+    """
+    Check available VRAM and determine safe concurrent limit.
+    
+    Returns:
+        Safe number of concurrent chunks (1 if VRAM low)
+    """
+    global _current_concurrent_limit
+    
+    if not torch.cuda.is_available():
+        return 1
+    
+    try:
+        total_vram = torch.cuda.get_device_properties(0).total_memory / 1e9
+        
+        # VRAM düşükse concurrent=1'e düş
+        if total_vram < settings.CONCURRENT_MIN_VRAM_GB:
+            print(f"  ℹ VRAM ({total_vram:.1f}GB) < {settings.CONCURRENT_MIN_VRAM_GB}GB, concurrent=1")
+            _current_concurrent_limit = 1
+            return 1
+        
+        return settings.MAX_CONCURRENT_CHUNKS
+    except Exception:
+        return 1
+
+
+def _handle_oom_error():
+    """Handle Out of Memory error by reducing concurrent limit."""
+    global _current_concurrent_limit
+    
+    print("⚠ OOM Error detected! Reducing concurrent limit to 1")
+    _current_concurrent_limit = 1
+    
+    # Aggressive cleanup
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+    
+    import gc
+    gc.collect()
+
+
+async def _process_single_chunk(
+    chunk: Chunk,
+    project: Project,
+    output_path: str,
+    use_gpu: bool
+) -> ChunkResult:
+    """
+    Process a single chunk with retry logic.
+    
+    Args:
+        chunk: Chunk to process
+        project: Parent project
+        output_path: Output file path
+        use_gpu: Whether to use GPU
+        
+    Returns:
+        ChunkResult with success status and any error
+    """
+    engine = get_tts_engine(use_gpu=use_gpu)
+    
+    attempt = 0
+    success = False
+    chunk_error = ""
+    
+    while attempt < MAX_CHUNK_RETRIES and not success:
+        try:
+            success = await asyncio.to_thread(
+                engine.generate_audio,
+                text=chunk.text_content,
+                speaker_wav=project.voice_ref_path,
+                output_path=output_path,
+                language=project.language or settings.DEFAULT_LANGUAGE,
+                temperature=project.temperature or settings.DEFAULT_TEMPERATURE,
+                top_p=project.top_p or settings.DEFAULT_TOP_P,
+                repetition_penalty=(
+                    project.repetition_penalty 
+                    or settings.DEFAULT_REPETITION_PENALTY
+                ),
+                speed=project.speed or settings.DEFAULT_SPEED
+            )
+            
+            if success:
+                return ChunkResult(
+                    chunk_index=chunk.index,
+                    success=True,
+                    output_path=output_path
+                )
+                
+        except torch.cuda.OutOfMemoryError as oom:
+            _handle_oom_error()
+            chunk_error = f"OOM: {str(oom)}"
+            # OOM sonrası retry şansı ver
+            
+        except Exception as e:
+            chunk_error = str(e)
+            
+        attempt += 1
+        
+        if attempt < MAX_CHUNK_RETRIES:
+            print(f"  🔁 Retry {attempt}/{MAX_CHUNK_RETRIES} for chunk {chunk.index}")
+            # Memory cleanup between retries
+            engine.release_memory()
+    
+    return ChunkResult(
+        chunk_index=chunk.index,
+        success=False,
+        error=chunk_error or "Unknown error"
+    )
 
 async def merge_audio_files(project_id: int, db: Session):
     """
@@ -179,8 +311,22 @@ async def merge_audio_files(project_id: int, db: Session):
     print(f"✅ Merge completed for project {project_id}")
 
 async def process_audio_task(project_id: int, use_gpu: bool = False):
+    """
+    Process all unprocessed chunks for a project.
+    
+    Features:
+    - Skips already processed chunks (supports resume)
+    - Retries failed chunks up to MAX_CHUNK_RETRIES times
+    - Tracks permanently failed chunks in project.failed_chunks
+    - Updates progress from where it left off
+    - Concurrent processing support (configurable)
+    """
     from ..db.session import SessionLocal
     db = SessionLocal()
+    
+    # Track failed chunks during this processing session
+    session_failed_chunks: List[int] = []
+    last_error_message: str = ""
     
     try:
         project = db.query(Project).filter(Project.id == project_id).first()
@@ -190,27 +336,76 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
 
         chunks = db.query(Chunk).filter(Chunk.project_id == project_id).order_by(Chunk.index).all()
         total_chunks = len(chunks)
+        
+        # Load existing failed chunks (from previous attempts)
+        existing_failed: List[int] = []
+        if project.failed_chunks:
+            try:
+                existing_failed = json.loads(project.failed_chunks)
+            except json.JSONDecodeError:
+                existing_failed = []
+
+        # Calculate initial progress (for resume support)
+        already_processed = sum(1 for c in chunks if c.is_processed)
+        initial_progress = (already_processed / total_chunks) * 100 if total_chunks > 0 else 0
+
+        # Determine concurrent limit based on VRAM
+        concurrent_limit = 1  # Default: sequential
+        if use_gpu and settings.USE_CONCURRENT_PROCESSING:
+            concurrent_limit = _check_vram_for_concurrent()
 
         print(f"Processing project {project_id}: {total_chunks} chunks, use_gpu={use_gpu}")
+        print(f"  Already processed: {already_processed}/{total_chunks} ({initial_progress:.1f}%)")
+        print(f"  Concurrent limit: {concurrent_limit}")
+        if existing_failed:
+            print(f"  Previously failed chunks: {existing_failed}")
 
-        # Status ve cancellation bayrağı, process_project endpoint'inde de set ediliyor,
-        # ancak güvenlik için burada da doğruluyoruz.
+        # Status ve cancellation bayrağı güncelle
         project.status = "processing"
         project.is_cancelled = False
         db.commit()
 
+        # Broadcast with initial progress (resume support)
         await manager.broadcast({
             "type": "status_update",
             "project_id": project_id,
             "status": "processing",
-            "progress": 0
+            "progress": initial_progress,
+            "concurrent_limit": concurrent_limit
         })
 
-        for chunk in chunks:
-            # Her chunk öncesi iptal isteği var mı kontrol et
+        # Get unprocessed chunks
+        unprocessed_chunks = [c for c in chunks if not c.is_processed]
+        
+        # Create project output directory
+        project_output_dir = settings.OUTPUT_DIR / str(project_id)
+        project_output_dir.mkdir(exist_ok=True)
+        
+        # Semaphore for concurrent limit control
+        semaphore = asyncio.Semaphore(concurrent_limit)
+        
+        async def process_with_semaphore(chunk: Chunk) -> Tuple[Chunk, ChunkResult]:
+            """Process chunk with semaphore for concurrency control."""
+            async with semaphore:
+                # Check cancellation before processing
+                db.refresh(project)
+                if project.is_cancelled or project.status == "cancelled":
+                    return chunk, ChunkResult(chunk.index, False, "Cancelled")
+                
+                output_path = str(project_output_dir / f"chunk_{chunk.index}.wav")
+                print(f"  Processing chunk {chunk.index}/{total_chunks-1}")
+                
+                result = await _process_single_chunk(chunk, project, output_path, use_gpu)
+                return chunk, result
+        
+        # Process chunks in batches for better progress tracking
+        batch_size = max(concurrent_limit * 2, 4)  # Process in small batches
+        
+        for i in range(0, len(unprocessed_chunks), batch_size):
+            # Check cancellation at batch start
             db.refresh(project)
             if project.is_cancelled or project.status == "cancelled":
-                print(f"Project {project_id} cancelled. Stopping processing loop.")
+                print(f"Project {project_id} cancelled. Stopping processing.")
                 await manager.broadcast({
                     "type": "status_update",
                     "project_id": project_id,
@@ -223,155 +418,93 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
                 project.status = "cancelled"
                 db.commit()
                 return
-
-            if chunk.is_processed:
-                continue
+            
+            batch = unprocessed_chunks[i:i+batch_size]
+            
+            # Process batch concurrently
+            tasks = [process_with_semaphore(chunk) for chunk in batch]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            # Process results
+            for result in results:
+                if isinstance(result, Exception):
+                    print(f"  ❌ Batch processing error: {result}")
+                    continue
+                    
+                chunk, chunk_result = result
                 
-            # Create project-specific output directory
-            project_output_dir = settings.OUTPUT_DIR / str(project_id)
-            project_output_dir.mkdir(exist_ok=True)
-            
-            output_filename = f"chunk_{chunk.index}.wav"
-            output_path = project_output_dir / output_filename
-            
-            print(f"Processing chunk {chunk.index}/{total_chunks-1}")
-            
-            # Log TTS parameters being used
-            print(f"   Using TTS parameters:")
-            print(f"   - Preset: {project.preset_id or 'default'}")
-            print(f"   - Language: {project.language}")
-            print(f"   - Temperature: {project.temperature}")
-            print(f"   - Top-P: {project.top_p}")
-            print(f"   - Repetition Penalty: {project.repetition_penalty}")
-            print(f"   - Speed: {project.speed}")
-            
-            try:
-                engine = get_tts_engine(use_gpu=use_gpu)
-
-                # Generate audio with preset parameters from project
-                max_retries = 2
-                attempt = 0
-                success = False
-
-                while attempt <= max_retries and not success:
-                    if attempt > 0:
-                        print(f"🔁 Retry {attempt}/{max_retries} for chunk {chunk.index}")
-                        # Notify UI about retry attempt for this chunk
-                        await manager.broadcast({
-                            "type": "status_update",
-                            "project_id": project_id,
-                            "status": "retry",
-                            "chunk_index": chunk.index,
-                            "chunk_text_preview": (chunk.text_content or "")[:120],
-                        })
-
-                    success = await asyncio.to_thread(
-                        engine.generate_audio,
-                        text=chunk.text_content,
-                        speaker_wav=project.voice_ref_path,
-                        output_path=str(output_path),
-                        language=project.language or settings.DEFAULT_LANGUAGE,
-                        temperature=project.temperature or settings.DEFAULT_TEMPERATURE,
-                        top_p=project.top_p or settings.DEFAULT_TOP_P,
-                        repetition_penalty=(
-                            project.repetition_penalty 
-                            or settings.DEFAULT_REPETITION_PENALTY
-                        ),
-                        speed=project.speed or settings.DEFAULT_SPEED
-                    )
-
-                    if success:
-                        break
-
-                    attempt += 1
-            except RuntimeError as e:
-                error_msg = str(e)
-                if "CUDA" in error_msg or "device-side assert" in error_msg:
-                    print(f"❌ CUDA Error on chunk {chunk.index}: {e}")
-                    print("🔄 Attempting to recover: clearing GPU and reloading model...")
+                if chunk_result.success:
+                    # Update chunk in database
+                    chunk.is_processed = True
+                    chunk.chunk_audio_path = chunk_result.output_path
+                    db.commit()
                     
-                    # Force cleanup
-                    engine.release_memory()
-                    del engine
-                    import gc
-                    gc.collect()
+                    # Calculate and broadcast progress
+                    processed_count = db.query(Chunk).filter(
+                        Chunk.project_id == project_id,
+                        Chunk.is_processed == True
+                    ).count()
+                    progress = (processed_count / total_chunks) * 100
                     
-                    # Reload model
-                    try:
-                        engine = get_tts_engine(use_gpu=use_gpu)
-                        print("✓ Model reloaded successfully")
-                        success = False  # Skip this chunk for now
-                    except Exception as reload_error:
-                        print(f"❌ Failed to reload model: {reload_error}")
-                        raise  # Critical failure
+                    await manager.broadcast({
+                        "type": "progress_update",
+                        "project_id": project_id,
+                        "chunk_index": chunk.index,
+                        "chunk_text_preview": (chunk.text_content or "")[:120],
+                        "progress": progress,
+                    })
                 else:
-                    print(f"Critical error: {e}")
-                    raise
-            except Exception as e:
-                print(f"Error processing chunk {chunk.index}: {e}")
-                success = False
+                    # Track failed chunk
+                    session_failed_chunks.append(chunk.index)
+                    if chunk_result.error:
+                        last_error_message = f"Chunk {chunk.index}: {chunk_result.error}"
+                    
+                    await manager.broadcast({
+                        "type": "status_update",
+                        "project_id": project_id,
+                        "status": "chunk_skipped",
+                        "chunk_index": chunk.index,
+                        "chunk_text_preview": (chunk.text_content or "")[:120],
+                        "message": f"Chunk {chunk.index} skipped: {chunk_result.error}"
+                    })
             
-            if success:
-                chunk.is_processed = True
-                chunk.chunk_audio_path = str(output_path)
-                db.commit()
-                
-                processed_count = db.query(Chunk).filter(
-                    Chunk.project_id == project_id, 
-                    Chunk.is_processed == True
-                ).count()
-                progress = (processed_count / total_chunks) * 100
-
-                # Broadcast successful processing for this chunk with text preview
-                await manager.broadcast({
-                    "type": "progress_update",
-                    "project_id": project_id,
-                    "chunk_index": chunk.index,
-                    "chunk_text_preview": (chunk.text_content or "")[:120],
-                    "progress": progress,
-                })
-
-                # Aggressive memory cleanup AFTER EVERY CHUNK (for large projects)
-                engine.release_memory()
-            else:
-                print(f"Failed to process chunk {chunk.index}")
-                # Notify UI that this chunk failed after retries
-                await manager.broadcast({
-                    "type": "status_update",
-                    "project_id": project_id,
-                    "status": "chunk_failed",
-                    "chunk_index": chunk.index,
-                    "chunk_text_preview": (chunk.text_content or "")[:120],
-                })
-
-            # Döngü sonunda tekrar iptal kontrolü
-            db.refresh(project)
-            if project.is_cancelled or project.status == "cancelled":
-                print(f"Project {project_id} cancelled after processing chunk {chunk.index}.")
-                await manager.broadcast({
-                    "type": "status_update",
-                    "project_id": project_id,
-                    "status": "cancelled",
-                    "progress": (db.query(Chunk)
-                                 .filter(Chunk.project_id == project_id,
-                                         Chunk.is_processed == True)
-                                 .count() / max(total_chunks, 1)) * 100,
-                })
-                project.status = "cancelled"
-                db.commit()
-                return
-
+            # Memory cleanup after each batch
+            engine = get_tts_engine(use_gpu=use_gpu)
+            engine.release_memory()
+        
         # Eğer iptal edilmediyse normal tamamlanma ve merge
         db.refresh(project)
         if not project.is_cancelled and project.status != "cancelled":
+            # Update failed chunks list (combine existing + new)
+            all_failed = list(set(existing_failed + session_failed_chunks))
+            if all_failed:
+                project.failed_chunks = json.dumps(sorted(all_failed))
+                print(f"⚠ Project {project_id} completed with {len(all_failed)} failed chunks: {all_failed}")
+            else:
+                project.failed_chunks = None
+            
+            # Update last error if any
+            if last_error_message:
+                project.last_error = last_error_message
+            else:
+                project.last_error = None
+            
             project.status = "completed"
             db.commit()
+
+            # Calculate final progress (may be <100% if chunks failed)
+            processed_count = db.query(Chunk).filter(
+                Chunk.project_id == project_id,
+                Chunk.is_processed == True
+            ).count()
+            final_progress = (processed_count / total_chunks) * 100 if total_chunks > 0 else 100
 
             await manager.broadcast({
                 "type": "status_update",
                 "project_id": project_id,
                 "status": "completed",
-                "progress": 100
+                "progress": final_progress,
+                "failed_chunks": all_failed if all_failed else None
             })
 
             # Automatically merge audio files after processing completes
@@ -384,15 +517,26 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
                 # Don't fail the whole process if merge fails
         
     except Exception as e:
-        print(f"Error processing project {project_id}: {e}")
+        error_msg = str(e)
+        print(f"Error processing project {project_id}: {error_msg}")
+        
+        # Save error and failed chunks info
         project.status = "failed"
+        project.last_error = error_msg
+        
+        # Save any failed chunks from this session
+        all_failed = list(set(existing_failed + session_failed_chunks))
+        if all_failed:
+            project.failed_chunks = json.dumps(sorted(all_failed))
+        
         db.commit()
         
         await manager.broadcast({
             "type": "status_update",
             "project_id": project_id,
             "status": "failed",
-            "error": str(e)
+            "error": error_msg,
+            "failed_chunks": all_failed if all_failed else None
         })
     finally:
         db.close()
