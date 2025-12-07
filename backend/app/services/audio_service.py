@@ -394,8 +394,10 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
                     "message": f"Chunk {chunk.index} skipped: {result.error}"
                 })
             
-            # Memory cleanup after each chunk
-            if chunk.index % 10 == 0:  # Her 10 chunk'ta bir
+            # Memory cleanup periodically
+            # T4 has 16GB VRAM, frequent cleanup hurts performance (sync overhead)
+            # Changed from 10 to 50 to speed up processing
+            if chunk.index % 50 == 0:
                 engine = get_tts_engine(use_gpu=use_gpu)
                 engine.release_memory()
         

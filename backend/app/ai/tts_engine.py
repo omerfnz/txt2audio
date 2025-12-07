@@ -162,6 +162,10 @@ class TTSEngine:
                     print(f"🔄 Moving model to {self.device.upper()}...")
                     self.tts = self.tts.to(self.device)
                 
+                # Force Eval Mode (Performance Optimization)
+                if hasattr(self.tts, 'tts_model'):
+                    self.tts.tts_model.eval()
+                
                 print("✓ Model loaded successfully.")
                 
                 # VRAM temizliği

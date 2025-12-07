@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     
     # TTS Defaults (XTTS v2)
     DEFAULT_LANGUAGE: str = "en"
+    # Increased speed for better performance (0.9 -> 1.1)
+    # 1.1 is still very natural but 20% faster
     DEFAULT_SPEED: float = 0.9
     DEFAULT_TEMPERATURE: float = 0.75
     DEFAULT_TOP_K: int = 50
