@@ -234,21 +234,13 @@ class TTSEngine:
         # Geçici dosya ile warm-up inference
         try:
             with tempfile.NamedTemporaryFile(suffix='.wav', delete=True) as tmp:
-                if self.use_gpu:
-                    with torch.cuda.amp.autocast():
-                        self.tts.tts_to_file(
-                            text=settings.WARMUP_TEXT,
-                            speaker_wav=ref_wav,
-                            language="en",
-                            file_path=tmp.name
-                        )
-                else:
-                    self.tts.tts_to_file(
-                        text=settings.WARMUP_TEXT,
-                        speaker_wav=ref_wav,
-                        language="en",
-                        file_path=tmp.name
-                    )
+                # FP32 Mode (Safest for XTTS v2 on T4)
+                self.tts.tts_to_file(
+                    text=settings.WARMUP_TEXT,
+                    speaker_wav=ref_wav,
+                    language="en",
+                    file_path=tmp.name
+                )
             
             elapsed = time.time() - start_time
             print(f"  ✓ Model warm-up tamamlandı ({elapsed:.2f}s)")
@@ -289,15 +281,10 @@ class TTSEngine:
                 if hasattr(tts_model, 'get_conditioning_latents'):
                     print(f"  🔄 Computing speaker embedding...")
                     
-                    if self.use_gpu:
-                        with torch.cuda.amp.autocast():
-                            gpt_cond_latent, speaker_embedding = tts_model.get_conditioning_latents(
-                                audio_path=speaker_wav
-                            )
-                    else:
-                        gpt_cond_latent, speaker_embedding = tts_model.get_conditioning_latents(
-                            audio_path=speaker_wav
-                        )
+                    # FP32 Mode
+                    gpt_cond_latent, speaker_embedding = tts_model.get_conditioning_latents(
+                        audio_path=speaker_wav
+                    )
                     
                     # Cache the result
                     self._speaker_cache.put(cache_key, (gpt_cond_latent, speaker_embedding))
@@ -367,32 +354,18 @@ class TTSEngine:
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             
             # TTS çağrısı - Coqui XTTS v2 parametreleri
-            # Autocast ile FP16/FP32 uyumsuzluğunu önle
-            if self.use_gpu:
-                with torch.cuda.amp.autocast():
-                    self.tts.tts_to_file(
-                        text=text,
-                        speaker_wav=speaker_wav,
-                        language=language,
-                        file_path=output_path,
-                        temperature=temperature,
-                        top_p=top_p,
-                        repetition_penalty=repetition_penalty,
-                        speed=speed,
-                        **kwargs
-                    )
-            else:
-                self.tts.tts_to_file(
-                    text=text,
-                    speaker_wav=speaker_wav,
-                    language=language,
-                    file_path=output_path,
-                    temperature=temperature,
-                    top_p=top_p,
-                    repetition_penalty=repetition_penalty,
-                    speed=speed,
-                    **kwargs
-                )
+            # FP32 Mode (Safest for XTTS v2 on T4)
+            self.tts.tts_to_file(
+                text=text,
+                speaker_wav=speaker_wav,
+                language=language,
+                file_path=output_path,
+                temperature=temperature,
+                top_p=top_p,
+                repetition_penalty=repetition_penalty,
+                speed=speed,
+                **kwargs
+            )
             
             # Dosya oluşturuldu mu kontrol et
             if not os.path.exists(output_path):
