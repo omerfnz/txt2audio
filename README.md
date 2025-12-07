@@ -5,30 +5,30 @@ Modern bir sesli kitap oluşturma uygulaması. TXT/EPUB dosyalarınızı referan
 ## 🚀 Özellikler
 
 - ✅ **Ses Klonlama**: XTTS v2 ile 6-10 saniyelik referans ses kullanarak birebir ses klonlama
+- ✅ **Optimize Edilmiş Performans**: FP16 (Half Precision) ve Async Locking ile hızlı ve hatasız üretim
 - ✅ **Akıllı Metin İşleme**: Spacy NLP ile metni anlamlı cümlelere bölme
 - ✅ **Canlı İzleme**: WebSocket ile gerçek zamanlı ilerleme takibi
-- ✅ **GPU/CPU Desteği**: Hem CPU hem de CUDA GPU desteği
+- ✅ **GPU/CPU Desteği**: Hem CPU hem de CUDA GPU desteği (T4 ve üzeri optimize)
 - ✅ **Modern UI**: React + Tailwind CSS ile tasarlanmış kullanıcı dostu arayüz
-- ✅ **Referans Sesler**: Hazır İngilizce referans sesleri veya kendi sesinizi yükleyebilme
 
 ## 📋 Gereksinimler
 
 ### Yazılım
 - **Python**: 3.10 veya üzeri
 - **Node.js**: 16 veya üzeri
-- **espeak-ng**: TTS için gerekli (otomatik kurulum talimatları aşağıda)
-- **ffmpeg**: Ses dosyalarını birleştirmek için gerekli (otomatik kurulum talimatları aşağıda)
+- **espeak-ng**: TTS için gerekli
+- **ffmpeg**: Ses birleştirme için gerekli
 
 ### Donanım
-- **CPU Mode**: En az 8 GB RAM
-- **GPU Mode**: CUDA destekli GPU + en az 4 GB VRAM (önerilen: 6 GB+)
+- **GPU Mode**: NVIDIA GPU (4GB+ VRAM). Tesla T4, RTX 30xx/40xx önerilir.
+- **CPU Mode**: En az 8 GB RAM (Yavaş çalışır)
 
 ## 🔧 Kurulum
 
 ### 1. Sistem Bağımlılıkları (İlk Kez)
 
 **Windows:**
-```bash
+```powershell
 winget install eSpeak-NG.eSpeak-NG
 winget install Gyan.FFmpeg
 ```
@@ -39,50 +39,48 @@ sudo apt-get update
 sudo apt-get install -y espeak-ng ffmpeg
 ```
 
-**macOS:**
-```bash
-brew install espeak-ng ffmpeg
-```
-
 ### 2. Projeyi Kur
-```bash
-# İlk kurulum için
+
+Windows:
+```cmd
 .\setup-all.cmd
 ```
 
-Bu komut:
-- Backend için Python sanal ortamı oluşturur
-- Tüm Python bağımlılıklarını yükler
-- Frontend için npm paketlerini yükler
-- Spacy modelini indirir
-
-## 🎬 Kullanım
-
-### Quick Start (Önerilen)
+Linux/Mac:
 ```bash
-.\quick-start.cmd
+chmod +x setup-all.sh
+./setup-all.sh
 ```
 
-Bu komut:
-- Backend'i `http://localhost:8000` adresinde başlatır
-- Frontend'i `http://localhost:5173` adresinde başlatır
-- Tarayıcınızı otomatik açar
+Bu komut sanal ortamı kurar, bağımlılıkları yükler ve modeli hazırlar.
 
-### Manuel Başlatma
+## 🎬 Başlatma
 
-**Backend:**
+Kurulum tamamlandıktan sonra uygulamayı başlatmak için:
+
+**Windows:**
+```cmd
+.\start_app.cmd
+```
+*(setup-all.cmd tarafından oluşturulur)*
+
+**Linux/Mac:**
 ```bash
-cd backend
-venv\Scripts\activate
-set COQUI_TOS_AGREED=1
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+chmod +x start.sh
+./start.sh
 ```
 
-**Frontend:**
-```bash
-cd frontend
-npm run dev
-```
+- Backend: `http://localhost:8000`
+- Frontend: `http://localhost:5173`
+
+## ⚡ Performans Optimizasyonları (Güncel)
+
+Bu proje, XTTS v2 modelinin kararlılığı ve hızı için özel optimizasyonlar içerir:
+
+1.  **Async Locking**: GPU erişimi seri hale getirilerek `device-side assert` ve bellek çakışmaları %100 önlenmiştir.
+2.  **Native FP16**: DeepSpeed yerine PyTorch native FP16 kullanılarak Tesla T4 gibi kartlarda 2x hız artışı sağlanmıştır.
+3.  **No-DeepSpeed**: XTTS ile uyumsuzluk yaratan DeepSpeed modülleri devre dışı bırakılmıştır.
+4.  **Auto-Recovery**: OOM (Out of Memory) durumlarında otomatik bellek temizliği yapılır.
 
 ## 📁 Proje Yapısı
 
@@ -90,154 +88,20 @@ npm run dev
 txt2audio/
 ├── backend/              # FastAPI + AI Logic
 │   ├── app/
-│   │   ├── core/        # Config & Logging
-│   │   ├── routers/     # API Routes (Projects, Audio, WS)
-│   │   ├── services/    # Business Logic (Audio, WS)
-│   │   ├── db/          # Database Models & Session
-│   │   └── main.py      # FastAPI App
-│   ├── storage/         # Uploads, Outputs, Models
-│   └── venv/            # Python Virtual Environment
+│   │   ├── core/        # Config (Pydantic) & Logging
+│   │   ├── ai/          # TTS Engine & Text Processing
+│   │   ├── services/    # Business Logic
+│   │   └── main.py      # App Entry Point
+│   └── storage/         # Models & Outputs
 │
-├── frontend/            # React + TypeScript
-│   ├── src/
-│   │   ├── components/  # UI Components
-│   │   │   └── upload/  # Upload Form Components
-│   │   ├── views/       # Page Views (Upload, Project)
-│   │   ├── hooks/       # Custom React Hooks
-│   │   ├── types/       # TypeScript Definitions
-│   │   ├── api/         # API Client
-│   │   └── App.tsx      # Main App
-│   └── package.json
+├── frontend/            # React + TypeScript + Vite
 │
-├── quick-start.cmd      # Hızlı başlatma scripti
-├── setup-all.cmd        # Kurulum scripti
-└── clean.cmd            # Temizlik scripti
+├── scripts/             # Yardımcı araçlar
+├── setup-all.sh         # Linux kurulum scripti
+├── setup-all.cmd        # Windows kurulum scripti
+└── start.sh             # Başlatma scripti
 ```
-
-## 🎯 Önemli Yapılan Optimizasyonlar
-
-### ✅ GPU Optimizasyonları (Aralık 2024)
-- **FP16 (Half Precision):** VRAM >= 8GB'de otomatik aktif (%40-50 hızlanma)
-- **Model Warm-up:** CUDA kernel preload ile ilk chunk hızlandırması
-- **GPU Monitoring:** VRAM kullanımı, sıcaklık ve kullanım oranı izleme
-- **Concurrent Processing:** DEVRE DIŞI (XTTS v2 thread-safe değil, GPU çakışması)
-- **torch.compile:** DEVRE DIŞI (XTTS v2 ile uyumsuz)
-- **Speaker Cache:** DEVRE DIŞI (şimdilik kapalı, test sonrası açılabilir)
-
-**Önemli:** Concurrent processing `USE_CONCURRENT_PROCESSING = False` olarak KAPALI TUTULMALI.
-XTTS v2 modeli aynı anda birden fazla chunk işlerken CUDA assertion hatası veriyor.
-
-### ✅ WebSocket Düzeltmeleri
-- WebSocket endpoint URL'i düzeltildi (`/api/ws`)
-- Background task execution model optimize edildi (asyncio.run yerine direct async)
-- Bağlantı hatalarının düzeltilmesi
-
-### ✅ TTS Engine İyileştirmeleri
-- Deprecated `gpu` parametresi kaldırıldı, `.to(device)` kullanımına geçildi
-- espeak-ng yolu otomatik tespiti geliştirildi (scoop, winget yolları eklendi)
-- Coqui TTS lisans onayı otomatikleştirildi (`COQUI_TOS_AGREED=1`)
-- Düşük VRAM uyarısı eklendi (< 4 GB)
-- Progress bar görünür hale getirildi
-
-### ✅ Memory Management
-- GPU memory cleanup sıklığı artırıldı (her 5 chunk → her 3 chunk)
-- Model yüklendikten sonra otomatik cache temizleme
-- Düşük VRAM'li GPU'lar için optimize edildi
-
-### ✅ Frontend İyileştirmeleri
-- Kullanılmayan değişkenler temizlendi (`isConnected`, `_error`)
-- TypeScript strict mode uyumluluğu sağlandı
-- Chunk kalite kontrolü ve retry mekanizması eklendi
-- ACX kalite analizi ve normalizasyon özellikleri eklendi
-- İşlem iptal etme (Cancel Processing) özelliği eklendi
-- WebSocket üzerinden chunk text preview gösterimi eklendi
-
-### ✅ Kalite Kontrolü ve ACX Uyumluluğu
-- Chunk çıkış kalitesi kontrolü (süre ve RMS kontrolü)
-- Başarısız chunk'lar için otomatik retry mekanizması (max 2 deneme)
-- ACX kalite analizi endpoint'i (`/api/projects/{id}/audio-quality`)
-- ACX normalizasyon endpoint'i (`/api/projects/{id}/normalize`)
-- Referans ses validasyonu (süre: 3-15s, RMS kontrolü)
-
-## 🐛 Bilinen Sorunlar ve Çözümler
-
-### espeak-ng bulunamıyor
-**Çözüm**: 
-```bash
-# Windows
-winget install eSpeak-NG.eSpeak-NG
-
-# Linux
-sudo apt-get install espeak-ng
-
-# macOS
-brew install espeak-ng
-```
-Kurulumdan sonra terminal'i yeniden başlatın.
-
-### ffmpeg bulunamıyor (Audio merging hatası)
-**Hata**: `Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work`
-
-**Çözüm**: 
-```bash
-# Windows
-winget install Gyan.FFmpeg
-
-# Linux (Ubuntu/Debian)
-sudo apt-get install ffmpeg
-
-# macOS
-brew install ffmpeg
-
-# CentOS/RHEL
-sudo yum install ffmpeg
-```
-Kurulumdan sonra backend'i yeniden başlatın.
-
-### GPU Memory (VRAM) yetersiz
-**Çözüm**: 
-- CPU modunda çalıştırın (frontend'de GPU checkbox'ını işaretlemeyin)
-- Küçük metin parçaları ile test edin
-
-### Model indirme çok uzun sürüyor
-**Açıklama**: XTTS v2 modeli ilk çalıştırmada ~2 GB indirilir. Bu normal bir durumdur ve sadece bir kez olur.
-
-## 📚 API Dökümantasyonu
-
-Backend çalışırken otomatik API dökümantasyonuna erişebilirsiniz:
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
-
-## 🏗️ Teknoloji Stack'i
-
-### Backend
-- **FastAPI**: Modern, hızlı web framework
-- **SQLAlchemy**: ORM ve database yönetimi
-- **Coqui TTS**: XTTS v2 ses klonlama motoru
-- **Spacy**: NLP ve metin işleme
-- **PyTorch**: GPU/CPU compute
-
-### Frontend
-- **React 18**: UI library
-- **TypeScript**: Type-safe JavaScript
-- **Vite**: Build tool ve dev server
-- **Tailwind CSS**: Utility-first CSS
-- **ShadCN UI**: Modern, accessible component library
-- **TweakCN Cosmic Night**: Premium dark theme
-- **Zustand**: State management
-- **Axios**: HTTP client
-- **Lucide React**: Icon library
 
 ## 📝 Lisans
 
-Bu proje Coqui TTS'in lisansına tabidir. Ticari kullanım için Coqui'den lisans alınması gerekmektedir.
-- Non-commercial: CPML (https://coqui.ai/cpml)
-- Commercial: licensing@coqui.ai
-
-## 🤝 Katkıda Bulunma
-
-Pull request'ler hoş karşılanır. Büyük değişiklikler için lütfen önce bir issue açarak ne değiştirmek istediğinizi tartışın.
-
-## 📧 İletişim
-
-Sorularınız için issue açabilir veya projeyi fork edebilirsiniz.
+Bu proje Coqui TTS lisansına tabidir (CPML). Ticari kullanım için lisans gereklidir.

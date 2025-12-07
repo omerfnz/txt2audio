@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useWebSocket } from './useWebSocket';
 import { getProjectStatus } from '../api/client';
 import axios from 'axios';
@@ -138,21 +138,45 @@ export const useProjectStatus = (projectId: number | null) => {
   }, [lastMessage, projectId, addLog, processingStartTime, status]);
 
   // Calculate estimated end time
+  const prevRemainingRef = useRef<number | null>(null);
+
   useEffect(() => {
-    if ((status === 'processing' || status === 'merging') && processingStartTime && progress > 0 && progress < 100) {
-      const elapsed = Date.now() - processingStartTime.getTime();
-      if (elapsed > 0) {
-        const estimatedTotal = (elapsed / progress) * 100;
-        const remaining = estimatedTotal - elapsed;
-        if (remaining > 0) {
-          setEstimatedEndTime(new Date(Date.now() + remaining));
+    if ((status === 'processing' || status === 'merging') && processingStartTime && progress > 2 && progress < 100) {
+      const now = Date.now();
+      const elapsed = now - processingStartTime.getTime();
+      
+      // Wait for at least 5 seconds of data and 2% progress
+      if (elapsed > 5000) {
+        // Raw estimate based on cumulative average speed
+        const estimatedTotalDuration = (elapsed / progress) * 100;
+        const rawRemaining = estimatedTotalDuration - elapsed;
+        
+        let finalRemaining = rawRemaining;
+
+        // Apply smoothing if we have a previous estimate
+        // Weight: 70% previous estimate, 30% new calculation
+        // This prevents jitter when instantaneous speed fluctuates
+        if (prevRemainingRef.current !== null) {
+          // Adjust previous remaining time by subtracting the time passed since last update
+          // This is tricky in useEffect, so we just smooth the absolute value
+          finalRemaining = (prevRemainingRef.current * 0.7) + (rawRemaining * 0.3);
         }
+        
+        if (finalRemaining < 0) finalRemaining = 0;
+
+        prevRemainingRef.current = finalRemaining;
+        setEstimatedEndTime(new Date(now + finalRemaining));
       }
-    } else if (status === 'completed' || status === 'failed') {
+    } else if (status === 'completed' || status === 'failed' || progress >= 100) {
       setEstimatedEndTime(null);
-      if (projectId) {
+      prevRemainingRef.current = null;
+      if (projectId && (status === 'completed' || status === 'failed')) {
         localStorage.removeItem(`processingStartTime_${projectId}`);
       }
+    } else if (progress <= 2) {
+      // Not enough data for estimation
+      setEstimatedEndTime(null);
+      prevRemainingRef.current = null;
     }
   }, [status, progress, processingStartTime, projectId]);
 

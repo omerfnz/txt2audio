@@ -16,6 +16,8 @@ MAX_CHUNK_RETRIES = 3  # 3 kez deneme, başarısız olursa atla
 
 # Global instance for lazy loading
 tts_engine = None
+# Global GPU lock for serializing access to TTS engine
+gpu_lock = asyncio.Lock()
 
 
 @dataclass
@@ -56,49 +58,51 @@ async def _process_single_chunk(
     """
     engine = get_tts_engine(use_gpu=use_gpu)
     
-    attempt = 0
-    success = False
-    chunk_error = ""
-    
-    while attempt < MAX_CHUNK_RETRIES and not success:
-        try:
-            success = await asyncio.to_thread(
-                engine.generate_audio,
-                text=chunk.text_content,
-                speaker_wav=project.voice_ref_path,
-                output_path=output_path,
-                language=project.language or settings.DEFAULT_LANGUAGE,
-                temperature=project.temperature or settings.DEFAULT_TEMPERATURE,
-                top_p=project.top_p or settings.DEFAULT_TOP_P,
-                repetition_penalty=(
-                    project.repetition_penalty 
-                    or settings.DEFAULT_REPETITION_PENALTY
-                ),
-                speed=project.speed or settings.DEFAULT_SPEED
-            )
-            
-            if success:
-                return ChunkResult(
-                    chunk_index=chunk.index,
-                    success=True,
-                    output_path=output_path
+    # Serialize GPU access
+    async with gpu_lock:
+        attempt = 0
+        success = False
+        chunk_error = ""
+        
+        while attempt < MAX_CHUNK_RETRIES and not success:
+            try:
+                success = await asyncio.to_thread(
+                    engine.generate_audio,
+                    text=chunk.text_content,
+                    speaker_wav=project.voice_ref_path,
+                    output_path=output_path,
+                    language=project.language or settings.DEFAULT_LANGUAGE,
+                    temperature=project.temperature or settings.DEFAULT_TEMPERATURE,
+                    top_p=project.top_p or settings.DEFAULT_TOP_P,
+                    repetition_penalty=(
+                        project.repetition_penalty 
+                        or settings.DEFAULT_REPETITION_PENALTY
+                    ),
+                    speed=project.speed or settings.DEFAULT_SPEED
                 )
                 
-        except torch.cuda.OutOfMemoryError as oom:
-            _handle_oom_error()
-            chunk_error = f"OOM: {str(oom)}"
-            # OOM sonrası retry şansı ver
+                if success:
+                    return ChunkResult(
+                        chunk_index=chunk.index,
+                        success=True,
+                        output_path=output_path
+                    )
+                    
+            except torch.cuda.OutOfMemoryError as oom:
+                _handle_oom_error()
+                chunk_error = f"OOM: {str(oom)}"
+                # OOM sonrası retry şansı ver
+                
+            except Exception as e:
+                chunk_error = str(e)
+                
+            attempt += 1
             
-        except Exception as e:
-            chunk_error = str(e)
-            
-        attempt += 1
+            if attempt < MAX_CHUNK_RETRIES:
+                print(f"  🔁 Retry {attempt}/{MAX_CHUNK_RETRIES} for chunk {chunk.index}")
+                # Memory cleanup between retries
+                engine.release_memory()
         
-        if attempt < MAX_CHUNK_RETRIES:
-            print(f"  🔁 Retry {attempt}/{MAX_CHUNK_RETRIES} for chunk {chunk.index}")
-            # Memory cleanup between retries
-            engine.release_memory()
-    
     return ChunkResult(
         chunk_index=chunk.index,
         success=False,

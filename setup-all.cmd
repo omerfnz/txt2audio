@@ -105,7 +105,8 @@ echo [4/4] Creating start script...
 echo @echo off
 echo set TTS_HOME=%%CD%%\backend\storage\models
 echo set COQUI_TOS_AGREED=1
-echo start "Backend" cmd /k "cd backend ^& venv\Scripts\activate ^& set TTS_HOME=%%~dp0backend\storage\models ^& set COQUI_TOS_AGREED=1 ^& uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+echo set TTS_USE_DEEPSPEED=False
+echo start "Backend" cmd /k "cd backend ^& venv\Scripts\activate ^& set TTS_HOME=%%~dp0backend\storage\models ^& set COQUI_TOS_AGREED=1 ^& set TTS_USE_DEEPSPEED=False ^& uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
 echo start "Frontend" cmd /k "cd frontend ^& npm run dev"
 echo echo App is starting...
 echo echo Backend: http://localhost:8000

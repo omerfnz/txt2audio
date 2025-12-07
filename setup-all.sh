@@ -73,16 +73,8 @@ else
     echo -e "${GREEN}✓ PyTorch already installed.${NC}"
 fi
 
-# Optional: DeepSpeed
-if ! python -c "import deepspeed" &> /dev/null; then
-    echo "Checking for DeepSpeed compatibility..."
-    if python -c "import torch; import platform; print(torch.cuda.is_available() and platform.system() != 'Windows')" 2>/dev/null | grep -q "True"; then
-        echo "Installing DeepSpeed..."
-        pip install deepspeed || echo -e "${YELLOW}⚠ DeepSpeed installation failed, continuing without it.${NC}"
-    else
-        echo -e "${YELLOW}ℹ DeepSpeed skipped (no CUDA GPU or unsupported platform).${NC}"
-    fi
-fi
+# DeepSpeed REMOVED for Stability (XTTS v2 Incompatibility)
+# if ! python -c "import deepspeed" &> /dev/null; then ... fi
 
 # Other requirements
 pip install -r requirements.txt
@@ -147,6 +139,8 @@ cat >> start.sh << 'EOF'
 # Prevent re-downloading models
 export TTS_HOME="$(pwd)/storage/models"
 export COQUI_TOS_AGREED=1
+# Disable DeepSpeed explicitly
+export TTS_USE_DEEPSPEED=False
 
 echo "Starting Backend..."
 uvicorn app.main:app --host 0.0.0.0 --port 8000 &

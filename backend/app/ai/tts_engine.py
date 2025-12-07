@@ -93,6 +93,8 @@ class TTSEngine:
         self.model_path = os.path.join(os.getcwd(), "storage", "models")
         os.environ["TTS_HOME"] = self.model_path
         os.environ["COQUI_TOS_AGREED"] = "1"
+        # Disable DeepSpeed to prevent kernel crashes with XTTS v2
+        os.environ["TTS_USE_DEEPSPEED"] = "False"
         
         # espeak-ng pathini bul ve ayarla
         self._setup_espeak()
@@ -159,6 +161,20 @@ class TTSEngine:
                 if self.use_gpu:
                     print(f"🔄 Moving model to {self.device.upper()}...")
                     self.tts = self.tts.to(self.device)
+                    
+                    # Native FP16 Optimization (DeepSpeed yerine)
+                    try:
+                        if hasattr(self.tts, 'half'):
+                            print("🔄 Converting model to FP16 (Half Precision)...")
+                            self.tts.half()
+                            print("✓ Model converted to FP16")
+                        elif hasattr(self.tts, 'tts') and hasattr(self.tts.tts, 'half'):
+                            # Bazı versiyonlarda iç içe olabilir
+                            print("🔄 Converting internal model to FP16 (Half Precision)...")
+                            self.tts.tts.half()
+                            print("✓ Model converted to FP16")
+                    except Exception as fp16_err:
+                        print(f"⚠ FP16 conversion failed (continuing with FP32): {fp16_err}")
                 
                 print("✓ Model loaded successfully.")
                 
