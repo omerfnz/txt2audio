@@ -18,6 +18,15 @@ MAX_CHUNK_RETRIES = 3  # 3 kez deneme, başarısız olursa atla
 tts_engine = None
 
 
+@dataclass
+class ChunkResult:
+    """Result of processing a single chunk."""
+    chunk_index: int
+    success: bool
+    error: Optional[str] = None
+    output_path: Optional[str] = None
+
+
 def get_tts_engine(use_gpu: bool = False):
     """Lazy loading for TTS engine"""
     global tts_engine
@@ -322,7 +331,7 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
         
         # Process chunks sequentially (XTTS v2 is not thread-safe)
         for chunk in unprocessed_chunks:
-            # Check cancellation at batch start
+            # Check cancellation
             db.refresh(project)
             if project.is_cancelled or project.status == "cancelled":
                 print(f"Project {project_id} cancelled. Stopping processing.")
@@ -339,58 +348,52 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
                 db.commit()
                 return
             
-            batch = unprocessed_chunks[i:i+batch_size]
+            output_path = str(project_output_dir / f"chunk_{chunk.index}.wav")
+            print(f"  Processing chunk {chunk.index}/{total_chunks-1}")
             
-            # Process batch concurrently
-            tasks = [process_with_semaphore(chunk) for chunk in batch]
-            results = await asyncio.gather(*tasks, return_exceptions=True)
+            # Process single chunk
+            result = await _process_single_chunk(chunk, project, output_path, use_gpu)
             
-            # Process results
-            for result in results:
-                if isinstance(result, Exception):
-                    print(f"  ❌ Batch processing error: {result}")
-                    continue
-                    
-                chunk, chunk_result = result
+            if result.success:
+                # Update chunk in database
+                chunk.is_processed = True
+                chunk.chunk_audio_path = result.output_path
+                db.commit()
                 
-                if chunk_result.success:
-                    # Update chunk in database
-                    chunk.is_processed = True
-                    chunk.chunk_audio_path = chunk_result.output_path
-                    db.commit()
-                    
-                    # Calculate and broadcast progress
-                    processed_count = db.query(Chunk).filter(
-                        Chunk.project_id == project_id,
-                        Chunk.is_processed == True
-                    ).count()
-                    progress = (processed_count / total_chunks) * 100
-                    
-                    await manager.broadcast({
-                        "type": "progress_update",
-                        "project_id": project_id,
-                        "chunk_index": chunk.index,
-                        "chunk_text_preview": (chunk.text_content or "")[:120],
-                        "progress": progress,
-                    })
-                else:
-                    # Track failed chunk
-                    session_failed_chunks.append(chunk.index)
-                    if chunk_result.error:
-                        last_error_message = f"Chunk {chunk.index}: {chunk_result.error}"
-                    
-                    await manager.broadcast({
-                        "type": "status_update",
-                        "project_id": project_id,
-                        "status": "chunk_skipped",
-                        "chunk_index": chunk.index,
-                        "chunk_text_preview": (chunk.text_content or "")[:120],
-                        "message": f"Chunk {chunk.index} skipped: {chunk_result.error}"
-                    })
+                # Calculate and broadcast progress
+                processed_count = db.query(Chunk).filter(
+                    Chunk.project_id == project_id,
+                    Chunk.is_processed == True
+                ).count()
+                progress = (processed_count / total_chunks) * 100
+                
+                # HER CHUNK için WebSocket mesajı gönder
+                await manager.broadcast({
+                    "type": "progress_update",
+                    "project_id": project_id,
+                    "chunk_index": chunk.index,
+                    "chunk_text_preview": (chunk.text_content or "")[:120],
+                    "progress": progress,
+                })
+            else:
+                # Track failed chunk
+                session_failed_chunks.append(chunk.index)
+                if result.error:
+                    last_error_message = f"Chunk {chunk.index}: {result.error}"
+                
+                await manager.broadcast({
+                    "type": "status_update",
+                    "project_id": project_id,
+                    "status": "chunk_skipped",
+                    "chunk_index": chunk.index,
+                    "chunk_text_preview": (chunk.text_content or "")[:120],
+                    "message": f"Chunk {chunk.index} skipped: {result.error}"
+                })
             
-            # Memory cleanup after each batch
-            engine = get_tts_engine(use_gpu=use_gpu)
-            engine.release_memory()
+            # Memory cleanup after each chunk
+            if chunk.index % 10 == 0:  # Her 10 chunk'ta bir
+                engine = get_tts_engine(use_gpu=use_gpu)
+                engine.release_memory()
         
         # Eğer iptal edilmediyse normal tamamlanma ve merge
         db.refresh(project)
