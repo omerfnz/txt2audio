@@ -30,9 +30,10 @@ class Settings:
     EXPORT_FORMAT = "mp3"
     
     # GPU Optimization Settings
-    # FP16: GPU VRAM'e göre otomatik karar (8GB+ için açık)
+    # FP16: Coqui TTS ile uyumluluk sorunu var - şimdilik kapalı
+    # NOT: XTTS v2 internal olarak FP32 input bekliyor, model.half() uyumsuz
     FP16_MIN_VRAM_GB = 8.0  # Bu değerin üzerindeki GPU'larda FP16 aktif
-    USE_FP16_AUTO = True     # True: VRAM'e göre otomatik, False: her zaman kapalı
+    USE_FP16_AUTO = False    # KAPATILDI - Coqui TTS uyumsuzluğu
     
     # torch.compile (PyTorch 2.0+)
     # Sadece Linux + GPU ortamında aktif (Windows'ta uyumluluk sorunları var)
