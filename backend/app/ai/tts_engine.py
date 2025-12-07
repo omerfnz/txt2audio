@@ -161,20 +161,6 @@ class TTSEngine:
                 if self.use_gpu:
                     print(f"🔄 Moving model to {self.device.upper()}...")
                     self.tts = self.tts.to(self.device)
-                    
-                    # Native FP16 Optimization (DeepSpeed yerine)
-                    try:
-                        if hasattr(self.tts, 'half'):
-                            print("🔄 Converting model to FP16 (Half Precision)...")
-                            self.tts.half()
-                            print("✓ Model converted to FP16")
-                        elif hasattr(self.tts, 'tts') and hasattr(self.tts.tts, 'half'):
-                            # Bazı versiyonlarda iç içe olabilir
-                            print("🔄 Converting internal model to FP16 (Half Precision)...")
-                            self.tts.tts.half()
-                            print("✓ Model converted to FP16")
-                    except Exception as fp16_err:
-                        print(f"⚠ FP16 conversion failed (continuing with FP32): {fp16_err}")
                 
                 print("✓ Model loaded successfully.")
                 
@@ -248,12 +234,21 @@ class TTSEngine:
         # Geçici dosya ile warm-up inference
         try:
             with tempfile.NamedTemporaryFile(suffix='.wav', delete=True) as tmp:
-                self.tts.tts_to_file(
-                    text=settings.WARMUP_TEXT,
-                    speaker_wav=ref_wav,
-                    language="en",
-                    file_path=tmp.name
-                )
+                if self.use_gpu:
+                    with torch.cuda.amp.autocast():
+                        self.tts.tts_to_file(
+                            text=settings.WARMUP_TEXT,
+                            speaker_wav=ref_wav,
+                            language="en",
+                            file_path=tmp.name
+                        )
+                else:
+                    self.tts.tts_to_file(
+                        text=settings.WARMUP_TEXT,
+                        speaker_wav=ref_wav,
+                        language="en",
+                        file_path=tmp.name
+                    )
             
             elapsed = time.time() - start_time
             print(f"  ✓ Model warm-up tamamlandı ({elapsed:.2f}s)")
@@ -293,9 +288,16 @@ class TTSEngine:
                 tts_model = self.tts.synthesizer.tts_model
                 if hasattr(tts_model, 'get_conditioning_latents'):
                     print(f"  🔄 Computing speaker embedding...")
-                    gpt_cond_latent, speaker_embedding = tts_model.get_conditioning_latents(
-                        audio_path=speaker_wav
-                    )
+                    
+                    if self.use_gpu:
+                        with torch.cuda.amp.autocast():
+                            gpt_cond_latent, speaker_embedding = tts_model.get_conditioning_latents(
+                                audio_path=speaker_wav
+                            )
+                    else:
+                        gpt_cond_latent, speaker_embedding = tts_model.get_conditioning_latents(
+                            audio_path=speaker_wav
+                        )
                     
                     # Cache the result
                     self._speaker_cache.put(cache_key, (gpt_cond_latent, speaker_embedding))
@@ -365,17 +367,32 @@ class TTSEngine:
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             
             # TTS çağrısı - Coqui XTTS v2 parametreleri
-            self.tts.tts_to_file(
-                text=text,
-                speaker_wav=speaker_wav,
-                language=language,
-                file_path=output_path,
-                temperature=temperature,
-                top_p=top_p,
-                repetition_penalty=repetition_penalty,
-                speed=speed,
-                **kwargs
-            )
+            # Autocast ile FP16/FP32 uyumsuzluğunu önle
+            if self.use_gpu:
+                with torch.cuda.amp.autocast():
+                    self.tts.tts_to_file(
+                        text=text,
+                        speaker_wav=speaker_wav,
+                        language=language,
+                        file_path=output_path,
+                        temperature=temperature,
+                        top_p=top_p,
+                        repetition_penalty=repetition_penalty,
+                        speed=speed,
+                        **kwargs
+                    )
+            else:
+                self.tts.tts_to_file(
+                    text=text,
+                    speaker_wav=speaker_wav,
+                    language=language,
+                    file_path=output_path,
+                    temperature=temperature,
+                    top_p=top_p,
+                    repetition_penalty=repetition_penalty,
+                    speed=speed,
+                    **kwargs
+                )
             
             # Dosya oluşturuldu mu kontrol et
             if not os.path.exists(output_path):
