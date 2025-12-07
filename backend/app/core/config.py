@@ -29,38 +29,19 @@ class Settings:
     EXPORT_BITRATE = "192k"
     EXPORT_FORMAT = "mp3"
     
-    # GPU Optimization Settings
-    # FP16: KAPATILDI - Coqui TTS uyumsuzluk (Input FP32 vs Model FP16)
-    # Hata: "Input type (FloatTensor) and weight type (HalfTensor) should be the same"
-    FP16_MIN_VRAM_GB = 8.0  # Bu değerin üzerindeki GPU'larda FP16 aktif
-    USE_FP16_AUTO = False    # ❌ KAPALI - Coqui TTS uyumsuz
-    
-    # torch.compile (PyTorch 2.0+)
-    # KAPATILDI - XTTS v2 ile uyumluluk sorunları var
-    USE_TORCH_COMPILE = False  # KAPATILDI - CUDA errors
-    TORCH_COMPILE_MODE = "reduce-overhead"  # "reduce-overhead" veya "max-autotune"
-    
-    # Model Warm-up
-    WARMUP_ON_LOAD = True  # ✅ AÇIK - CUDA kernel preload (güvenli)
+    # Model Warm-up (AÇIK - güvenli)
+    WARMUP_ON_LOAD = True
     WARMUP_TEXT = "Hello, this is a warm-up test for the text to speech engine."
     
-    # Speaker Embedding Cache
-    # Single-chunk modunda GÜVENLİ - Aynı ses projelerinde %10-15 hızlanma
-    USE_SPEAKER_CACHE = True  # ✅ AÇ - Concurrent=1'de güvenli
+    # Speaker Embedding Cache (AÇIK - single-chunk modunda güvenli)
+    USE_SPEAKER_CACHE = True
     SPEAKER_CACHE_MAX_SIZE = 10  # Maximum cache'lenecek speaker sayısı (LRU)
     
-    # Concurrent Processing
-    # KRİTİK: KAPALI KALMALI - XTTS v2 thread-safe değil, GPU çakışması oluyor
-    # CUDA assertion hatası: srcIndex < srcSelectDimSize
-    USE_CONCURRENT_PROCESSING = False  # ❌ KRİTİK: KAPALI TUTUN
-    MAX_CONCURRENT_CHUNKS = 1  # ❌ KRİTİK: 1'de TUTUN (concurrent çalışmıyor)
-    CONCURRENT_MIN_VRAM_GB = 12.0  # Bu değerin altında concurrent=1'e düş
-    
     # GPU Monitoring
-    GPU_MONITOR_ENABLED = True  # GPU izleme aktif
-    GPU_TEMP_WARNING_C = 80  # Bu sıcaklığın üzerinde uyarı
-    GPU_TEMP_CRITICAL_C = 90  # Bu sıcaklığın üzerinde işlemi yavaşlat
-    GPU_VRAM_WARNING_PERCENT = 85  # VRAM %85'in üzerinde uyarı
+    GPU_MONITOR_ENABLED = True
+    GPU_TEMP_WARNING_C = 80
+    GPU_TEMP_CRITICAL_C = 90
+    GPU_VRAM_WARNING_PERCENT = 85
 
     def __init__(self):
         # Ensure directories exist

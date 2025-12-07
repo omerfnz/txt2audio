@@ -17,18 +17,6 @@ MAX_CHUNK_RETRIES = 3  # 3 kez deneme, başarısız olursa atla
 # Global instance for lazy loading
 tts_engine = None
 
-# Concurrent processing state
-_current_concurrent_limit = settings.MAX_CONCURRENT_CHUNKS
-
-
-@dataclass
-class ChunkResult:
-    """Result of processing a single chunk."""
-    chunk_index: int
-    success: bool
-    error: Optional[str] = None
-    output_path: Optional[str] = None
-
 
 def get_tts_engine(use_gpu: bool = False):
     """Lazy loading for TTS engine"""
@@ -37,48 +25,6 @@ def get_tts_engine(use_gpu: bool = False):
         from ..ai.tts_engine import TTSEngine
         tts_engine = TTSEngine(use_gpu=use_gpu)
     return tts_engine
-
-
-def _check_vram_for_concurrent() -> int:
-    """
-    Check available VRAM and determine safe concurrent limit.
-    
-    Returns:
-        Safe number of concurrent chunks (1 if VRAM low)
-    """
-    global _current_concurrent_limit
-    
-    if not torch.cuda.is_available():
-        return 1
-    
-    try:
-        total_vram = torch.cuda.get_device_properties(0).total_memory / 1e9
-        
-        # VRAM düşükse concurrent=1'e düş
-        if total_vram < settings.CONCURRENT_MIN_VRAM_GB:
-            print(f"  ℹ VRAM ({total_vram:.1f}GB) < {settings.CONCURRENT_MIN_VRAM_GB}GB, concurrent=1")
-            _current_concurrent_limit = 1
-            return 1
-        
-        return settings.MAX_CONCURRENT_CHUNKS
-    except Exception:
-        return 1
-
-
-def _handle_oom_error():
-    """Handle Out of Memory error by reducing concurrent limit."""
-    global _current_concurrent_limit
-    
-    print("⚠ OOM Error detected! Reducing concurrent limit to 1")
-    _current_concurrent_limit = 1
-    
-    # Aggressive cleanup
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-        torch.cuda.synchronize()
-    
-    import gc
-    gc.collect()
 
 
 async def _process_single_chunk(
@@ -349,14 +295,8 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
         already_processed = sum(1 for c in chunks if c.is_processed)
         initial_progress = (already_processed / total_chunks) * 100 if total_chunks > 0 else 0
 
-        # Determine concurrent limit based on VRAM
-        concurrent_limit = 1  # Default: sequential
-        if use_gpu and settings.USE_CONCURRENT_PROCESSING:
-            concurrent_limit = _check_vram_for_concurrent()
-
         print(f"Processing project {project_id}: {total_chunks} chunks, use_gpu={use_gpu}")
         print(f"  Already processed: {already_processed}/{total_chunks} ({initial_progress:.1f}%)")
-        print(f"  Concurrent limit: {concurrent_limit}")
         if existing_failed:
             print(f"  Previously failed chunks: {existing_failed}")
 
@@ -370,8 +310,7 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
             "type": "status_update",
             "project_id": project_id,
             "status": "processing",
-            "progress": initial_progress,
-            "concurrent_limit": concurrent_limit
+            "progress": initial_progress
         })
 
         # Get unprocessed chunks
@@ -381,27 +320,8 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
         project_output_dir = settings.OUTPUT_DIR / str(project_id)
         project_output_dir.mkdir(exist_ok=True)
         
-        # Semaphore for concurrent limit control
-        semaphore = asyncio.Semaphore(concurrent_limit)
-        
-        async def process_with_semaphore(chunk: Chunk) -> Tuple[Chunk, ChunkResult]:
-            """Process chunk with semaphore for concurrency control."""
-            async with semaphore:
-                # Check cancellation before processing
-                db.refresh(project)
-                if project.is_cancelled or project.status == "cancelled":
-                    return chunk, ChunkResult(chunk.index, False, "Cancelled")
-                
-                output_path = str(project_output_dir / f"chunk_{chunk.index}.wav")
-                print(f"  Processing chunk {chunk.index}/{total_chunks-1}")
-                
-                result = await _process_single_chunk(chunk, project, output_path, use_gpu)
-                return chunk, result
-        
-        # Process chunks in batches for better progress tracking
-        batch_size = max(concurrent_limit * 2, 4)  # Process in small batches
-        
-        for i in range(0, len(unprocessed_chunks), batch_size):
+        # Process chunks sequentially (XTTS v2 is not thread-safe)
+        for chunk in unprocessed_chunks:
             # Check cancellation at batch start
             db.refresh(project)
             if project.is_cancelled or project.status == "cancelled":

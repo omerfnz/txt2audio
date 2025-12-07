@@ -77,15 +77,6 @@ class TTSEngine:
         self.device = "cuda" if self.use_gpu else "cpu"
         self.model_name = "tts_models/multilingual/multi-dataset/xtts_v2"
         self.tts: Optional[object] = None
-        self.use_deepspeed = False
-        
-        # FP16 optimization flag
-        self.use_fp16 = False
-        self.vram_gb = 0.0
-        
-        # torch.compile flag (PyTorch 2.0+ only, Linux only)
-        self.use_torch_compile = False
-        self.model_compiled = False
         
         # Speaker embedding cache
         self.use_speaker_cache = settings.USE_SPEAKER_CACHE
@@ -94,10 +85,9 @@ class TTSEngine:
             self._speaker_cache = LRUCache(max_size=settings.SPEAKER_CACHE_MAX_SIZE)
             print(f"✓ Speaker Embedding Cache aktif (max {settings.SPEAKER_CACHE_MAX_SIZE} speaker)")
 
-        # Quality thresholds for individual chunks (to detect silent/invalid outputs)
-        # Duration in milliseconds and RMS level in dBFS
-        self.min_chunk_duration_ms = 700   # ~0.7s minimum duration
-        self.min_chunk_rms_db = -50.0      # below this treated as "too quiet / likely silence"
+        # Quality thresholds for individual chunks
+        self.min_chunk_duration_ms = 700
+        self.min_chunk_rms_db = -50.0
         
         # Model indirme dizini
         self.model_path = os.path.join(os.getcwd(), "storage", "models")
@@ -107,47 +97,15 @@ class TTSEngine:
         # espeak-ng pathini bul ve ayarla
         self._setup_espeak()
 
-        # GPU / DeepSpeed / FP16 bilgisi
+        # GPU bilgisi
         if self.use_gpu:
             gpu_name = torch.cuda.get_device_name(0)
-            self.vram_gb = torch.cuda.get_device_properties(0).total_memory / 1e9
+            vram_gb = torch.cuda.get_device_properties(0).total_memory / 1e9
             print(f"✓ GPU Modu: {gpu_name}")
-            print(f"  VRAM: {self.vram_gb:.2f} GB")
+            print(f"  VRAM: {vram_gb:.2f} GB")
             
-            # FP16 kararı: VRAM'e göre otomatik
-            if settings.USE_FP16_AUTO and self.vram_gb >= settings.FP16_MIN_VRAM_GB:
-                self.use_fp16 = True
-                print(f"  ✓ FP16 (Half Precision) aktif edilecek (VRAM >= {settings.FP16_MIN_VRAM_GB}GB)")
-            elif settings.USE_FP16_AUTO:
-                print(f"  ℹ FP16 devre dışı (VRAM < {settings.FP16_MIN_VRAM_GB}GB)")
-            else:
-                print("  ℹ FP16 config'de devre dışı")
-            
-            # Düşük VRAM uyarısı
-            if self.vram_gb < 4:
+            if vram_gb < 4:
                 print("  ⚠ VRAM düşük! Büyük metinlerde sorun yaşanabilir.")
-
-            # DeepSpeed sadece Linux/WSL + GPU için denenir
-            if platform.system() != "Windows":
-                try:
-                    import deepspeed  # type: ignore  # noqa: F401
-                    self.use_deepspeed = True
-                    print("  ✓ DeepSpeed kurulu ve GPU ortamında kullanılabilir.")
-                except Exception:
-                    print("  ℹ DeepSpeed bulunamadı veya yüklenemedi. Standart PyTorch ile devam edilecek.")
-            else:
-                print("  ℹ DeepSpeed Windows ortamında otomatik olarak devre dışı bırakıldı.")
-            
-            # torch.compile kararı (PyTorch 2.0+ ve Linux gerekli)
-            if settings.USE_TORCH_COMPILE:
-                pytorch_version = tuple(map(int, torch.__version__.split('.')[:2]))
-                if pytorch_version >= (2, 0) and platform.system() != "Windows":
-                    self.use_torch_compile = True
-                    print(f"  ✓ torch.compile aktif edilecek (PyTorch {torch.__version__}, mode={settings.TORCH_COMPILE_MODE})")
-                elif platform.system() == "Windows":
-                    print("  ℹ torch.compile Windows'ta devre dışı (uyumluluk sorunları)")
-                else:
-                    print(f"  ℹ torch.compile devre dışı (PyTorch {torch.__version__} < 2.0)")
         else:
             print("✓ CPU Modu")
 
@@ -185,12 +143,7 @@ class TTSEngine:
             print("  If installed, it will still be found by the system")
 
     def load_model(self):
-        """
-        Load XTTS v2 model with optional FP16 optimization.
-        
-        FP16 (Half Precision) reduces VRAM usage by ~50% and
-        increases inference speed by ~40-50% on compatible GPUs.
-        """
+        """Load XTTS v2 model."""
         if self.tts is None:
             try:
                 from TTS.api import TTS
@@ -206,14 +159,6 @@ class TTSEngine:
                 if self.use_gpu:
                     print(f"🔄 Moving model to {self.device.upper()}...")
                     self.tts = self.tts.to(self.device)
-                    
-                    # FP16 (Half Precision) optimizasyonu
-                    if self.use_fp16:
-                        self._apply_fp16_optimization()
-                    
-                    # torch.compile optimizasyonu (FP16'dan sonra)
-                    if self.use_torch_compile and not self.model_compiled:
-                        self._apply_torch_compile()
                 
                 print("✓ Model loaded successfully.")
                 
@@ -223,7 +168,6 @@ class TTSEngine:
                     self._log_gpu_memory("After model load")
                 
                 # Model Warm-up (CUDA kernel'larını önceden yükle)
-                # torch.compile sonrası warm-up daha önemli (derleme tetiklenir)
                 if settings.WARMUP_ON_LOAD:
                     self._warmup_model()
                     
@@ -241,84 +185,6 @@ class TTSEngine:
                 print(f"❌ Model yükleme hatası: {type(e).__name__}")
                 print(f"   Detay: {str(e)}")
                 raise
-    
-    def _apply_fp16_optimization(self):
-        """
-        Apply FP16 (Half Precision) to the TTS model.
-        
-        This converts model weights from FP32 to FP16, reducing
-        memory usage and increasing inference speed on GPUs with
-        Tensor Cores (Pascal and newer).
-        """
-        try:
-            print("🔄 Applying FP16 optimization...")
-            
-            # XTTS v2 model'in synthesizer'ına erişim
-            if hasattr(self.tts, 'synthesizer') and hasattr(self.tts.synthesizer, 'tts_model'):
-                # Ana TTS modelini half precision'a çevir
-                self.tts.synthesizer.tts_model = self.tts.synthesizer.tts_model.half()
-                print("  ✓ TTS model converted to FP16")
-                
-                # Vocoder varsa onu da çevir
-                if hasattr(self.tts.synthesizer, 'vocoder_model') and self.tts.synthesizer.vocoder_model is not None:
-                    self.tts.synthesizer.vocoder_model = self.tts.synthesizer.vocoder_model.half()
-                    print("  ✓ Vocoder model converted to FP16")
-            else:
-                # Fallback: direkt model üzerinde dene
-                if hasattr(self.tts, 'model'):
-                    self.tts.model = self.tts.model.half()
-                    print("  ✓ Model converted to FP16 (fallback)")
-            
-            # VRAM tasarrufunu logla
-            torch.cuda.empty_cache()
-            self._log_gpu_memory("After FP16 conversion")
-            print("✓ FP16 optimization applied successfully")
-            
-        except Exception as e:
-            print(f"⚠ FP16 optimization failed: {e}")
-            print("  Continuing with FP32 (standard precision)")
-            self.use_fp16 = False  # Fallback to FP32
-    
-    def _apply_torch_compile(self):
-        """
-        Apply torch.compile() JIT optimization to the TTS model.
-        
-        torch.compile (PyTorch 2.0+) optimizes the model by:
-        - Fusing operations (kernel fusion)
-        - Optimizing memory access patterns
-        - Generating optimized CUDA kernels
-        
-        Note: First inference will be slower due to compilation,
-        but subsequent inferences will be 15-30% faster.
-        """
-        import time
-        
-        try:
-            print(f"🔄 Applying torch.compile optimization (mode={settings.TORCH_COMPILE_MODE})...")
-            print("  ⏳ İlk inference'ta derleme yapılacak, bu ~30-60 saniye sürebilir")
-            start_time = time.time()
-            
-            # XTTS v2 model'in synthesizer'ına erişim
-            if hasattr(self.tts, 'synthesizer') and hasattr(self.tts.synthesizer, 'tts_model'):
-                # Ana TTS modelini compile et
-                self.tts.synthesizer.tts_model = torch.compile(
-                    self.tts.synthesizer.tts_model,
-                    mode=settings.TORCH_COMPILE_MODE,
-                    fullgraph=False  # Dynamic shapes için False
-                )
-                self.model_compiled = True
-                elapsed = time.time() - start_time
-                print(f"  ✓ torch.compile uygulandı ({elapsed:.2f}s)")
-                print("  ℹ Not: Gerçek derleme ilk inference sırasında yapılacak")
-            else:
-                print("  ⚠ Model yapısı torch.compile için uygun değil")
-                self.use_torch_compile = False
-                
-        except Exception as e:
-            print(f"  ⚠ torch.compile başarısız: {e}")
-            print("  Continuing without torch.compile")
-            self.use_torch_compile = False
-            self.model_compiled = False
     
     def _log_gpu_memory(self, context: str = ""):
         """Log current GPU memory usage."""
@@ -581,8 +447,6 @@ class TTSEngine:
         """Print engine statistics including cache stats."""
         print("\n📊 TTS Engine Stats:")
         print(f"  Device: {self.device.upper()}")
-        print(f"  FP16: {self.use_fp16}")
-        print(f"  torch.compile: {self.model_compiled}")
         if self._speaker_cache:
             stats = self._speaker_cache.stats()
             print(f"  Speaker Cache: {stats['size']}/{stats['max_size']} "
