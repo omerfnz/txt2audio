@@ -628,14 +628,30 @@ async def normalize_audio(
     Returns:
         İşlem durumu
     """
+    # Project kontrolü
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    if not project.audio_path or not os.path.exists(project.audio_path):
+    # Dosya kontrolü
+    if not project.audio_path:
         raise HTTPException(
             status_code=400,
-            detail="Audio file not found. Project may not be completed yet."
+            detail="Audio path not set. Project may not be completed yet."
+        )
+    
+    if not os.path.exists(project.audio_path):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Audio file not found on disk: {project.audio_path}"
+        )
+    
+    # Dosya boyutu kontrolü
+    file_size = os.path.getsize(project.audio_path)
+    if file_size == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Audio file is empty (0 bytes)"
         )
     
     try:
@@ -645,30 +661,58 @@ async def normalize_audio(
         
         # Background task olarak normalize et
         def normalize_task():
-            success = audio_mastering.normalize_for_acx(
-                original_path,
-                normalized_path,
-                use_ffmpeg_normalize=True
-            )
-            
-            if success:
-                # Eski dosyayı sil, yeniyi orijinal isimle kaydet
-                os.remove(original_path)
-                os.rename(normalized_path, original_path)
-                print(f"✓ Audio normalized for project {project_id}")
-            else:
-                print(f"⚠ Normalization failed for project {project_id}")
+            try:
+                print(f"🎚️ Starting normalization for project {project_id}...")
+                print(f"   Input: {original_path} ({file_size:,} bytes)")
+                
+                success = audio_mastering.normalize_for_acx(
+                    original_path,
+                    normalized_path,
+                    use_ffmpeg_normalize=True
+                )
+                
+                if success and os.path.exists(normalized_path):
+                    # Yeni dosya boyutu kontrolü
+                    new_size = os.path.getsize(normalized_path)
+                    if new_size > 0:
+                        # Eski dosyayı sil, yeniyi orijinal isimle kaydet
+                        os.remove(original_path)
+                        os.rename(normalized_path, original_path)
+                        print(f"✓ Audio normalized for project {project_id}")
+                        print(f"   Output: {original_path} ({new_size:,} bytes)")
+                    else:
+                        print(f"⚠ Normalized file is empty, keeping original")
+                        if os.path.exists(normalized_path):
+                            os.remove(normalized_path)
+                else:
+                    print(f"⚠ Normalization failed for project {project_id}")
+                    # Temp dosyayı temizle
+                    if os.path.exists(normalized_path):
+                        os.remove(normalized_path)
+                        
+            except Exception as e:
+                print(f"❌ Normalization error for project {project_id}: {e}")
+                # Temp dosyayı temizle
+                if os.path.exists(normalized_path):
+                    try:
+                        os.remove(normalized_path)
+                    except:
+                        pass
         
         background_tasks.add_task(normalize_task)
         
         return {
             "project_id": project_id,
             "message": "Normalization started in background",
-            "status": "processing"
+            "status": "processing",
+            "file_size": file_size
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Normalization setup failed: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Normalization failed: {str(e)}"
+            detail=f"Normalization setup failed: {str(e)}"
         )

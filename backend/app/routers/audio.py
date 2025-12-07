@@ -6,8 +6,11 @@ from ..db.models import Project, Chunk
 from ..core.config import settings
 from ..services.audio_service import merge_audio_files
 import os
+import asyncio
+from typing import AsyncGenerator
 
 router = APIRouter()
+
 
 @router.get("/audio/chunk/{project_id}/{chunk_index}")
 async def serve_chunk_audio(project_id: int, chunk_index: int, db: Session = Depends(get_db)):
@@ -29,9 +32,42 @@ async def serve_chunk_audio(project_id: int, chunk_index: int, db: Session = Dep
         filename=f"chunk_{chunk_index}.wav"
     )
 
+
+async def async_file_reader(file_path: str, chunk_size: int = 8 * 1024 * 1024) -> AsyncGenerator[bytes, None]:
+    """
+    Async file reader for faster streaming downloads.
+    
+    Args:
+        file_path: Path to file
+        chunk_size: Size of each chunk (default 8MB for faster downloads)
+        
+    Yields:
+        File chunks as bytes
+    """
+    loop = asyncio.get_event_loop()
+    
+    def read_chunk(f, size):
+        return f.read(size)
+    
+    with open(file_path, 'rb') as f:
+        while True:
+            # Use thread pool for non-blocking file I/O
+            chunk = await loop.run_in_executor(None, read_chunk, f, chunk_size)
+            if not chunk:
+                break
+            yield chunk
+
+
 @router.get("/audio/download/{project_id}")
 async def download_merged_audio(project_id: int, db: Session = Depends(get_db)):
-    """Download merged final audio (MP3 format)"""
+    """
+    Download merged final audio (MP3 format).
+    
+    Optimized for faster downloads with:
+    - Async streaming
+    - Larger chunk sizes (8MB)
+    - Proper Content-Length header
+    """
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -56,8 +92,14 @@ async def download_merged_audio(project_id: int, db: Session = Depends(get_db)):
     else:
         # Fallback: merge on-demand if file doesn't exist
         print(f"⚠ Merged file not found, merging on-demand...")
-        await merge_audio_files(project_id, db)
-        db.refresh(project)
+        try:
+            await merge_audio_files(project_id, db)
+            db.refresh(project)
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Failed to merge audio files: {str(e)}"
+            )
         
         if project.audio_path and os.path.exists(project.audio_path):
             output_path = project.audio_path
@@ -65,17 +107,47 @@ async def download_merged_audio(project_id: int, db: Session = Depends(get_db)):
         else:
             raise HTTPException(status_code=500, detail="Failed to create merged audio file")
     
-    # Use StreamingResponse for faster downloads (larger chunks)
-    def iterfile():
-        with open(output_path, mode="rb") as file_like:
-            while chunk := file_like.read(4 * 1024 * 1024):  # 4MB chunks
-                yield chunk
+    # Verify file exists and get size
+    if not os.path.exists(str(output_path)):
+        raise HTTPException(status_code=404, detail="Audio file not found on disk")
     
+    file_size = os.path.getsize(str(output_path))
+    
+    # Use async streaming for faster downloads
     return StreamingResponse(
-        iterfile(),
+        async_file_reader(str(output_path), chunk_size=8 * 1024 * 1024),  # 8MB chunks
         media_type="audio/mpeg",
         headers={
-            "Content-Disposition": f"attachment; filename={output_filename}",
-            "Content-Length": str(os.path.getsize(output_path))
+            "Content-Disposition": f'attachment; filename="{output_filename}"',
+            "Content-Length": str(file_size),
+            "Accept-Ranges": "bytes",
+            "Cache-Control": "no-cache",
+        }
+    )
+
+
+@router.get("/audio/stream/{project_id}")
+async def stream_audio(project_id: int, db: Session = Depends(get_db)):
+    """
+    Stream audio for playback (without download prompt).
+    
+    Uses smaller chunks for smoother playback.
+    """
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    if not project.audio_path or not os.path.exists(project.audio_path):
+        raise HTTPException(status_code=404, detail="Audio file not found")
+    
+    file_size = os.path.getsize(project.audio_path)
+    
+    # Smaller chunks for streaming playback (1MB)
+    return StreamingResponse(
+        async_file_reader(project.audio_path, chunk_size=1024 * 1024),
+        media_type="audio/mpeg",
+        headers={
+            "Content-Length": str(file_size),
+            "Accept-Ranges": "bytes",
         }
     )

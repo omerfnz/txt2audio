@@ -36,23 +36,23 @@ class Settings:
     USE_FP16_AUTO = False    # KAPATILDI - Coqui TTS uyumsuzluğu
     
     # torch.compile (PyTorch 2.0+)
-    # Sadece Linux + GPU ortamında aktif (Windows'ta uyumluluk sorunları var)
-    USE_TORCH_COMPILE = True  # GPU + Linux'ta otomatik aktif
+    # KAPATILDI - XTTS v2 ile uyumluluk sorunları var
+    USE_TORCH_COMPILE = False  # KAPATILDI - CUDA errors
     TORCH_COMPILE_MODE = "reduce-overhead"  # "reduce-overhead" veya "max-autotune"
     
     # Model Warm-up
-    WARMUP_ON_LOAD = True  # Model yüklendikten sonra warm-up yap
+    WARMUP_ON_LOAD = True  # ✅ AÇIK - CUDA kernel preload (güvenli)
     WARMUP_TEXT = "Hello, this is a warm-up test for the text to speech engine."
     
     # Speaker Embedding Cache
-    # Aynı referans ses dosyası için embedding'i tekrar hesaplamamak için cache
-    USE_SPEAKER_CACHE = True  # Speaker embedding cache aktif
+    # Aynı ses dosyası için embedding'i tekrar hesaplamamak için cache
+    USE_SPEAKER_CACHE = True  # ✅ AÇIK - %10-20 hızlanma (güvenli)
     SPEAKER_CACHE_MAX_SIZE = 10  # Maximum cache'lenecek speaker sayısı (LRU)
     
     # Concurrent Processing
-    # Birden fazla chunk'ı aynı anda işleme (GPU memory'e dikkat!)
-    USE_CONCURRENT_PROCESSING = True  # Concurrent processing aktif
-    MAX_CONCURRENT_CHUNKS = 2  # T4 GPU (16GB) için güvenli değer
+    # 2 chunk paralel işleme - T4 GPU için test edilecek
+    USE_CONCURRENT_PROCESSING = True  # ✅ AÇIK - %50 hızlanma potansiyeli
+    MAX_CONCURRENT_CHUNKS = 2  # T4 GPU (16GB) için 2 chunk dene
     CONCURRENT_MIN_VRAM_GB = 12.0  # Bu değerin altında concurrent=1'e düş
     
     # GPU Monitoring

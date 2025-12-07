@@ -505,14 +505,16 @@ class TTSEngine:
                 print(f"❌ Output file is empty: {output_path}")
                 return False
 
-            # Task 3.1: Basit kalite kontrolü (çok kısa / çok sessiz chunk'ları yakala)
+            # Task 3.1: Kalite kontrolü (çok kısa / çok sessiz / yarıda kesik chunk'ları yakala)
             try:
                 from pydub import AudioSegment
 
                 audio = AudioSegment.from_wav(output_path)
                 duration_ms = len(audio)
+                duration_sec = duration_ms / 1000
                 rms_db = audio.dBFS if audio.dBFS != float("-inf") else -100.0
 
+                # Temel kalite kontrolü (çok kısa / sessiz)
                 if duration_ms < self.min_chunk_duration_ms or rms_db < self.min_chunk_rms_db:
                     print(
                         "⚠ Chunk below quality thresholds "
@@ -526,15 +528,39 @@ class TTSEngine:
                         print(f"⚠ Could not remove low-quality chunk file: {remove_error}")
                     return False
 
+                # Yarıda kesik chunk kontrolü (metin uzunluğuna göre)
+                # Ortalama: 1 karakter ≈ 50ms konuşma süresi (150 kelime/dakika, 5 karakter/kelime)
+                text_length = len(text)
+                expected_duration_ms = text_length * 50  # Tahmini beklenen süre
+                min_expected_duration_ms = expected_duration_ms * 0.3  # Minimum %30'u
+                
+                if duration_ms < min_expected_duration_ms and text_length > 100:
+                    # Sadece uzun metinler için kontrol et (kısa metinlerde normal olabilir)
+                    truncation_ratio = (duration_ms / expected_duration_ms) * 100
+                    print(
+                        f"⚠ TRUNCATED AUDIO DETECTED! "
+                        f"Text: {text_length} chars, "
+                        f"Expected: ~{expected_duration_ms/1000:.1f}s, "
+                        f"Got: {duration_sec:.1f}s ({truncation_ratio:.0f}%)"
+                    )
+                    print(f"   Text preview: {text[:80]}...")
+                    # Yarıda kesik ses dosyasını sil ve retry tetikle
+                    try:
+                        os.remove(output_path)
+                    except OSError:
+                        pass
+                    return False
+
                 # Task 1.3.3: Cümle sonlarına sessizlik ekle (halüsinasyon önleme)
                 audio_with_pause = audio + AudioSegment.silent(duration=350)
                 audio_with_pause.export(output_path, format="wav")
-                print("✓ Added 350ms silence to chunk")
+                print(f"✓ Audio generated: {duration_sec:.1f}s, {file_size:,} bytes")
+                
             except Exception as silence_error:
                 print(f"⚠ Warning: Could not add silence / run quality check: {silence_error}")
                 # Devam et, kritik hata değil
+                print(f"✓ Audio generated: {file_size:,} bytes")
             
-            print(f"✓ Audio generated: {file_size:,} bytes")
             return True
             
         except Exception as e:
