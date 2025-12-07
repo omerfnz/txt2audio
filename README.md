@@ -116,6 +116,17 @@ txt2audio/
 
 ## 🎯 Önemli Yapılan Optimizasyonlar
 
+### ✅ GPU Optimizasyonları (Aralık 2024)
+- **FP16 (Half Precision):** VRAM >= 8GB'de otomatik aktif (%40-50 hızlanma)
+- **Model Warm-up:** CUDA kernel preload ile ilk chunk hızlandırması
+- **GPU Monitoring:** VRAM kullanımı, sıcaklık ve kullanım oranı izleme
+- **Concurrent Processing:** DEVRE DIŞI (XTTS v2 thread-safe değil, GPU çakışması)
+- **torch.compile:** DEVRE DIŞI (XTTS v2 ile uyumsuz)
+- **Speaker Cache:** DEVRE DIŞI (şimdilik kapalı, test sonrası açılabilir)
+
+**Önemli:** Concurrent processing `USE_CONCURRENT_PROCESSING = False` olarak KAPALI TUTULMALI.
+XTTS v2 modeli aynı anda birden fazla chunk işlerken CUDA assertion hatası veriyor.
+
 ### ✅ WebSocket Düzeltmeleri
 - WebSocket endpoint URL'i düzeltildi (`/api/ws`)
 - Background task execution model optimize edildi (asyncio.run yerine direct async)

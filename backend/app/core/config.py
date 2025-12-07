@@ -30,10 +30,10 @@ class Settings:
     EXPORT_FORMAT = "mp3"
     
     # GPU Optimization Settings
-    # FP16: Coqui TTS ile uyumluluk sorunu var - şimdilik kapalı
-    # NOT: XTTS v2 internal olarak FP32 input bekliyor, model.half() uyumsuz
+    # FP16: Test için AÇ - T4 GPU (16GB) ile test edilecek
+    # NOT: Eğer ses kalitesi sorunu olursa False yapın
     FP16_MIN_VRAM_GB = 8.0  # Bu değerin üzerindeki GPU'larda FP16 aktif
-    USE_FP16_AUTO = False    # KAPATILDI - Coqui TTS uyumsuzluğu
+    USE_FP16_AUTO = True    # ✅ TEST - %40-50 hızlanma bekleniyor
     
     # torch.compile (PyTorch 2.0+)
     # KAPATILDI - XTTS v2 ile uyumluluk sorunları var
@@ -45,15 +45,15 @@ class Settings:
     WARMUP_TEXT = "Hello, this is a warm-up test for the text to speech engine."
     
     # Speaker Embedding Cache
-    # KAPATILDI - CUDA hata durumunda corrupt cache riski
-    USE_SPEAKER_CACHE = False  # ❌ KAPALI - Stability için
+    # ŞİMDİLİK KAPALI - Single-chunk modunda test edildikten sonra açılabilir
+    USE_SPEAKER_CACHE = False  # ❌ KAPALI - İleride açılabilir
     SPEAKER_CACHE_MAX_SIZE = 10  # Maximum cache'lenecek speaker sayısı (LRU)
     
     # Concurrent Processing
-    # KAPATILDI - İki model instance GPU çakışması yapıyor
-    # XTTS v2 single-threaded çalışmalı
-    USE_CONCURRENT_PROCESSING = False  # ❌ KAPALI - GPU çakışması
-    MAX_CONCURRENT_CHUNKS = 1  # Tek chunk
+    # KRİTİK: KAPALI KALMALI - XTTS v2 thread-safe değil, GPU çakışması oluyor
+    # CUDA assertion hatası: srcIndex < srcSelectDimSize
+    USE_CONCURRENT_PROCESSING = False  # ❌ KRİTİK: KAPALI TUTUN
+    MAX_CONCURRENT_CHUNKS = 1  # ❌ KRİTİK: 1'de TUTUN (concurrent çalışmıyor)
     CONCURRENT_MIN_VRAM_GB = 12.0  # Bu değerin altında concurrent=1'e düş
     
     # GPU Monitoring

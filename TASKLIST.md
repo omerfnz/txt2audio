@@ -326,11 +326,23 @@
 | Görev 1: Resume | ✅ Tamamlandı | Aralık 2024 | Aralık 2024 | DB + API + Service + Frontend |
 | Görev 2: FP16 | ✅ Tamamlandı | Aralık 2024 | Aralık 2024 | Config + TTSEngine (VRAM>=8GB otomatik) |
 | Görev 3: Warm-up | ✅ Tamamlandı | Aralık 2024 | Aralık 2024 | CUDA kernel preload + dummy inference |
-| Görev 4: torch.compile | ✅ Tamamlandı | Aralık 2024 | Aralık 2024 | PyTorch 2.0+ JIT, sadece Linux |
-| Görev 5: Speaker Cache | ✅ Tamamlandı | Aralık 2024 | Aralık 2024 | LRU Cache, max 10 speaker |
-| Görev 6: Concurrent | ✅ Tamamlandı | Aralık 2024 | Aralık 2024 | 2 concurrent, OOM→1'e düş |
+| Görev 4: torch.compile | ❌ İptal | - | - | XTTS v2 uyumsuz - CUDA errors |
+| Görev 5: Speaker Cache | ⏸️ Devre Dışı | Aralık 2024 | - | Kod hazır, config'de kapalı (test sonrası açılabilir) |
+| Görev 6: Concurrent | ❌ İptal | - | - | XTTS v2 thread-safe değil, GPU çakışması |
 | Görev 7: DeepSpeed | ⏸️ Atlandı | - | - | İleride eklenebilir |
 | Görev 8: Monitoring | ✅ Tamamlandı | Aralık 2024 | Aralık 2024 | Temp + VRAM izleme |
+
+**Son Durum (7 Aralık 2024):**
+- ✅ **FP16 Aktif:** VRAM >= 8GB'de otomatik açılıyor (%40-50 hızlanma)
+- ✅ **Warmup Aktif:** CUDA kernel preload (ilk chunk hızlanması)
+- ❌ **Concurrent Kapalı:** XTTS v2 thread-safe değil (KRİTİK: AÇMAYIN!)
+- ❌ **torch.compile Kapalı:** XTTS v2 ile uyumsuz
+- ❌ **Speaker Cache Kapalı:** Şimdilik kapalı (test sonrası açılabilir)
+
+**CUDA Assertion Hatası Çözümü:**
+- Problem: `srcIndex < srcSelectDimSize` → 2 concurrent chunk GPU çakışması
+- Çözüm: `USE_CONCURRENT_PROCESSING = False` ve `MAX_CONCURRENT_CHUNKS = 1`
+- Durum: Config güncellendi, tek chunk modunda çalışacak
 
 ---
 
