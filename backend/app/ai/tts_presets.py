@@ -54,7 +54,7 @@ PRESETS: Dict[str, TTSPreset] = {
         temperature=0.75,  # Reduced from 0.80 for better stability
         top_p=0.85,
         repetition_penalty=2.3,  # Increased from 2.0 for stability
-        speed=0.9,
+        speed=0.95,
         enable_text_splitting=True
     ),
     
@@ -71,7 +71,7 @@ PRESETS: Dict[str, TTSPreset] = {
         temperature=0.32,  # Slightly lower for maximum stability
         top_p=0.88,  # Reduced for more consistent output
         repetition_penalty=2.5,  # Increased from 2.0 to prevent loops/truncation
-        speed=0.9,
+        speed=0.95,
         enable_text_splitting=True
     ),
     

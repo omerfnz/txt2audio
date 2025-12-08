@@ -52,7 +52,7 @@ export function FileUpload({ onUpload }: FileUploadProps) {
     const [selectedVoice, setSelectedVoice] = useState<string>('');
 
     // TTS Preset State
-    const [selectedPresetId, setSelectedPresetId] = useState<string>('en_fiction');
+    const [selectedPresetId, setSelectedPresetId] = useState<string>('en_nonfiction');
 
     // Advanced Settings State
     const [language, setLanguage] = useState('en');
