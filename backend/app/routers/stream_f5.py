@@ -24,7 +24,7 @@ async def websocket_f5_tts(websocket: WebSocket):
         text = data.get("text")
         ref_audio_path = data.get("ref_audio_path")
         ref_text = data.get("ref_text", "")
-        speed = float(data.get("speed", 1.0))
+        speed = float(data.get("speed", 0.9))
         
         if not text or not ref_audio_path:
             await websocket.send_text("ERROR: Missing text or ref_audio_path")

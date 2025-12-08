@@ -1,6 +1,7 @@
 import spacy
 from typing import List
 import sys
+import re
 
 from .text_normalizer import AdvancedTextNormalizer
 
@@ -34,53 +35,70 @@ class TextProcessor:
             raise
 
     def validate_chunk(self, chunk: str) -> str:
-        """Chunk'ın noktalama ile bittiğini garanti eder ve özel karakterleri korur."""
-        chunk = chunk.strip()
-        
-        if not chunk:
-            return chunk
-        
-        # Ellipsis (...) ve em-dash (—) gibi özel karakterleri koru
-        # Bu karakterler kitaplarda sıkça kullanılır ve anlamsal olarak önemlidir
-        
-        # Cümle sonu noktalama kontrolü - genişletilmiş
-        valid_endings = (
-            '.', '!', '?',           # Standart noktalama
-            '...', '…',              # Ellipsis (3 nokta veya Unicode)
-            '.\"', '!\"', '?\"',     # Tırnak içinde biten
-            '.\'', '!\'', '?\'',     # Tek tırnak ile biten
-            '.)', '!)', '?)',        # Parantez içinde biten
-            '."', '!"', '?"',        # Çift tırnak (farklı encoding)
-            '.—', '!—', '?—',        # Em-dash ile biten
-            '—', '–',                # Sadece dash (cümle kesilmesi)
-        )
-        
-        if not chunk.endswith(valid_endings):
-            # Son karakter alfanumerik ise nokta ekle
-            if chunk[-1].isalnum():
-                chunk += "."
-            # Virgül ile bitiyorsa (cümle ortası), nokta ekle
-            elif chunk[-1] == ',':
-                chunk += "."
-        
-        return chunk
+        """
+        Chunk'ı temizler.
+        Eskiden nokta ekliyordu, artık eklemiyor çünkü cümle ortasında bölünmüş olabilir.
+        F5-TTS ve XTTS noktasız metinleri de işleyebilir.
+        """
+        return chunk.strip()
     
+    def _smart_split(self, text: str, max_chars: int) -> List[str]:
+        """
+        Uzun bir metni/cümleyi anlamlı yerlerden (noktalama) bölmeye çalışır.
+        """
+        if len(text) <= max_chars:
+            return [text]
+            
+        chunks = []
+        current_text = text
+        
+        while len(current_text) > max_chars:
+            # Kesme noktası bul
+            # Öncelik sırası: 
+            # 1. Cümle bitişleri (.!?) - gerçi buraya gelmişse zaten tek cümle olması muhtemel
+            # 2. Alt cümle bitişleri (;:)
+            # 3. Virgüller (,)
+            # 4. Boşluk ( )
+            
+            # Max limit içindeki son geçerli konumu bulmaya çalışacağız
+            search_area = current_text[:max_chars]
+            
+            # Regex ile en uygun bölme noktasını ara (sondan başa doğru)
+            # Noktalı virgül veya iki nokta
+            split_match = re.search(r'[;:]\s', search_area[::-1])
+            split_index = -1
+            
+            if split_match:
+                # Tersten bulduğumuz için indeksi düzelt
+                split_index = len(search_area) - split_match.end() + 1 # +1 to include punctuation
+            else:
+                # Virgül dene
+                comma_match = re.search(r',\s', search_area[::-1])
+                if comma_match:
+                    split_index = len(search_area) - comma_match.end() + 1
+                else:
+                    # Boşluk dene (mecburiyet)
+                    space_match = re.search(r'\s', search_area[::-1])
+                    if space_match:
+                        split_index = len(search_area) - space_match.end()
+            
+            if split_index > 0:
+                chunks.append(current_text[:split_index].strip())
+                current_text = current_text[split_index:].strip()
+            else:
+                # Hiçbir bölme noktası bulamadık (tek kelime çok uzun olabilir mi?)
+                # Direkt max_chars'dan kes
+                chunks.append(current_text[:max_chars].strip())
+                current_text = current_text[max_chars:].strip()
+                
+        if current_text:
+            chunks.append(current_text)
+            
+        return chunks
+
     def split_into_chunks(self, text: str, max_chars: int = 480, min_chars: int = 50, language: str = "en", normalize: bool = True) -> List[str]:
         """
         Metni mantıklı chunk'lara böler, birden fazla cümleyi birleştirir.
-        CÜMLE SINIRLARINI KORUR - cümle ortasında bölme yapmaz.
-        
-        Args:
-            max_chars: Maksimum chunk uzunluğu (varsayılan: 480)
-            min_chars: Minimum chunk uzunluğu (varsayılan: 50)
-            language: Dil kodu
-            normalize: Metin normalizasyonu yapılsın mı
-            
-        Not:
-            - XTTS v2 limit: ~400 token (~530 karakter ham)
-            - 480 karakter = ~360 token (normalizasyon sonrası)
-            - XTTS limitinin altında, güvenli çalışma aralığı
-            - Chunk sayısını %20 azaltır, ses kalitesini korur
         """
         if not self.nlp:
             raise RuntimeError("NLP model not loaded")
@@ -103,68 +121,55 @@ class TextProcessor:
             if not sentence:
                 continue
 
-            # Tek bir cümle max_chars'ı aşıyorsa - ZORUNLU BÖLME (HARD SPLIT)
-            # XTTS limiti aşılmaması için cümle bütünlüğü feda edilir
+            # Eğer tek bir cümle limitin üzerindeyse, akıllı bölme yap
             if len(sentence) > max_chars:
-                # Mevcut chunk'ı kaydet
+                # Önce eldeki chunk'ı kaydet
                 if current_chunk:
-                    chunks.append(self.validate_chunk(current_chunk.strip()))
+                    chunks.append(self.validate_chunk(current_chunk))
                     current_chunk = ""
                 
-                # Uzun cümleyi parçalara ayır
-                words = sentence.split(' ')
-                temp_chunk = ""
+                # Cümleyi alt parçalara böl
+                sub_chunks = self._smart_split(sentence, max_chars)
                 
-                for word in words:
-                    if len(temp_chunk) + len(word) + 1 <= max_chars:
-                        temp_chunk += (word + " ")
-                    else:
-                        # Chunk doldu, kaydet
-                        if temp_chunk:
-                            chunks.append(self.validate_chunk(temp_chunk.strip()))
-                        temp_chunk = word + " "
+                # Alt parçaları ekle
+                # Son parça hariç hepsini chunks'a ekle, son parçayı current_chunk yap (birleştirme şansı için)
+                if sub_chunks:
+                    chunks.extend([self.validate_chunk(sc) for sc in sub_chunks[:-1]])
+                    current_chunk = sub_chunks[-1] # Son parça elde kalsın
                 
-                # Kalan son parçayı current_chunk yap
-                if temp_chunk:
-                    current_chunk = temp_chunk.strip()
-
             else:
                 # Cümleyi mevcut chunk'a eklemeyi dene
-                potential_chunk = current_chunk + " " + sentence if current_chunk else sentence
+                # Araya boşluk koy
+                separator = " " if current_chunk else ""
+                potential_chunk = current_chunk + separator + sentence
                 
                 if len(potential_chunk) <= max_chars:
-                    # Ekle, hala limit içinde
                     current_chunk = potential_chunk
                 else:
-                    # Mevcut chunk'ı kaydet ve yeni chunk başlat
+                    # Sığmıyor, mevcut chunk'ı kaydet
                     if current_chunk:
-                        chunks.append(self.validate_chunk(current_chunk.strip()))
+                        chunks.append(self.validate_chunk(current_chunk))
                     current_chunk = sentence
         
-        # Son chunk'ı ekle (minimum uzunluk kontrolü ile)
+        # Kalan son parçayı ekle
         if current_chunk:
-            current_chunk = current_chunk.strip()
-            if len(current_chunk) >= min_chars:
-                chunks.append(self.validate_chunk(current_chunk))
-            else:
-                # Çok kısa chunk'ı önceki chunk'a ekle (varsa)
-                if chunks:
-                    chunks[-1] = self.validate_chunk(chunks[-1] + " " + current_chunk)
-                else:
-                    # Hiç chunk yoksa, yine de ekle
-                    chunks.append(self.validate_chunk(current_chunk))
+            # Eğer son parça çok kısaysa ve önceki chunk varsa, birleştirmeyi dene (limit aşılsa bile son parça için esneme yapılabilir mi? Hayır, güvenli kalalım)
+            # Ama min_chars kontrolü yapabiliriz
+            chunks.append(self.validate_chunk(current_chunk))
 
-        return chunks if chunks else [""] # En az 1 chunk döndür
-
+        # Boş chunkları temizle
+        chunks = [c for c in chunks if c]
+        
+        return chunks if chunks else [""]
 
 if __name__ == "__main__":
     try:
         processor = TextProcessor()
-        sample_text = "This is a test sentence. Here is another one that is slightly longer. " * 5
-        chunks = processor.split_into_chunks(sample_text)
+        sample_text = "This is a test sentence. " * 5 + "Here is a very long sentence that definitely needs to be split because it goes on and on and on, perhaps with a comma here, and another clause there, just to make sure it exceeds the limit effectively."
+        chunks = processor.split_into_chunks(sample_text, max_chars=100)
         print(f"\nTotal chunks: {len(chunks)}")
         for i, chunk in enumerate(chunks):
-            print(f"{i+1}: {chunk[:50]}... (Len: {len(chunk)})")
+            print(f"{i+1}: [{chunk}] (Len: {len(chunk)})")
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)

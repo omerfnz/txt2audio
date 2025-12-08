@@ -117,7 +117,7 @@ class F5TTSEngine:
         text: str, 
         ref_audio: str, 
         ref_text: str = None,
-        speed: float = 1.0
+        speed: float = 0.9
     ) -> Generator[bytes, None, None]:
         """
         Generates audio and yields chunks (bytes) for streaming.
@@ -164,7 +164,7 @@ class F5TTSEngine:
         ref_audio: str,
         output_path: str,
         ref_text: str = None,
-        speed: float = 1.0,
+        speed: float = 0.9,
         **kwargs # Ignore extra args like temperature
     ) -> bool:
         """

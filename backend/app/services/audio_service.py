@@ -235,8 +235,19 @@ async def merge_audio_files(project_id: int, db: Session):
     for idx, chunk in enumerate(valid_chunks):
         try:
             audio = AudioSegment.from_wav(chunk.chunk_audio_path)
-            # Add silence between chunks
-            combined += audio + AudioSegment.silent(duration=settings.CHUNK_SILENCE_DURATION)
+            
+            # Add silence between chunks based on text content
+            silence_duration = settings.CHUNK_SILENCE_DURATION
+            if chunk.text_content:
+                text = chunk.text_content.strip()
+                # If chunk does not end with sentence terminator, reduce silence
+                if text and not any(text.endswith(end) for end in ['.', '!', '?', '"', "'", '”', '’']):
+                    if text.endswith((',', ';', ':')):
+                        silence_duration = 150  # Short pause for sub-clauses
+                    else:
+                        silence_duration = 20   # Very short pause for split sentences (just to avoid clicks)
+            
+            combined += audio + AudioSegment.silent(duration=silence_duration)
             chunk_files_to_delete.append(chunk.chunk_audio_path)
             
             # Update progress: 99% + (idx/total_valid * 0.5) = 99% to 99.5%
