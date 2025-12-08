@@ -7,8 +7,11 @@ from typing import Optional, Dict, Any, Tuple
 from collections import OrderedDict
 import shutil
 
+import logging
 # Config import
 from ..core.config import settings
+
+logger = logging.getLogger("ai_audiobook_studio")
 
 
 class LRUCache:
@@ -83,7 +86,7 @@ class TTSEngine:
         self._speaker_cache: Optional[LRUCache] = None
         if self.use_speaker_cache:
             self._speaker_cache = LRUCache(max_size=settings.SPEAKER_CACHE_MAX_SIZE)
-            print(f"✓ Speaker Embedding Cache aktif (max {settings.SPEAKER_CACHE_MAX_SIZE} speaker)")
+            logger.info(f"✓ Speaker Embedding Cache aktif (max {settings.SPEAKER_CACHE_MAX_SIZE} speaker)")
 
         # Quality thresholds for individual chunks
         self.min_chunk_duration_ms = 700
@@ -103,13 +106,13 @@ class TTSEngine:
         if self.use_gpu:
             gpu_name = torch.cuda.get_device_name(0)
             vram_gb = torch.cuda.get_device_properties(0).total_memory / 1e9
-            print(f"✓ GPU Modu: {gpu_name}")
-            print(f"  VRAM: {vram_gb:.2f} GB")
+            logger.info(f"✓ GPU Modu: {gpu_name}")
+            logger.info(f"  VRAM: {vram_gb:.2f} GB")
             
             if vram_gb < 4:
-                print("  ⚠ VRAM düşük! Büyük metinlerde sorun yaşanabilir.")
+                logger.warning("  ⚠ VRAM düşük! Büyük metinlerde sorun yaşanabilir.")
         else:
-            print("✓ CPU Modu")
+            logger.info("✓ CPU Modu")
 
     def _setup_espeak(self):
         """espeak-ng PATH'ini kontrol et ve ayarla"""
@@ -117,7 +120,7 @@ class TTSEngine:
             # Önce komut satırında var mı kontrol et
             espeak_path = shutil.which("espeak-ng")
             if espeak_path:
-                print(f"✓ espeak-ng found: {espeak_path}")
+                logger.info(f"✓ espeak-ng found: {espeak_path}")
                 return
             
             # Windows yollarında ara
@@ -134,22 +137,22 @@ class TTSEngine:
                     bin_path = os.path.join(base_path, "bin")
                     if os.path.exists(bin_path):
                         os.environ["PATH"] = f"{bin_path};{os.environ.get('PATH', '')}"
-                        print(f"✓ espeak-ng found at: {bin_path}")
+                        logger.info(f"✓ espeak-ng found at: {bin_path}")
                         return
                     else:
                         os.environ["PATH"] = f"{base_path};{os.environ.get('PATH', '')}"
-                        print(f"✓ espeak-ng found at: {base_path}")
+                        logger.info(f"✓ espeak-ng found at: {base_path}")
                         return
             
-            print("⚠ espeak-ng not in PATH or standard locations")
-            print("  If installed, it will still be found by the system")
+            logger.warning("⚠ espeak-ng not in PATH or standard locations")
+            logger.warning("  If installed, it will still be found by the system")
 
     def load_model(self):
         """Load XTTS v2 model."""
         if self.tts is None:
             try:
                 from TTS.api import TTS
-                print(f"📦 Loading XTTS v2 model on {self.device.upper()}...")
+                logger.info(f"📦 Loading XTTS v2 model on {self.device.upper()}...")
                 
                 # Model yükle
                 self.tts = TTS(
@@ -159,14 +162,14 @@ class TTSEngine:
                 
                 # GPU'ya taşı (eğer istenmişse)
                 if self.use_gpu:
-                    print(f"🔄 Moving model to {self.device.upper()}...")
+                    logger.info(f"🔄 Moving model to {self.device.upper()}...")
                     self.tts = self.tts.to(self.device)
                 
                 # Force Eval Mode (Performance Optimization)
                 if hasattr(self.tts, 'tts_model'):
                     self.tts.tts_model.eval()
                 
-                print("✓ Model loaded successfully.")
+                logger.info("✓ Model loaded successfully.")
                 
                 # VRAM temizliği
                 if self.use_gpu:
@@ -184,12 +187,12 @@ class TTSEngine:
                         f"Mevcut: Python {sys.version.split()[0]}. "
                         "Lütfen Python 3.10+ kullanın."
                     )
-                    print(error_msg)
+                    logger.error(error_msg)
                     raise RuntimeError(error_msg) from e
                 raise
             except Exception as e:
-                print(f"❌ Model yükleme hatası: {type(e).__name__}")
-                print(f"   Detay: {str(e)}")
+                logger.error(f"❌ Model yükleme hatası: {type(e).__name__}")
+                logger.error(f"   Detay: {str(e)}")
                 raise
     
     def _log_gpu_memory(self, context: str = ""):
@@ -197,7 +200,7 @@ class TTSEngine:
         if self.use_gpu:
             allocated = torch.cuda.memory_allocated(0) / 1e9
             reserved = torch.cuda.memory_reserved(0) / 1e9
-            print(f"  📊 GPU Memory {context}: {allocated:.2f}GB allocated, {reserved:.2f}GB reserved")
+            logger.debug(f"  📊 GPU Memory {context}: {allocated:.2f}GB allocated, {reserved:.2f}GB reserved")
     
     def _warmup_model(self):
         """
@@ -209,7 +212,7 @@ class TTSEngine:
         import tempfile
         import time
         
-        print("🔄 Model warm-up başlatılıyor...")
+        logger.info("🔄 Model warm-up başlatılıyor...")
         start_time = time.time()
         
         # Varsayılan referans ses dosyası bul
@@ -232,7 +235,7 @@ class TTSEngine:
                     ref_wav = os.path.join(female_dir, wav_files[0])
         
         if not ref_wav:
-            print("  ⚠ Warm-up için referans ses bulunamadı, atlanıyor")
+            logger.warning("  ⚠ Warm-up için referans ses bulunamadı, atlanıyor")
             return
         
         # Geçici dosya ile warm-up inference
@@ -247,14 +250,14 @@ class TTSEngine:
                 )
             
             elapsed = time.time() - start_time
-            print(f"  ✓ Model warm-up tamamlandı ({elapsed:.2f}s)")
+            logger.info(f"  ✓ Model warm-up tamamlandı ({elapsed:.2f}s)")
             
             # Warm-up sonrası bellek temizliği
             if self.use_gpu:
                 torch.cuda.empty_cache()
                 
         except Exception as e:
-            print(f"  ⚠ Warm-up hatası (kritik değil): {e}")
+            logger.warning(f"  ⚠ Warm-up hatası (kritik değil): {e}")
     
     def _get_speaker_embedding(self, speaker_wav: str) -> Optional[Tuple[Any, Any]]:
         """
@@ -275,7 +278,7 @@ class TTSEngine:
         # Check cache first
         cached = self._speaker_cache.get(cache_key)
         if cached is not None:
-            print(f"  📦 Speaker embedding cache HIT")
+            logger.debug(f"  📦 Speaker embedding cache HIT")
             return cached
         
         # Compute embedding
@@ -283,7 +286,7 @@ class TTSEngine:
             if hasattr(self.tts, 'synthesizer') and hasattr(self.tts.synthesizer, 'tts_model'):
                 tts_model = self.tts.synthesizer.tts_model
                 if hasattr(tts_model, 'get_conditioning_latents'):
-                    print(f"  🔄 Computing speaker embedding...")
+                    logger.debug(f"  🔄 Computing speaker embedding...")
                     
                     # FP32 Mode
                     gpt_cond_latent, speaker_embedding = tts_model.get_conditioning_latents(
@@ -292,11 +295,11 @@ class TTSEngine:
                     
                     # Cache the result
                     self._speaker_cache.put(cache_key, (gpt_cond_latent, speaker_embedding))
-                    print(f"  ✓ Speaker embedding cached")
+                    logger.debug(f"  ✓ Speaker embedding cached")
                     
                     return (gpt_cond_latent, speaker_embedding)
         except Exception as e:
-            print(f"  ⚠ Speaker embedding hesaplanamadı: {e}")
+            logger.warning(f"  ⚠ Speaker embedding hesaplanamadı: {e}")
         
         return None
     
@@ -310,7 +313,7 @@ class TTSEngine:
         """Clear the speaker embedding cache."""
         if self._speaker_cache:
             self._speaker_cache.clear()
-            print("🧹 Speaker cache cleared")
+            logger.info("🧹 Speaker cache cleared")
 
     def _trim_silence(self, audio: Any, threshold_db: float = -50.0, chunk_size: int = 10) -> Any:
         """
@@ -369,9 +372,9 @@ class TTSEngine:
             self.load_model()
         
         try:
-            print(f"🎵 Generating audio (Device: {self.device.upper()})")
-            print(f"   Text: {text[:50]}...")
-            print(f"   Parameters: T={temperature}, TopP={top_p}, "
+            logger.info(f"🎵 Generating audio (Device: {self.device.upper()})")
+            logger.info(f"   Text: {text[:50]}...")
+            logger.debug(f"   Parameters: T={temperature}, TopP={top_p}, "
                   f"RepPen={repetition_penalty}, Speed={speed}")
             
             # Speaker embedding cache check (precompute for future optimization)
@@ -397,12 +400,12 @@ class TTSEngine:
             
             # Dosya oluşturuldu mu kontrol et
             if not os.path.exists(output_path):
-                print(f"❌ Output file not created: {output_path}")
+                logger.error(f"❌ Output file not created: {output_path}")
                 return False
                 
             file_size = os.path.getsize(output_path)
             if file_size == 0:
-                print(f"❌ Output file is empty: {output_path}")
+                logger.error(f"❌ Output file is empty: {output_path}")
                 return False
 
             # Task 3.1: Kalite kontrolü (çok kısa / çok sessiz / yarıda kesik chunk'ları yakala)
@@ -416,7 +419,7 @@ class TTSEngine:
 
                 # Temel kalite kontrolü (çok kısa / sessiz)
                 if duration_ms < self.min_chunk_duration_ms or rms_db < self.min_chunk_rms_db:
-                    print(
+                    logger.warning(
                         "⚠ Chunk below quality thresholds "
                         f"(duration={duration_ms}ms, rms={rms_db:.2f}dB, "
                         f"min_duration={self.min_chunk_duration_ms}ms, "
@@ -425,7 +428,7 @@ class TTSEngine:
                     try:
                         os.remove(output_path)
                     except OSError as remove_error:
-                        print(f"⚠ Could not remove low-quality chunk file: {remove_error}")
+                        logger.warning(f"⚠ Could not remove low-quality chunk file: {remove_error}")
                     return False
 
                 # Yarıda kesik chunk kontrolü (kelime bazlı - daha doğru)
@@ -437,13 +440,13 @@ class TTSEngine:
                 if duration_ms < min_expected_duration_ms and words_count > 20:
                     # Sadece uzun metinler için kontrol et (20+ kelime)
                     truncation_ratio = (duration_ms / expected_duration_ms) * 100
-                    print(
+                    logger.warning(
                         f"⚠ TRUNCATED AUDIO DETECTED! "
                         f"Words: {words_count}, "
                         f"Expected: ~{expected_duration_ms/1000:.1f}s, "
                         f"Got: {duration_sec:.1f}s ({truncation_ratio:.0f}%)"
                     )
-                    print(f"   Text preview: {text[:80]}...")
+                    logger.warning(f"   Text preview: {text[:80]}...")
                     # Yarıda kesik ses dosyasını sil ve retry tetikle
                     try:
                         os.remove(output_path)
@@ -460,7 +463,7 @@ class TTSEngine:
                     
                     # -60dB sessizlik olarak kabul edilir, biraz toleransla -50dB diyelim
                     if last_segment_rms < -50.0:
-                        print(
+                        logger.warning(
                             f"⚠ END-OF-FILE SILENCE DETECTED! "
                             f"Last {check_duration_ms/1000:.1f}s is silent ({last_segment_rms:.1f}dB). "
                             f"Model likely stopped early."
@@ -490,18 +493,18 @@ class TTSEngine:
                 final_duration_sec = len(audio_with_pause) / 1000.0
                 final_size = os.path.getsize(output_path)
                 
-                print(f"✓ Audio generated & trimmed: {final_duration_sec:.1f}s (was {duration_sec:.1f}s), {final_size:,} bytes")
+                logger.info(f"✓ Audio generated & trimmed: {final_duration_sec:.1f}s (was {duration_sec:.1f}s), {final_size:,} bytes")
                 
             except Exception as silence_error:
-                print(f"⚠ Warning: Could not add silence / run quality check: {silence_error}")
+                logger.warning(f"⚠ Warning: Could not add silence / run quality check: {silence_error}")
                 # Devam et, kritik hata değil
-                print(f"✓ Audio generated: {file_size:,} bytes")
+                logger.info(f"✓ Audio generated: {file_size:,} bytes")
             
             return True
             
         except Exception as e:
-            print(f"❌ Audio generation error: {type(e).__name__}")
-            print(f"   Detail: {str(e)}")
+            logger.error(f"❌ Audio generation error: {type(e).__name__}")
+            logger.error(f"   Detail: {str(e)}")
             return False
 
     def release_memory(self):
@@ -511,26 +514,26 @@ class TTSEngine:
                 torch.cuda.empty_cache()
             gc.collect()
         except Exception as e:
-            print(f"⚠ Memory cleanup error: {e}")
+            logger.warning(f"⚠ Memory cleanup error: {e}")
     
     def print_stats(self):
         """Print engine statistics including cache stats."""
-        print("\n📊 TTS Engine Stats:")
-        print(f"  Device: {self.device.upper()}")
+        logger.info("\n📊 TTS Engine Stats:")
+        logger.info(f"  Device: {self.device.upper()}")
         if self._speaker_cache:
             stats = self._speaker_cache.stats()
-            print(f"  Speaker Cache: {stats['size']}/{stats['max_size']} "
+            logger.info(f"  Speaker Cache: {stats['size']}/{stats['max_size']} "
                   f"(hits: {stats['hits']}, misses: {stats['misses']}, rate: {stats['hit_rate']})")
         
         # GPU stats
         if self.use_gpu:
             gpu_stats = self.get_gpu_stats()
             if gpu_stats:
-                print(f"  GPU: {gpu_stats.get('name', 'Unknown')}")
-                print(f"  VRAM: {gpu_stats.get('vram_used_gb', 0):.2f}/{gpu_stats.get('vram_total_gb', 0):.2f} GB "
+                logger.info(f"  GPU: {gpu_stats.get('name', 'Unknown')}")
+                logger.info(f"  VRAM: {gpu_stats.get('vram_used_gb', 0):.2f}/{gpu_stats.get('vram_total_gb', 0):.2f} GB "
                       f"({gpu_stats.get('vram_percent', 0):.1f}%)")
                 if 'temperature' in gpu_stats:
-                    print(f"  Temperature: {gpu_stats['temperature']}°C")
+                    logger.info(f"  Temperature: {gpu_stats['temperature']}°C")
     
     # ==================== GPU MONITORING ====================
     

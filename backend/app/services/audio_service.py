@@ -11,7 +11,10 @@ from ..db.models import Project, Chunk
 from ..core.config import settings
 from .websocket import manager
 from ..ai.text_processor import TextProcessor
+import logging
 from .audio_mastering import AudioMastering
+
+logger = logging.getLogger("ai_audiobook_studio")
 
 # Retry configuration
 MAX_CHUNK_RETRIES = 3  # 3 kez deneme, başarısız olursa atla
@@ -71,7 +74,7 @@ def get_tts_engine(use_gpu: bool = False, model_type: str = "xtts"):
         
     # If another model is active, unload it first
     if active_engine is not None:
-        print(f"🔄 Switching model from {active_model_type} to {model_type}...")
+        logger.info(f"🔄 Switching model from {active_model_type} to {model_type}...")
         unload_active_model()
         
     # Load requested model
@@ -138,13 +141,13 @@ async def _process_single_chunk(
                     temperature_adj = max(0.35, base_temp * 0.7)
                     speed_adj = base_speed * 0.85  # 15% slower
                     repetition_penalty_adj = min(3.0, base_rep_penalty * 1.2)
-                    print(f"  🔧 Retry with adjusted params: temp={temperature_adj:.2f}, speed={speed_adj:.2f}, rep_pen={repetition_penalty_adj:.2f}")
+                    logger.info(f"  🔧 Retry with adjusted params: temp={temperature_adj:.2f}, speed={speed_adj:.2f}, rep_pen={repetition_penalty_adj:.2f}")
                 else:
                     # Third attempt: Very conservative (safest settings)
                     temperature_adj = 0.3
                     speed_adj = 0.7
                     repetition_penalty_adj = 2.8
-                    print(f"  🔧 Final retry with conservative params: temp={temperature_adj:.2f}, speed={speed_adj:.2f}, rep_pen={repetition_penalty_adj:.2f}")
+                    logger.info(f"  🔧 Final retry with conservative params: temp={temperature_adj:.2f}, speed={speed_adj:.2f}, rep_pen={repetition_penalty_adj:.2f}")
                 
                 if model_type == "f5":
                     # F5-TTS Call
@@ -171,7 +174,7 @@ async def _process_single_chunk(
                 
                 if success:
                     if attempt > 0:
-                        print(f"  ✅ Chunk {chunk.index} succeeded on attempt {attempt + 1}")
+                        logger.info(f"  ✅ Chunk {chunk.index} succeeded on attempt {attempt + 1}")
                     return ChunkResult(
                         chunk_index=chunk.index,
                         success=True,
@@ -189,13 +192,13 @@ async def _process_single_chunk(
             attempt += 1
             
             if attempt < MAX_CHUNK_RETRIES:
-                print(f"  🔁 Retry {attempt}/{MAX_CHUNK_RETRIES} for chunk {chunk.index}")
+                logger.warning(f"  🔁 Retry {attempt}/{MAX_CHUNK_RETRIES} for chunk {chunk.index}")
                 # Memory cleanup between retries
                 engine.release_memory()
 
         # If all retries failed, try recursive splitting for long chunks
         if not success and len(chunk.text_content) > 200:
-            print(f"  ✂️ All retries failed. Attempting recursive split for chunk {chunk.index}...")
+            logger.warning(f"  ✂️ All retries failed. Attempting recursive split for chunk {chunk.index}...")
             try:
                 # Initialize text processor
                 processor = TextProcessor()
@@ -204,7 +207,7 @@ async def _process_single_chunk(
                 split_text = processor._smart_split(chunk.text_content, len(chunk.text_content) // 2 + 50)
                 
                 if len(split_text) >= 2:
-                    print(f"  🧩 Split into {len(split_text)} parts: {[len(t) for t in split_text]} chars")
+                    logger.info(f"  🧩 Split into {len(split_text)} parts: {[len(t) for t in split_text]} chars")
                     
                     temp_files = []
                     all_parts_success = True
@@ -229,7 +232,7 @@ async def _process_single_chunk(
                                 speed=settings.DEFAULT_SPEED
                             )
                         except Exception as e:
-                            print(f"  ❌ Part {i} failed: {e}")
+                            logger.error(f"  ❌ Part {i} failed: {e}")
                         
                         if not part_success:
                             all_parts_success = False
@@ -237,7 +240,7 @@ async def _process_single_chunk(
                     
                     if all_parts_success:
                         # Combine parts
-                        print(f"  🔗 Combining {len(temp_files)} parts...")
+                        logger.info(f"  🔗 Combining {len(temp_files)} parts...")
                         combined = AudioSegment.empty()
                         for temp_file in temp_files:
                             if os.path.exists(temp_file):
@@ -251,7 +254,7 @@ async def _process_single_chunk(
                         
                         # Export final combined file
                         combined.export(output_path, format="wav")
-                        print(f"  ✅ Recursive split succeeded for chunk {chunk.index}")
+                        logger.info(f"  ✅ Recursive split succeeded for chunk {chunk.index}")
                         
                         return ChunkResult(
                             chunk_index=chunk.index,
@@ -267,7 +270,7 @@ async def _process_single_chunk(
                                 except:
                                     pass
             except Exception as e:
-                print(f"  ⚠ Recursive split failed: {e}")
+                logger.error(f"  ⚠ Recursive split failed: {e}")
         
     return ChunkResult(
         chunk_index=chunk.index,
