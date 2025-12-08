@@ -22,7 +22,8 @@ class Settings(BaseSettings):
     DEFAULT_TEMPERATURE: float = 0.75
     DEFAULT_TOP_K: int = 50
     DEFAULT_TOP_P: float = 0.85
-    DEFAULT_REPETITION_PENALTY: float = 2.0
+    # Increased from 2.0 to 2.5 to prevent truncation and repetition issues
+    DEFAULT_REPETITION_PENALTY: float = 2.5
     
     # Audio Processing
     CHUNK_SILENCE_DURATION: int = 350  # ms

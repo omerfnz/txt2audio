@@ -404,18 +404,18 @@ class TTSEngine:
                         print(f"⚠ Could not remove low-quality chunk file: {remove_error}")
                     return False
 
-                # Yarıda kesik chunk kontrolü (metin uzunluğuna göre)
-                # Ortalama: 1 karakter ≈ 50ms konuşma süresi (150 kelime/dakika, 5 karakter/kelime)
-                text_length = len(text)
-                expected_duration_ms = text_length * 50  # Tahmini beklenen süre
-                min_expected_duration_ms = expected_duration_ms * 0.3  # Minimum %30'u
+                # Yarıda kesik chunk kontrolü (kelime bazlı - daha doğru)
+                # Ortalama: 150 kelime/dakika = 2.5 kelime/saniye = 400ms/kelime
+                words_count = len(text.split())
+                expected_duration_ms = words_count * 400  # Tahmini beklenen süre (kelime bazlı)
+                min_expected_duration_ms = expected_duration_ms * 0.5  # Minimum %50'si (daha toleranslı)
                 
-                if duration_ms < min_expected_duration_ms and text_length > 100:
-                    # Sadece uzun metinler için kontrol et (kısa metinlerde normal olabilir)
+                if duration_ms < min_expected_duration_ms and words_count > 20:
+                    # Sadece uzun metinler için kontrol et (20+ kelime)
                     truncation_ratio = (duration_ms / expected_duration_ms) * 100
                     print(
                         f"⚠ TRUNCATED AUDIO DETECTED! "
-                        f"Text: {text_length} chars, "
+                        f"Words: {words_count}, "
                         f"Expected: ~{expected_duration_ms/1000:.1f}s, "
                         f"Got: {duration_sec:.1f}s ({truncation_ratio:.0f}%)"
                     )
@@ -448,9 +448,12 @@ class TTSEngine:
                         return False
 
                 # Task 1.3.3: Cümle sonlarına sessizlik ekle (halüsinasyon önleme)
-                audio_with_pause = audio + AudioSegment.silent(duration=350)
+                # Dinamik silence padding: uzun chunk'larda daha uzun sessizlik
+                text_length = len(text)
+                silence_duration = min(500, max(200, text_length // 2))  # 200-500ms arası
+                audio_with_pause = audio + AudioSegment.silent(duration=silence_duration)
                 audio_with_pause.export(output_path, format="wav")
-                print(f"✓ Audio generated: {duration_sec:.1f}s, {file_size:,} bytes")
+                print(f"✓ Audio generated: {duration_sec:.1f}s, {file_size:,} bytes (silence: {silence_duration}ms)")
                 
             except Exception as silence_error:
                 print(f"⚠ Warning: Could not add silence / run quality check: {silence_error}")

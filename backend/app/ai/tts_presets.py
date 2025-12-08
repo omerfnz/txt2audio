@@ -45,14 +45,15 @@ PRESETS: Dict[str, TTSPreset] = {
         name="English Fiction",
         description=(
             "Optimized for English novels and story narration. "
-            "Higher temperature for rich emotional expression "
-            "and character voice variation."
+            "Balanced temperature for rich emotional expression "
+            "while maintaining stability. Higher repetition penalty "
+            "prevents truncation in dramatic passages."
         ),
         language="en",
         content_type="fiction",
-        temperature=0.80,
+        temperature=0.75,  # Reduced from 0.80 for better stability
         top_p=0.85,
-        repetition_penalty=2.0,
+        repetition_penalty=2.3,  # Increased from 2.0 for stability
         speed=0.9,
         enable_text_splitting=True
     ),
@@ -62,13 +63,14 @@ PRESETS: Dict[str, TTSPreset] = {
         description=(
             "Optimized for English educational and informational content. "
             "Lower temperature for clear, consistent articulation "
-            "and professional tone."
+            "and professional tone. Enhanced stability with higher repetition "
+            "penalty to prevent truncation issues."
         ),
         language="en",
         content_type="nonfiction",
-        temperature=0.35,
-        top_p=0.90,
-        repetition_penalty=2.0,
+        temperature=0.32,  # Slightly lower for maximum stability
+        top_p=0.88,  # Reduced for more consistent output
+        repetition_penalty=2.5,  # Increased from 2.0 to prevent loops/truncation
         speed=0.9,
         enable_text_splitting=True
     ),

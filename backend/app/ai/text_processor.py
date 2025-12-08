@@ -34,6 +34,39 @@ class TextProcessor:
             print(f"✗ Unexpected error loading model: {e}")
             raise
 
+    def is_chunk_problematic(self, chunk: str) -> bool:
+        """
+        Sorunlu chunk'ları tespit et (XTTS için optimize edilmiş).
+        Bu chunk'lar daha küçük parçalara bölünmelidir.
+        """
+        if not chunk or len(chunk) < 10:
+            return False
+        
+        # 1. Çok fazla sayı içeren chunk'lar (XTTS sayılarda zorlanır)
+        digit_count = sum(c.isdigit() for c in chunk)
+        digit_ratio = digit_count / len(chunk)
+        if digit_ratio > 0.3:  # %30'dan fazla rakam
+            return True
+        
+        # 2. Çok fazla büyük harf (ALL CAPS metinler)
+        upper_count = sum(c.isupper() for c in chunk if c.isalpha())
+        alpha_count = sum(c.isalpha() for c in chunk)
+        if alpha_count > 20 and upper_count / max(alpha_count, 1) > 0.7:  # %70'den fazla büyük
+            return True
+        
+        # 3. Çok fazla özel karakter
+        special_chars = sum(1 for c in chunk if not c.isalnum() and c not in ' .,!?;:-\'"')
+        special_ratio = special_chars / len(chunk)
+        if special_ratio > 0.2:  # %20'den fazla özel karakter
+            return True
+        
+        # 4. Çok uzun kelimeler (okunamayan terimler olabilir)
+        words = chunk.split()
+        if any(len(word) > 25 for word in words):  # 25+ karakter kelime
+            return True
+        
+        return False
+    
     def validate_chunk(self, chunk: str) -> str:
         """
         Chunk'ı temizler.
@@ -48,7 +81,7 @@ class TextProcessor:
         chunk = re.sub(r'\s+([!?,;:])', r'\1', chunk)
         
         # Tırnak işaretlerini düzelt
-        chunk = chunk.replace('“', '"').replace('”', '"').replace("‘", "'").replace("’", "'")
+        chunk = chunk.replace('"', '"').replace('"', '"').replace("'", "'").replace("'", "'")
         
         return chunk.strip()
     
@@ -106,9 +139,13 @@ class TextProcessor:
             
         return chunks
 
-    def split_into_chunks(self, text: str, max_chars: int = 480, min_chars: int = 50, language: str = "en", normalize: bool = True) -> List[str]:
+    def split_into_chunks(self, text: str, max_chars: int = 350, min_chars: int = 50, language: str = "en", normalize: bool = True) -> List[str]:
         """
         Metni mantıklı chunk'lara böler, birden fazla cümleyi birleştirir.
+        
+        Optimized for XTTS v2:
+        - Default max_chars reduced from 480 to 350 for better stability
+        - Problematic chunks (lots of numbers, special chars) are split smaller
         """
         if not self.nlp:
             raise RuntimeError("NLP model not loaded")
@@ -170,7 +207,19 @@ class TextProcessor:
         # Boş chunkları temizle
         chunks = [c for c in chunks if c]
         
-        return chunks if chunks else [""]
+        # Problematic chunk'ları tespit et ve daha küçük parçalara böl
+        final_chunks = []
+        for chunk in chunks:
+            if self.is_chunk_problematic(chunk) and len(chunk) > 100:
+                # Problematic chunk'ı yarıya böl
+                print(f"⚠ Problematic chunk detected (len={len(chunk)}), splitting smaller...")
+                smaller_max = max_chars // 2  # Yarı boyutta chunk'lar
+                sub_chunks = self._smart_split(chunk, smaller_max)
+                final_chunks.extend([self.validate_chunk(sc) for sc in sub_chunks])
+            else:
+                final_chunks.append(chunk)
+        
+        return final_chunks if final_chunks else [""]
 
 if __name__ == "__main__":
     try:

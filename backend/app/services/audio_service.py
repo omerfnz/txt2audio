@@ -14,6 +14,9 @@ from .websocket import manager
 # Retry configuration
 MAX_CHUNK_RETRIES = 3  # 3 kez deneme, başarısız olursa atla
 
+# Failed chunks debug log file
+FAILED_CHUNKS_LOG = "failed_chunks_log.txt"
+
 # Global instances for model management
 active_engine = None
 active_model_type = None  # "xtts" or "f5"
@@ -118,6 +121,29 @@ async def _process_single_chunk(
         
         while attempt < MAX_CHUNK_RETRIES and not success:
             try:
+                # Adaptive parameters for each retry attempt
+                base_temp = project.temperature or settings.DEFAULT_TEMPERATURE
+                base_speed = project.speed or settings.DEFAULT_SPEED
+                base_rep_penalty = project.repetition_penalty or settings.DEFAULT_REPETITION_PENALTY
+                
+                if attempt == 0:
+                    # First attempt: Use normal parameters
+                    temperature_adj = base_temp
+                    speed_adj = base_speed
+                    repetition_penalty_adj = base_rep_penalty
+                elif attempt == 1:
+                    # Second attempt: More conservative (slower, lower temperature)
+                    temperature_adj = max(0.35, base_temp * 0.7)
+                    speed_adj = base_speed * 0.85  # 15% slower
+                    repetition_penalty_adj = min(3.0, base_rep_penalty * 1.2)
+                    print(f"  🔧 Retry with adjusted params: temp={temperature_adj:.2f}, speed={speed_adj:.2f}, rep_pen={repetition_penalty_adj:.2f}")
+                else:
+                    # Third attempt: Very conservative (safest settings)
+                    temperature_adj = 0.3
+                    speed_adj = 0.7
+                    repetition_penalty_adj = 2.8
+                    print(f"  🔧 Final retry with conservative params: temp={temperature_adj:.2f}, speed={speed_adj:.2f}, rep_pen={repetition_penalty_adj:.2f}")
+                
                 if model_type == "f5":
                     # F5-TTS Call
                     success = await asyncio.to_thread(
@@ -125,26 +151,25 @@ async def _process_single_chunk(
                         text=chunk.text_content,
                         ref_audio=project.voice_ref_path,
                         output_path=output_path,
-                        speed=project.speed or settings.DEFAULT_SPEED
+                        speed=speed_adj
                     )
                 else:
-                    # XTTS Call
+                    # XTTS Call with adaptive parameters
                     success = await asyncio.to_thread(
                         engine.generate_audio,
                         text=chunk.text_content,
                         speaker_wav=project.voice_ref_path,
                         output_path=output_path,
                         language=project.language or settings.DEFAULT_LANGUAGE,
-                        temperature=project.temperature or settings.DEFAULT_TEMPERATURE,
+                        temperature=temperature_adj,
                         top_p=project.top_p or settings.DEFAULT_TOP_P,
-                        repetition_penalty=(
-                            project.repetition_penalty 
-                            or settings.DEFAULT_REPETITION_PENALTY
-                        ),
-                        speed=project.speed or settings.DEFAULT_SPEED
+                        repetition_penalty=repetition_penalty_adj,
+                        speed=speed_adj
                     )
                 
                 if success:
+                    if attempt > 0:
+                        print(f"  ✅ Chunk {chunk.index} succeeded on attempt {attempt + 1}")
                     return ChunkResult(
                         chunk_index=chunk.index,
                         success=True,
@@ -459,6 +484,25 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
                 if result.error:
                     last_error_message = f"Chunk {chunk.index}: {result.error}"
                 
+                # Debug logging for failed chunks
+                print(f"❌ FAILED CHUNK #{chunk.index}")
+                print(f"   Text length: {len(chunk.text_content)} chars")
+                print(f"   Text preview: {chunk.text_content[:200]}...")
+                print(f"   Error: {result.error}")
+                
+                # Save failed chunk to log file for analysis
+                try:
+                    import os
+                    log_path = os.path.join(os.getcwd(), FAILED_CHUNKS_LOG)
+                    with open(log_path, "a", encoding="utf-8") as f:
+                        f.write(f"\n{'='*60}\n")
+                        f.write(f"Chunk #{chunk.index} - Project {project_id}\n")
+                        f.write(f"Text length: {len(chunk.text_content)} chars\n")
+                        f.write(f"Text: {chunk.text_content}\n")
+                        f.write(f"Error: {result.error}\n")
+                except Exception as log_error:
+                    print(f"⚠ Could not write to log file: {log_error}")
+                
                 await manager.broadcast({
                     "type": "status_update",
                     "project_id": project_id,
@@ -470,8 +514,8 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
             
             # Memory cleanup periodically
             # T4 has 16GB VRAM, frequent cleanup hurts performance (sync overhead)
-            # Changed from 10 to 50 to speed up processing
-            if chunk.index % 50 == 0:
+            # Optimized to 30 for better stability vs performance balance
+            if chunk.index % 30 == 0:
                 # Re-fetch engine with correct type to call release/unload
                 model_type = getattr(project, "tts_model", "xtts") or "xtts"
                 engine = get_tts_engine(use_gpu=use_gpu, model_type=model_type)
