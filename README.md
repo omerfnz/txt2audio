@@ -7,6 +7,7 @@ Modern bir sesli kitap oluşturma uygulaması. TXT/EPUB dosyalarınızı referan
 - ✅ **Ses Klonlama**: XTTS v2 ile 6-10 saniyelik referans ses kullanarak birebir ses klonlama
 - ✅ **Optimize Edilmiş Performans**: FP16 (Half Precision) ve Async Locking ile hızlı ve hatasız üretim
 - ✅ **Akıllı Metin İşleme**: Spacy NLP ile metni anlamlı cümlelere bölme
+- ✅ **Gelişmiş Sayı Normalizasyonu**: Virgüllü büyük sayılar (140,000), ondalıklar, para birimleri doğru okunur ⭐ YENİ
 - ✅ **Canlı İzleme**: WebSocket ile gerçek zamanlı ilerleme takibi
 - ✅ **GPU/CPU Desteği**: Hem CPU hem de CUDA GPU desteği (T4 ve üzeri optimize)
 - ✅ **Modern UI**: React + Tailwind CSS ile tasarlanmış kullanıcı dostu arayüz
@@ -81,6 +82,7 @@ Bu proje, XTTS v2 modelinin kararlılığı ve hızı için özel optimizasyonla
 2.  **Native FP16**: DeepSpeed yerine PyTorch native FP16 kullanılarak Tesla T4 gibi kartlarda 2x hız artışı sağlanmıştır.
 3.  **No-DeepSpeed**: XTTS ile uyumsuzluk yaratan DeepSpeed modülleri devre dışı bırakılmıştır.
 4.  **Auto-Recovery**: OOM (Out of Memory) durumlarında otomatik bellek temizliği yapılır.
+5.  **⭐ Gelişmiş Sayı Normalizasyonu (YENİ)**: Virgüllü büyük sayılar (140,000 → "one hundred and forty thousand"), ondalıklar, para birimleri ve sıra sayıları XTTS için optimize edildi. Detaylar: [`XTTS_SAYI_COZUMU_TR.md`](XTTS_SAYI_COZUMU_TR.md)
 
 ## 📁 Proje Yapısı
 
