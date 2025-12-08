@@ -447,10 +447,10 @@ class TTSEngine:
                             pass
                         return False
 
-                # Task 1.3.3: Cümle sonlarına sessizlik ekle (halüsinasyon önleme)
-                # Dinamik silence padding: uzun chunk'larda daha uzun sessizlik
-                text_length = len(text)
-                silence_duration = min(500, max(200, text_length // 2))  # 200-500ms arası
+                # Task 1.3.3: Cümle sonlarına çok kısa sessizlik ekle (tıklamaları önlemek için)
+                # Dinamik silence padding: uzun chunk'larda bile minimum tutalım
+                # Sessizlikleri merge aşamasında yönetmek daha sağlıklı
+                silence_duration = 50  # Sabit 50ms (sadece yumuşak geçiş için)
                 audio_with_pause = audio + AudioSegment.silent(duration=silence_duration)
                 audio_with_pause.export(output_path, format="wav")
                 print(f"✓ Audio generated: {duration_sec:.1f}s, {file_size:,} bytes (silence: {silence_duration}ms)")

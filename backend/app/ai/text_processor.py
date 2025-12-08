@@ -45,19 +45,19 @@ class TextProcessor:
         # 1. Çok fazla sayı içeren chunk'lar (XTTS sayılarda zorlanır)
         digit_count = sum(c.isdigit() for c in chunk)
         digit_ratio = digit_count / len(chunk)
-        if digit_ratio > 0.3:  # %30'dan fazla rakam
+        if digit_ratio > 0.4:  # %40'tan fazla rakam (esnetildi: %30 -> %40)
             return True
         
         # 2. Çok fazla büyük harf (ALL CAPS metinler)
         upper_count = sum(c.isupper() for c in chunk if c.isalpha())
         alpha_count = sum(c.isalpha() for c in chunk)
-        if alpha_count > 20 and upper_count / max(alpha_count, 1) > 0.7:  # %70'den fazla büyük
+        if alpha_count > 20 and upper_count / max(alpha_count, 1) > 0.8:  # %80'den fazla büyük (esnetildi)
             return True
         
         # 3. Çok fazla özel karakter
         special_chars = sum(1 for c in chunk if not c.isalnum() and c not in ' .,!?;:-\'"')
         special_ratio = special_chars / len(chunk)
-        if special_ratio > 0.2:  # %20'den fazla özel karakter
+        if special_ratio > 0.3:  # %30'dan fazla özel karakter (esnetildi)
             return True
         
         # 4. Çok uzun kelimeler (okunamayan terimler olabilir)
@@ -157,12 +157,12 @@ class TextProcessor:
             
         return chunks
 
-    def split_into_chunks(self, text: str, max_chars: int = 600, min_chars: int = 50, language: str = "en", normalize: bool = True) -> List[str]:
+    def split_into_chunks(self, text: str, max_chars: int = 650, min_chars: int = 80, language: str = "en", normalize: bool = True) -> List[str]:
         """
         Metni mantıklı chunk'lara böler, birden fazla cümleyi birleştirir.
         
         Optimized for XTTS v2:
-        - Default max_chars increased to 600 (XTTS handles this well) to avoid splitting sentences unnecessarily.
+        - Default max_chars increased to 650 (Safe limit for XTTS v2)
         - Problematic chunks (lots of numbers, special chars) are split smaller
         """
         if not self.nlp:

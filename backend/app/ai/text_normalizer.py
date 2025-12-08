@@ -27,8 +27,71 @@ class AdvancedTextNormalizer:
             "Co.": "Company"
         }
         
+    def clean_gutenberg_style(self, text: str) -> str:
+        """
+        Project Gutenberg ve benzeri kaynaklardan gelen metinleri temizler.
+        Header/Footer, lisans metinleri ve satır sonu bozukluklarını düzeltir.
+        """
+        if not text:
+            return ""
+
+        # 1. Gutenberg Header/Footer temizliği (Basit yaklaşım)
+        # Genellikle "*** START OF" ve "*** END OF" işaretleri olur
+        start_markers = [
+            r"\*\*\* START OF (THE|THIS) PROJECT GUTENBERG EBOOK",
+            r"\*\*\*START OF (THE|THIS) PROJECT GUTENBERG EBOOK",
+        ]
+        end_markers = [
+            r"\*\*\* END OF (THE|THIS) PROJECT GUTENBERG EBOOK",
+            r"\*\*\*END OF (THE|THIS) PROJECT GUTENBERG EBOOK",
+        ]
+
+        for marker in start_markers:
+            match = re.search(marker, text, re.IGNORECASE)
+            if match:
+                text = text[match.end():]
+                break
+        
+        for marker in end_markers:
+            match = re.search(marker, text, re.IGNORECASE)
+            if match:
+                text = text[:match.start()]
+                break
+
+        # 2. İtalik vurguları temizle (_word_ -> word)
+        text = re.sub(r'_(.*?)_', r'\1', text)
+        
+        # 3. Köşeli parantez içindeki notları sil (örn. [Illustration])
+        text = re.sub(r'\[.*?\]', '', text)
+
+        # 4. Satır birleştirme (Line Unwrapping)
+        # Gutenberg metinlerinde paragraflar çift satır sonu (\n\n) ile ayrılır.
+        # Tek satır sonları (\n) ise cümle içindeki devamlılığı gösterir.
+        
+        # Önce tüm \r karakterlerini sil
+        text = text.replace('\r', '')
+        
+        # Paragrafları (çift enter) geçici bir belirteçle koru
+        text = re.sub(r'\n\s*\n', '<PARAGRAPH_BREAK>', text)
+        
+        # Tek satır sonlarını boşlukla değiştir (Cümleleri birleştir)
+        text = text.replace('\n', ' ')
+        
+        # Fazla boşlukları temizle (tab ve çoklu boşlukları tek boşluğa indir)
+        # \s yerine [ \t] kullanarak satır sonlarını etkilememesini sağla, 
+        # ama zaten şu an metinde \n yok (placeholder hariç)
+        text = re.sub(r'\s+', ' ', text).strip()
+        
+        # Paragrafları geri getir
+        text = text.replace('<PARAGRAPH_BREAK>', '\n\n')
+        
+        return text
+
     def normalize(self, text: str, lang: str = "en") -> str:
         """Dile göre metni normalize eder."""
+        # Önce genel temizlik yap
+        text = self.clean_gutenberg_style(text)
+        
         if lang == "tr":
             return self.normalize_turkish(text)
         return self.normalize_english(text)
@@ -38,16 +101,7 @@ class AdvancedTextNormalizer:
         if not text:
             return ""
             
-        # 0. Satır sonu iyileştirmesi: Paragraf boşluklarını cümle sonu olarak işaretle
-        # Bu, nokta konulmadan alt satıra geçilen metinlerde Spacy'nin cümleyi tanımasını sağlar
-        text = text.replace('\r\n', '\n').replace('\r', '\n')
-        # Eğer bir satır harf/rakam ile bitip çift enter ile ayrılıyorsa, nokta ekle
-        text = re.sub(r'(?<=[a-zA-Z0-9])\n\n+', '.\n', text)
-            
-        # 1. Fazla boşlukları temizle
-        text = re.sub(r'\s+', ' ', text).strip()
-        
-        # 2. Kısaltmaları genişlet
+        # 1. Kısaltmaları genişlet
         for abbr, full in self.abbreviations.items():
             # Kelime sınırlarını kontrol et (örn. "Dr." -> "Doctor" ama "Drive." -> "Drive.")
             pattern = r'\b' + re.escape(abbr)
@@ -158,15 +212,8 @@ class AdvancedTextNormalizer:
         """Türkçe metin normalizasyonu - XTTS için optimize edilmiş."""
         if not text:
             return ""
-            
-        # 0. Satır sonu iyileştirmesi
-        text = text.replace('\r\n', '\n').replace('\r', '\n')
-        text = re.sub(r'(?<=[a-zA-Z0-9])\n\n+', '.\n', text)
-            
-        # 1. Fazla boşlukları temizle
-        text = re.sub(r'\s+', ' ', text).strip()
         
-        # 2. Para birimleri - noktalı büyük sayıları destekler
+        # 1. Para birimleri - noktalı büyük sayıları destekler
         # 1.234 TL veya 140.000 TL -> Türkçe okunuşa çevir
         def tr_currency_replacer(match):
             try:

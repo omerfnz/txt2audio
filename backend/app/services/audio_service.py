@@ -243,7 +243,7 @@ async def _process_single_chunk(
                             if os.path.exists(temp_file):
                                 combined += AudioSegment.from_wav(temp_file)
                                 # Add small silence between parts to prevent abrupt changes
-                                combined += AudioSegment.silent(duration=150)
+                                combined += AudioSegment.silent(duration=50)
                                 try:
                                     os.remove(temp_file)
                                 except:
@@ -361,9 +361,9 @@ async def merge_audio_files(project_id: int, db: Session):
                     # If chunk does not end with sentence terminator, reduce silence
                     if text and not any(text.endswith(end) for end in ['.', '!', '?', '"', "'", '”', '’']):
                         if text.endswith((',', ';', ':')):
-                            silence_duration = 150  # Short pause for sub-clauses
+                            silence_duration = 50   # Short pause for sub-clauses
                         else:
-                            silence_duration = 20   # Very short pause for split sentences (just to avoid clicks)
+                            silence_duration = 10   # Minimal pause for split sentences
                 
                 if silence_duration > 0:
                     # Generate/get silence file
