@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Player } from '../components/Player';
 import { useProjectStatus } from '../hooks/useProjectStatus';
 import { Terminal, CheckCircle, Circle } from 'lucide-react';
-import { getAudioQuality, normalizeAudio, cancelProcessing, resumeProject, type AudioQualityResponse } from '../api/client';
+import { cancelProcessing, resumeProject } from '../api/client';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,10 +28,6 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
     const { status, progress, chunks, logs, processingStartTime, estimatedEndTime } = useProjectStatus(projectId);
     const [currentAudioUrl, setCurrentAudioUrl] = useState<string | null>(null);
     const [currentChunkIndex, setCurrentChunkIndex] = useState<number | null>(null);
-    const [quality, setQuality] = useState<AudioQualityResponse | null>(null);
-    const [qualityLoading, setQualityLoading] = useState(false);
-    const [normalizeLoading, setNormalizeLoading] = useState(false);
-    const [qualityError, setQualityError] = useState<string | null>(null);
     const [cancelLoading, setCancelLoading] = useState(false);
     const [resumeLoading, setResumeLoading] = useState(false);
 
@@ -52,42 +48,6 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
         const audioUrl = `${getApiBase()}/audio/download/${projectId}`;
         setCurrentAudioUrl(audioUrl);
         setCurrentChunkIndex(null);
-    };
-
-    const handleAnalyzeQuality = async () => {
-        try {
-            setQualityLoading(true);
-            setQualityError(null);
-            const result = await getAudioQuality(projectId);
-            setQuality(result);
-        } catch (error) {
-            console.error('Audio quality analysis failed:', error);
-            setQuality(null);
-            setQualityError(
-                error instanceof Error ? error.message : 'Audio quality analysis failed'
-            );
-        } finally {
-            setQualityLoading(false);
-        }
-    };
-
-    const handleNormalize = async () => {
-        try {
-            setNormalizeLoading(true);
-            setQualityError(null);
-            await normalizeAudio(projectId);
-
-            // Normalizasyon bittikten sonra kaliteyi tekrar ölçmek için kullanıcıyı yönlendirmek üzere
-            // sadece state'i resetliyoruz; kullanıcı yeniden "Analyze Quality" butonuna basabilir.
-            setQuality(null);
-        } catch (error) {
-            console.error('Audio normalization failed:', error);
-            setQualityError(
-                error instanceof Error ? error.message : 'Audio normalization failed'
-            );
-        } finally {
-            setNormalizeLoading(false);
-        }
     };
 
     const handleCancel = async () => {
