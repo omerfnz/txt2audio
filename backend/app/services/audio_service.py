@@ -249,64 +249,96 @@ async def merge_audio_files(project_id: int, db: Session):
     
     print(f"🔄 Merging {len(chunks)} chunks for project {project_id}...")
     
-    # Merge audio files
-    combined = AudioSegment.empty()
+    # Merge audio files using FFmpeg concat demuxer (memory efficient)
+    concat_list_path = project_output_dir / "concat_list.txt"
+    silence_cache = {}  # duration_ms -> file_path
+    
     chunk_files_to_delete = []
     
-    # Phase 1: Load and combine chunks (99% to 99.5% of total progress)
+    # Phase 1: Create concat list and generate silence files (99% to 99.5%)
     valid_chunks = [chunk for chunk in chunks if chunk.chunk_audio_path and os.path.exists(chunk.chunk_audio_path)]
     total_valid = len(valid_chunks)
     
-    for idx, chunk in enumerate(valid_chunks):
-        try:
-            audio = AudioSegment.from_wav(chunk.chunk_audio_path)
-            
-            # Add silence between chunks based on text content
-            silence_duration = settings.CHUNK_SILENCE_DURATION
-            if chunk.text_content:
-                text = chunk.text_content.strip()
-                # If chunk does not end with sentence terminator, reduce silence
-                if text and not any(text.endswith(end) for end in ['.', '!', '?', '"', "'", '”', '’']):
-                    if text.endswith((',', ';', ':')):
-                        silence_duration = 150  # Short pause for sub-clauses
-                    else:
-                        silence_duration = 20   # Very short pause for split sentences (just to avoid clicks)
-            
-            combined += audio + AudioSegment.silent(duration=silence_duration)
-            chunk_files_to_delete.append(chunk.chunk_audio_path)
-            
-            # Update progress: 99% + (idx/total_valid * 0.5) = 99% to 99.5%
-            if total_valid > 0:
-                merge_progress = 99.0 + (idx / total_valid) * 0.5
-                await manager.broadcast({
-                    "type": "progress_update",
-                    "project_id": project_id,
-                    "progress": merge_progress
-                })
-        except Exception as e:
-            print(f"⚠ Warning: Could not load chunk {chunk.index}: {e}")
-            continue
-    
-    if len(combined) == 0:
+    if total_valid == 0:
         print(f"⚠ No valid audio chunks found to merge for project {project_id}")
         project.status = "completed"
         db.commit()
         return
-    
-    # Phase 2: Export as MP3 (99.5% to 99.8% of total progress)
-    await manager.broadcast({
-        "type": "progress_update",
-        "project_id": project_id,
-        "progress": 99.5
-    })
-    
+
     try:
-        print(f"💾 Exporting merged audio as MP3...")
-        combined.export(
-            str(output_path_mp3), 
-            format=settings.EXPORT_FORMAT,
-            bitrate=settings.EXPORT_BITRATE
+        with open(concat_list_path, "w", encoding="utf-8") as f:
+            for idx, chunk in enumerate(valid_chunks):
+                chunk_path = chunk.chunk_audio_path
+                chunk_files_to_delete.append(chunk_path)
+                
+                # Format path for ffmpeg (escape backslashes or use forward slashes)
+                # Windows paths need care in ffmpeg concat files
+                safe_chunk_path = str(chunk_path).replace("\\", "/")
+                f.write(f"file '{safe_chunk_path}'\n")
+                
+                # Add silence between chunks based on text content
+                silence_duration = settings.CHUNK_SILENCE_DURATION
+                if chunk.text_content:
+                    text = chunk.text_content.strip()
+                    # If chunk does not end with sentence terminator, reduce silence
+                    if text and not any(text.endswith(end) for end in ['.', '!', '?', '"', "'", '”', '’']):
+                        if text.endswith((',', ';', ':')):
+                            silence_duration = 150  # Short pause for sub-clauses
+                        else:
+                            silence_duration = 20   # Very short pause for split sentences (just to avoid clicks)
+                
+                if silence_duration > 0:
+                    # Generate/get silence file
+                    if silence_duration not in silence_cache:
+                        silence_filename = f"silence_{silence_duration}ms.wav"
+                        silence_path = project_output_dir / silence_filename
+                        
+                        if not silence_path.exists():
+                            # Generate silence audio once
+                            AudioSegment.silent(duration=silence_duration).export(str(silence_path), format="wav")
+                        
+                        silence_cache[silence_duration] = str(silence_path).replace("\\", "/")
+                    
+                    f.write(f"file '{silence_cache[silence_duration]}'\n")
+                
+                # Update progress
+                if total_valid > 0 and idx % 10 == 0:  # Don't spam updates
+                    merge_progress = 99.0 + (idx / total_valid) * 0.5
+                    await manager.broadcast({
+                        "type": "progress_update",
+                        "project_id": project_id,
+                        "progress": merge_progress
+                    })
+        
+        # Phase 2: Run FFmpeg (99.5% to 99.8%)
+        await manager.broadcast({
+            "type": "progress_update",
+            "project_id": project_id,
+            "progress": 99.5
+        })
+        
+        print(f"💾 Exporting merged audio as MP3 via FFmpeg...")
+        
+        # FFmpeg command
+        cmd = [
+            'ffmpeg', '-y',
+            '-f', 'concat',
+            '-safe', '0',
+            '-i', str(concat_list_path),
+            '-c:a', 'libmp3lame',
+            '-b:a', settings.EXPORT_BITRATE,
+            str(output_path_mp3)
+        ]
+        
+        # Run ffmpeg in thread pool to avoid blocking event loop
+        await asyncio.to_thread(
+            subprocess.run, 
+            cmd, 
+            check=True, 
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE
         )
+        
         print(f"✓ Merged audio saved: {output_path_mp3}")
         
         await manager.broadcast({
@@ -314,8 +346,9 @@ async def merge_audio_files(project_id: int, db: Session):
             "project_id": project_id,
             "progress": 99.8
         })
+
     except Exception as e:
-        print(f"❌ Error exporting merged audio: {e}")
+        print(f"❌ Error merging audio: {e}")
         project.status = "failed"
         db.commit()
         await manager.broadcast({
@@ -324,9 +357,30 @@ async def merge_audio_files(project_id: int, db: Session):
             "status": "failed",
             "error": str(e)
         })
+        # Clean up concat list if exists
+        if concat_list_path.exists():
+            try:
+                os.remove(concat_list_path)
+            except:
+                pass
         return
-    
-    # Phase 3: Delete chunk files (99.8% to 100% of total progress)
+
+    # Phase 3: Delete chunk files and temp files (99.8% to 100%)
+    # Delete silence files
+    for silence_file in silence_cache.values():
+        try:
+            if os.path.exists(silence_file):
+                os.remove(silence_file)
+        except:
+            pass
+            
+    # Delete concat list
+    if concat_list_path.exists():
+        try:
+            os.remove(concat_list_path)
+        except:
+            pass
+
     deleted_count = 0
     total_to_delete = len(chunk_files_to_delete)
     for idx, chunk_file in enumerate(chunk_files_to_delete):
