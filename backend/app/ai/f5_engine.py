@@ -146,7 +146,9 @@ class F5TTSEngine:
                 gen_text=text,
                 remove_silence=True, # Natural pause removal
                 speed=speed,
-                nfe_step=16  # Reduced from 32 for performance on low VRAM
+                nfe_step=32, # Increased back to default for better quality (16 causes artifacts like 'dext')
+                cfg_strength=2.0, # Default classifier-free guidance
+                sway_sampling_coef=-1.0, # Default sway sampling coefficient
             )
 
             # Convert numpy array to WAV bytes

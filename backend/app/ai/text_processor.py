@@ -40,6 +40,16 @@ class TextProcessor:
         Eskiden nokta ekliyordu, artık eklemiyor çünkü cümle ortasında bölünmüş olabilir.
         F5-TTS ve XTTS noktasız metinleri de işleyebilir.
         """
+        # "dext" ve benzeri halüsinasyonları önlemek için ekstra temizlik
+        # Tekrar eden noktalamalar (tek nokta hariç)
+        chunk = re.sub(r'([!?,;:])\1+', r'\1', chunk)
+        
+        # Noktalama öncesi boşlukları sil ( , -> ,)
+        chunk = re.sub(r'\s+([!?,;:])', r'\1', chunk)
+        
+        # Tırnak işaretlerini düzelt
+        chunk = chunk.replace('“', '"').replace('”', '"').replace("‘", "'").replace("’", "'")
+        
         return chunk.strip()
     
     def _smart_split(self, text: str, max_chars: int) -> List[str]:
