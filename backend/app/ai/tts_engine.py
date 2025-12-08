@@ -312,6 +312,30 @@ class TTSEngine:
             self._speaker_cache.clear()
             print("🧹 Speaker cache cleared")
 
+    def _trim_silence(self, audio: Any, threshold_db: float = -50.0, chunk_size: int = 10) -> Any:
+        """
+        Ses dosyasının başındaki ve sonundaki sessizlikleri (threshold altı) kırpar.
+        Pydub AudioSegment nesnesi alır ve döndürür.
+        """
+        def detect_leading_silence(sound, silence_threshold, chunk_size):
+            trim_ms = 0
+            while trim_ms < len(sound) and sound[trim_ms:trim_ms+chunk_size].dBFS < silence_threshold:
+                trim_ms += chunk_size
+            return trim_ms
+
+        start_trim = detect_leading_silence(audio, threshold_db, chunk_size)
+        
+        # Eğer tüm dosya sessizse orijinali döndür (zaten kalite kontrol yakalar)
+        if start_trim >= len(audio):
+            return audio
+
+        end_trim = detect_leading_silence(audio.reverse(), threshold_db, chunk_size)
+        
+        duration = len(audio)
+        trimmed_audio = audio[start_trim:duration-end_trim]
+        
+        return trimmed_audio
+
     def generate_audio(
         self,
         text: str,
@@ -450,10 +474,23 @@ class TTSEngine:
                 # Task 1.3.3: Cümle sonlarına çok kısa sessizlik ekle (tıklamaları önlemek için)
                 # Dinamik silence padding: uzun chunk'larda bile minimum tutalım
                 # Sessizlikleri merge aşamasında yönetmek daha sağlıklı
-                silence_duration = 50  # Sabit 50ms (sadece yumuşak geçiş için)
+                
+                # ÖNCE TRIM YAP (Başlangıç ve bitişteki gereksiz boşlukları al)
+                # Bu, modelin geç tepki vermesinden kaynaklanan baştaki sessizlikleri yok eder
+                audio = self._trim_silence(audio, threshold_db=-50.0)
+                
+                # SONRA SABİT KISA SESSİZLİK EKLE (Yumuşak geçiş için)
+                silence_duration = 50  # Sabit 50ms
                 audio_with_pause = audio + AudioSegment.silent(duration=silence_duration)
+                
+                # Dosyayı güncelle
                 audio_with_pause.export(output_path, format="wav")
-                print(f"✓ Audio generated: {duration_sec:.1f}s, {file_size:,} bytes (silence: {silence_duration}ms)")
+                
+                # Yeni süre ve boyut
+                final_duration_sec = len(audio_with_pause) / 1000.0
+                final_size = os.path.getsize(output_path)
+                
+                print(f"✓ Audio generated & trimmed: {final_duration_sec:.1f}s (was {duration_sec:.1f}s), {final_size:,} bytes")
                 
             except Exception as silence_error:
                 print(f"⚠ Warning: Could not add silence / run quality check: {silence_error}")
