@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Player } from '../components/Player';
 import { useProjectStatus } from '../hooks/useProjectStatus';
 import { Terminal, CheckCircle, Circle } from 'lucide-react';
-import { cancelProcessing, resumeProject } from '../api/client';
+import { getAudioQuality, normalizeAudio, cancelProcessing, resumeProject, type AudioQualityResponse } from '../api/client';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +28,10 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
     const { status, progress, chunks, logs, processingStartTime, estimatedEndTime } = useProjectStatus(projectId);
     const [currentAudioUrl, setCurrentAudioUrl] = useState<string | null>(null);
     const [currentChunkIndex, setCurrentChunkIndex] = useState<number | null>(null);
+    const [quality, setQuality] = useState<AudioQualityResponse | null>(null);
+    const [qualityLoading, setQualityLoading] = useState(false);
+    const [normalizeLoading, setNormalizeLoading] = useState(false);
+    const [qualityError, setQualityError] = useState<string | null>(null);
     const [cancelLoading, setCancelLoading] = useState(false);
     const [resumeLoading, setResumeLoading] = useState(false);
 
@@ -48,6 +52,42 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
         const audioUrl = `${getApiBase()}/audio/download/${projectId}`;
         setCurrentAudioUrl(audioUrl);
         setCurrentChunkIndex(null);
+    };
+
+    const handleAnalyzeQuality = async () => {
+        try {
+            setQualityLoading(true);
+            setQualityError(null);
+            const result = await getAudioQuality(projectId);
+            setQuality(result);
+        } catch (error) {
+            console.error('Audio quality analysis failed:', error);
+            setQuality(null);
+            setQualityError(
+                error instanceof Error ? error.message : 'Audio quality analysis failed'
+            );
+        } finally {
+            setQualityLoading(false);
+        }
+    };
+
+    const handleNormalize = async () => {
+        try {
+            setNormalizeLoading(true);
+            setQualityError(null);
+            await normalizeAudio(projectId);
+
+            // Normalizasyon bittikten sonra kaliteyi tekrar ölçmek için kullanıcıyı yönlendirmek üzere
+            // sadece state'i resetliyoruz; kullanıcı yeniden "Analyze Quality" butonuna basabilir.
+            setQuality(null);
+        } catch (error) {
+            console.error('Audio normalization failed:', error);
+            setQualityError(
+                error instanceof Error ? error.message : 'Audio normalization failed'
+            );
+        } finally {
+            setNormalizeLoading(false);
+        }
     };
 
     const handleCancel = async () => {
@@ -241,32 +281,99 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
                         </CardContent>
                     </Card>
 
-                    {/* Logs Panel (Expanded) */}
-                    <Card className="flex flex-col h-[500px]">
-                        <CardHeader className="pb-2">
-                            <div className="flex items-center gap-2">
-                                <Terminal className="w-4 h-4 text-muted-foreground" />
-                                <CardTitle className="text-sm">System Logs</CardTitle>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="flex-1 overflow-hidden p-4 pt-0 space-y-3">
-                            <ScrollArea className="h-full w-full pr-4">
-                                <div className="space-y-1 text-muted-foreground font-mono text-xs">
-                                    {logs.map((log, i) => (
-                                        <div key={i} className="break-words">
-                                            <span className="text-muted-foreground/50 mr-2">
-                                                [{log.timestamp.toLocaleTimeString()}]
-                                            </span>
-                                            <span className="text-foreground">{log.message}</span>
+                    {/* Right Column Stack */}
+                    <div className="flex flex-col gap-6 h-[500px]">
+                        
+                        {/* Audio Tools Panel */}
+                        <Card className="flex-none">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm">Audio Tools</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {/* ACX Quality Check */}
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-medium">ACX Quality Check</span>
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm" 
+                                            onClick={handleAnalyzeQuality}
+                                            disabled={qualityLoading || !status || status !== 'completed'}
+                                            className="h-7 text-xs"
+                                        >
+                                            {qualityLoading ? 'Analyzing...' : 'Analyze'}
+                                        </Button>
+                                    </div>
+                                    
+                                    {qualityError && (
+                                        <p className="text-xs text-destructive">{qualityError}</p>
+                                    )}
+
+                                    {quality && (
+                                        <div className="rounded-md bg-muted p-2 space-y-1">
+                                            <div className="flex justify-between text-xs">
+                                                <span>Overall:</span>
+                                                <Badge variant={quality.overall_acx_compliant ? "default" : "destructive"} className="h-5 text-[10px]">
+                                                    {quality.overall_acx_compliant ? "PASS" : "FAIL"}
+                                                </Badge>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-1 text-[10px] text-muted-foreground mt-1">
+                                                <div>RMS: {quality.analysis.rms_db}dB</div>
+                                                <div>Peak: {quality.analysis.peak_db}dB</div>
+                                                <div>Noise: {quality.analysis.noise_floor_db}dB</div>
+                                            </div>
                                         </div>
-                                    ))}
-                                    {logs.length === 0 && (
-                                        <div className="text-muted-foreground italic">Waiting for logs...</div>
                                     )}
                                 </div>
-                            </ScrollArea>
-                        </CardContent>
-                    </Card>
+
+                                {/* ACX Mastering */}
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-medium">Auto-Mastering</span>
+                                            <span className="text-[10px] text-muted-foreground">Normalize to ACX specs</span>
+                                        </div>
+                                        <Button 
+                                            variant="secondary" 
+                                            size="sm" 
+                                            onClick={handleNormalize}
+                                            disabled={normalizeLoading || !status || status !== 'completed'}
+                                            className="h-7 text-xs"
+                                        >
+                                            {normalizeLoading ? 'Processing...' : 'Normalize'}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Logs Panel */}
+                        <Card className="flex-1 flex flex-col min-h-0">
+                            <CardHeader className="pb-2">
+                                <div className="flex items-center gap-2">
+                                    <Terminal className="w-4 h-4 text-muted-foreground" />
+                                    <CardTitle className="text-sm">System Logs</CardTitle>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="flex-1 overflow-hidden p-4 pt-0">
+                                <ScrollArea className="h-full w-full pr-4">
+                                    <div className="space-y-1 text-muted-foreground font-mono text-xs">
+                                        {logs.map((log, i) => (
+                                            <div key={i} className="break-words">
+                                                <span className="text-muted-foreground/50 mr-2">
+                                                    [{log.timestamp.toLocaleTimeString()}]
+                                                </span>
+                                                <span className="text-foreground">{log.message}</span>
+                                            </div>
+                                        ))}
+                                        {logs.length === 0 && (
+                                            <div className="text-muted-foreground italic">Waiting for logs...</div>
+                                        )}
+                                    </div>
+                                </ScrollArea>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
             </div>
 

@@ -423,50 +423,51 @@ async def merge_audio_files(project_id: int, db: Session):
         print(f"✓ Merged audio saved: {output_path_mp3}")
         
         # ==========================================
-        # Phase 2.5: ACX Mastering (Auto Normalize)
+        # Phase 2.5: ACX Mastering (Auto Normalize) - DISABLED
+        # Timeout riskine karşı devre dışı bırakıldı. Manuel işlem önerilir.
         # ==========================================
-        try:
-            print(f"🎚️ Applying automatic ACX mastering...")
-            await manager.broadcast({
-                "type": "progress_update",
-                "project_id": project_id,
-                "progress": 99.6
-            })
-            
-            # Create a backup of the raw merged file
-            raw_path = str(output_path_mp3).replace("_final.mp3", "_raw.mp3")
-            
-            # Rename current final to raw
-            if os.path.exists(output_path_mp3):
-                if os.path.exists(raw_path):
-                    os.remove(raw_path)
-                os.rename(output_path_mp3, raw_path)
-                
-                # Apply mastering
-                mastering = AudioMastering()
-                # Use thread pool for blocking operation
-                success = await asyncio.to_thread(
-                    mastering.normalize_for_acx,
-                    input_path=raw_path,
-                    output_path=str(output_path_mp3),
-                    use_ffmpeg_normalize=True
-                )
-                
-                if success:
-                    print(f"✓ ACX Mastering complete: {output_path_mp3}")
-                else:
-                    print(f"⚠ ACX Mastering failed, reverting to raw audio")
-                    # Revert
-                    if os.path.exists(raw_path):
-                        if os.path.exists(output_path_mp3):
-                            os.remove(output_path_mp3)
-                        os.rename(raw_path, output_path_mp3)
-            
-        except Exception as e:
-            print(f"⚠ Auto-mastering error: {e}")
-            # Ensure we have a valid final file
-            if os.path.exists(raw_path) and not os.path.exists(output_path_mp3):
-                os.rename(raw_path, output_path_mp3)
+        # try:
+        #     logger.info(f"🎚️ Applying automatic ACX mastering...")
+        #     await manager.broadcast({
+        #         "type": "progress_update",
+        #         "project_id": project_id,
+        #         "progress": 99.6
+        #     })
+        #     
+        #     # Create a backup of the raw merged file
+        #     raw_path = str(output_path_mp3).replace("_final.mp3", "_raw.mp3")
+        #     
+        #     # Rename current final to raw
+        #     if os.path.exists(output_path_mp3):
+        #         if os.path.exists(raw_path):
+        #             os.remove(raw_path)
+        #         os.rename(output_path_mp3, raw_path)
+        #         
+        #         # Apply mastering
+        #         mastering = AudioMastering()
+        #         # Use thread pool for blocking operation
+        #         success = await asyncio.to_thread(
+        #             mastering.normalize_for_acx,
+        #             input_path=raw_path,
+        #             output_path=str(output_path_mp3),
+        #             use_ffmpeg_normalize=True
+        #         )
+        #         
+        #         if success:
+        #             logger.info(f"✓ ACX Mastering complete: {output_path_mp3}")
+        #         else:
+        #             logger.warning(f"⚠ ACX Mastering failed, reverting to raw audio")
+        #             # Revert
+        #             if os.path.exists(raw_path):
+        #                 if os.path.exists(output_path_mp3):
+        #                     os.remove(output_path_mp3)
+        #                 os.rename(raw_path, output_path_mp3)
+        #     
+        # except Exception as e:
+        #     logger.warning(f"⚠ Auto-mastering error: {e}")
+        #     # Ensure we have a valid final file
+        #     if os.path.exists(raw_path) and not os.path.exists(output_path_mp3):
+        #         os.rename(raw_path, output_path_mp3)
         
         await manager.broadcast({
             "type": "progress_update",
