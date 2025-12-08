@@ -27,6 +27,13 @@ install_package() {
                 echo -e "${YELLOW}sudo not found. Trying to install without sudo...${NC}"
                 apt-get update && apt-get install -y $PACKAGE
             fi
+        # Check for Fedora/RHEL/CentOS
+        elif [ -f /etc/redhat-release ]; then
+             if command -v sudo &> /dev/null; then
+                sudo dnf install -y $PACKAGE || sudo yum install -y $PACKAGE
+            else
+                dnf install -y $PACKAGE || yum install -y $PACKAGE
+            fi
         else
             echo -e "${RED}Please install $PACKAGE manually for your OS.${NC}"
         fi
@@ -79,6 +86,21 @@ fi
 # Other requirements
 pip install -r requirements.txt
 python -m spacy download en_core_web_sm
+
+# F5-TTS Dependencies & Setup (Linux Specific)
+# 1. Install F5-TTS from source (requires git)
+if ! pip show f5-tts &> /dev/null; then
+    echo "Installing F5-TTS from source..."
+    pip install git+https://github.com/SWivid/F5-TTS.git
+else
+    echo -e "${GREEN}✓ F5-TTS already installed.${NC}"
+fi
+
+# 2. Fix torchcodec/ffmpeg issues on Linux
+# Uninstall torchcodec if exists to avoid conflicts
+pip uninstall -y torchcodec || true
+# Install ffmpeg-python for backend audio handling
+pip install ffmpeg-python
 
 # Model Check
 MODEL_DIR="$(pwd)/storage/models"
