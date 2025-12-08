@@ -28,4 +28,5 @@ export interface WebSocketMessage {
   chunk_text_preview?: string;
   project_id?: number;
   error?: string;
+  message?: string;
 }
