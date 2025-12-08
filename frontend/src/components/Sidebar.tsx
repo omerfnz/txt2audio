@@ -190,11 +190,13 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
                                             : 'hover:bg-accent/50'
                                     )}
                                 >
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                {getStatusIcon(project.status, project.audio_path)}
-                                                <p className="text-sm font-medium text-foreground truncate">
+                                    <div className="flex items-center justify-between gap-2 w-full overflow-hidden">
+                                        <div className="flex-1 min-w-0 overflow-hidden">
+                                            <div className="flex items-center gap-2 mb-1 w-full">
+                                                <div className="shrink-0">
+                                                    {getStatusIcon(project.status, project.audio_path)}
+                                                </div>
+                                                <p className="text-sm font-medium text-foreground truncate w-full">
                                                     {project.name}
                                                 </p>
                                             </div>

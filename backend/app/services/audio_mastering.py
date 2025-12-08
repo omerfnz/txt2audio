@@ -104,34 +104,55 @@ class AudioMastering:
             return False
     
     def _normalize_with_pydub(self, input_path: str, output_path: str) -> bool:
-        """pydub ile basit normalizasyon (fallback)"""
+        """
+        FFmpeg 'loudnorm' filtresi ile normalizasyon (Fallback yerine ana yöntem olarak kullanılabilir).
+        Pydub yerine FFmpeg kullanarak bellek sorunlarını (OOM) önler.
+        """
         try:
-            print(f"🎚️ Normalizing with pydub (basic)...")
+            print(f"🎚️ Normalizing with FFmpeg loudnorm filter...")
             
-            # Dosyayı yükle
-            if input_path.endswith('.mp3'):
-                audio = AudioSegment.from_mp3(input_path)
-            else:
-                audio = AudioSegment.from_wav(input_path)
+            # ACX Hedefleri:
+            # RMS: -23dB ile -18dB arası (Hedef -20dB)
+            # Peak: -3.0dB
+            # Noise Floor: -60dB (buna müdahale edemeyiz filter ile, noise gate gerekir)
             
-            # Peak normalization (basit)
-            target_dBFS = -3.0  # ACX peak hedefi
-            change_in_dBFS = target_dBFS - audio.max_dBFS
-            normalized_audio = audio.apply_gain(change_in_dBFS)
+            # loudnorm parametreleri:
+            # I (Integrated Loudness) -> -20.0 (ACX RMS hedefi gibi düşünülebilir)
+            # TP (True Peak) -> -3.0
+            # LRA (Loudness Range) -> 7.0
             
-            # MP3 olarak export
-            normalized_audio.export(
-                output_path,
-                format='mp3',
-                bitrate='192k',
-                parameters=["-ar", "44100"]
+            cmd = [
+                'ffmpeg', '-y',
+                '-i', input_path,
+                '-af', f'loudnorm=I={self.target_rms}:TP={self.target_peak}:LRA={self.loudness_range}:print_format=json',
+                '-c:a', 'libmp3lame',
+                '-b:a', '192k',
+                '-ar', '44100',
+                output_path
+            ]
+            
+            # 1 saatlik ses için timeout süresini uzat (10 dakika)
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=600,
+                encoding='utf-8',
+                errors='ignore'
             )
             
-            print(f"✓ Basic normalization complete: {output_path}")
-            return True
+            if result.returncode == 0:
+                print(f"✓ FFmpeg loudnorm complete: {output_path}")
+                return True
+            else:
+                print(f"⚠ FFmpeg loudnorm failed: {result.stderr}")
+                return False
             
+        except subprocess.TimeoutExpired:
+            print(f"❌ Normalization timeout (files too large?)")
+            return False
         except Exception as e:
-            print(f"❌ pydub normalization error: {e}")
+            print(f"❌ FFmpeg normalization error: {e}")
             return False
     
     def apply_compression(

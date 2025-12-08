@@ -87,7 +87,7 @@ class TextProcessor:
     
     def _smart_split(self, text: str, max_chars: int) -> List[str]:
         """
-        Uzun bir metni/cümleyi anlamlı yerlerden (noktalama) bölmeye çalışır.
+        Uzun bir metni/cümleyi anlamlı yerlerden (noktalama, bağlaç) bölmeye çalışır.
         """
         if len(text) <= max_chars:
             return [text]
@@ -95,42 +95,60 @@ class TextProcessor:
         chunks = []
         current_text = text
         
+        # Bağlaç regex'i (öncesinde virgül olmayabilir)
+        # and, but, or, nor, for, yet, so, because, which, that, who, when, where
+        conjunctions = r'\s+(and|but|or|nor|for|yet|so|because|which|that|who|when|where)\s'
+        
         while len(current_text) > max_chars:
             # Kesme noktası bul
             # Öncelik sırası: 
-            # 1. Cümle bitişleri (.!?) - gerçi buraya gelmişse zaten tek cümle olması muhtemel
-            # 2. Alt cümle bitişleri (;:)
-            # 3. Virgüller (,)
+            # 1. Alt cümle bitişleri (;:)
+            # 2. Virgüller (,)
+            # 3. Bağlaçlar (and, but, which...)
             # 4. Boşluk ( )
             
             # Max limit içindeki son geçerli konumu bulmaya çalışacağız
             search_area = current_text[:max_chars]
             
             # Regex ile en uygun bölme noktasını ara (sondan başa doğru)
-            # Noktalı virgül veya iki nokta
-            split_match = re.search(r'[;:]\s', search_area[::-1])
             split_index = -1
             
+            # 1. Noktalı virgül veya iki nokta
+            split_match = re.search(r'[;:]\s', search_area[::-1])
             if split_match:
-                # Tersten bulduğumuz için indeksi düzelt
-                split_index = len(search_area) - split_match.end() + 1 # +1 to include punctuation
+                split_index = len(search_area) - split_match.end() + 1
             else:
-                # Virgül dene
+                # 2. Virgül dene
                 comma_match = re.search(r',\s', search_area[::-1])
                 if comma_match:
                     split_index = len(search_area) - comma_match.end() + 1
                 else:
-                    # Boşluk dene (mecburiyet)
-                    space_match = re.search(r'\s', search_area[::-1])
-                    if space_match:
-                        split_index = len(search_area) - space_match.end()
+                    # 3. Bağlaç dene (En azından cümlenin ortasında rastgele kesmeyelim)
+                    # search_area üzerinde normal arama yapıp en sonuncuyu bulalım (reverse regex zor olabilir)
+                    # Son 100 karakter içinde arayalım ki çok geriye gitmeyelim
+                    search_window = search_area[-min(len(search_area), 150):]
+                    conj_matches = list(re.finditer(conjunctions, search_window))
+                    
+                    if conj_matches:
+                        # En son eşleşmeyi al
+                        last_match = conj_matches[-1]
+                        # search_window içindeki pozisyonunu search_area'ya uyarla
+                        window_offset = len(search_area) - len(search_window)
+                        # Bağlacın BITTIĞI yerden böl (bağlaç mevcut chunk'ta kalsın)
+                        # last_match.end() bağlaçtan sonraki boşluğu da içeriyor (\s... ile başlıyor ama \s ile bitmiyor regex)
+                        # Regex: \s+(and|...)\s
+                        split_index = window_offset + last_match.end()
+                    else:
+                        # 4. Boşluk dene (mecburiyet)
+                        space_match = re.search(r'\s', search_area[::-1])
+                        if space_match:
+                            split_index = len(search_area) - space_match.end()
             
             if split_index > 0:
                 chunks.append(current_text[:split_index].strip())
                 current_text = current_text[split_index:].strip()
             else:
-                # Hiçbir bölme noktası bulamadık (tek kelime çok uzun olabilir mi?)
-                # Direkt max_chars'dan kes
+                # Hiçbir bölme noktası bulamadık
                 chunks.append(current_text[:max_chars].strip())
                 current_text = current_text[max_chars:].strip()
                 
@@ -139,12 +157,12 @@ class TextProcessor:
             
         return chunks
 
-    def split_into_chunks(self, text: str, max_chars: int = 240, min_chars: int = 50, language: str = "en", normalize: bool = True) -> List[str]:
+    def split_into_chunks(self, text: str, max_chars: int = 600, min_chars: int = 50, language: str = "en", normalize: bool = True) -> List[str]:
         """
         Metni mantıklı chunk'lara böler, birden fazla cümleyi birleştirir.
         
         Optimized for XTTS v2:
-        - Default max_chars set to 240 (below XTTS 250 char limit) for maximum stability
+        - Default max_chars increased to 600 (XTTS handles this well) to avoid splitting sentences unnecessarily.
         - Problematic chunks (lots of numbers, special chars) are split smaller
         """
         if not self.nlp:

@@ -158,24 +158,8 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
                     <div className="flex items-center gap-4">
                         {status === 'completed' && (
                             <div className="flex items-center gap-3">
-                                <Button onClick={handlePlayFinal} size="sm">
+                                <Button onClick={handlePlayFinal} size="sm" className="w-full sm:w-auto">
                                     Play Final Audio (MP3)
-                                </Button>
-                                <Button
-                                    onClick={handleAnalyzeQuality}
-                                    disabled={qualityLoading || normalizeLoading}
-                                    variant="outline"
-                                    size="sm"
-                                >
-                                    {qualityLoading ? 'Analyzing…' : 'Analyze Quality (ACX)'}
-                                </Button>
-                                <Button
-                                    onClick={handleNormalize}
-                                    disabled={normalizeLoading}
-                                    variant="outline"
-                                    size="sm"
-                                >
-                                    {normalizeLoading ? 'Normalizing…' : 'Normalize for ACX'}
                                 </Button>
                             </div>
                         )}
@@ -297,7 +281,7 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
                         </CardContent>
                     </Card>
 
-                    {/* Logs + Quality Panel */}
+                    {/* Logs Panel (Expanded) */}
                     <Card className="flex flex-col h-[500px]">
                         <CardHeader className="pb-2">
                             <div className="flex items-center gap-2">
@@ -306,69 +290,8 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
                             </div>
                         </CardHeader>
                         <CardContent className="flex-1 overflow-hidden p-4 pt-0 space-y-3">
-                            {/* ACX Quality Panel */}
-                            {quality && (
-                                <Card className="p-3">
-                                    <CardContent className="p-0 space-y-1">
-                                        <div className="flex items-center justify-between mb-1">
-                                            <span className="font-semibold text-foreground text-xs">
-                                                ACX Quality
-                                            </span>
-                                            <Badge
-                                                variant={quality.overall_acx_compliant ? "default" : "secondary"}
-                                                className="text-[10px]"
-                                            >
-                                                {quality.overall_acx_compliant ? 'COMPLIANT' : 'NEEDS WORK'}
-                                            </Badge>
-                                        </div>
-                                        <div className="grid grid-cols-3 gap-2">
-                                            <div>
-                                                <p className="text-[10px] text-muted-foreground">RMS</p>
-                                                <p className="text-[11px] text-foreground">
-                                                    {quality.analysis.rms_db.toFixed(2)} dB
-                                                </p>
-                                                <p className="text-[10px] text-muted-foreground">
-                                                    {quality.compliance_details.rms.target}
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <p className="text-[10px] text-muted-foreground">Peak</p>
-                                                <p className="text-[11px] text-foreground">
-                                                    {quality.analysis.peak_db.toFixed(2)} dB
-                                                </p>
-                                                <p className="text-[10px] text-muted-foreground">
-                                                    {quality.compliance_details.peak.target}
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <p className="text-[10px] text-muted-foreground">Noise Floor</p>
-                                                <p className="text-[11px] text-foreground">
-                                                    {quality.analysis.noise_floor_db.toFixed(2)} dB
-                                                </p>
-                                                <p className="text-[10px] text-muted-foreground">
-                                                    {quality.compliance_details.noise_floor.target}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <p className="text-[10px] text-muted-foreground pt-1 border-t border-border mt-1">
-                                            Duration: {quality.analysis.duration_seconds.toFixed(1)}s • Sample
-                                            Rate: {quality.analysis.sample_rate} Hz • Channels:{' '}
-                                            {quality.analysis.channels}
-                                        </p>
-                                    </CardContent>
-                                </Card>
-                            )}
-
-                            {qualityError && (
-                                <Card className="bg-destructive/10 border-destructive">
-                                    <CardContent className="p-2 text-destructive text-[11px]">
-                                        {qualityError}
-                                    </CardContent>
-                                </Card>
-                            )}
-
-                            <ScrollArea className="flex-1">
-                                <div className="space-y-1 text-muted-foreground font-mono text-xs pr-4">
+                            <ScrollArea className="h-full w-full pr-4">
+                                <div className="space-y-1 text-muted-foreground font-mono text-xs">
                                     {logs.map((log, i) => (
                                         <div key={i} className="break-words">
                                             <span className="text-muted-foreground/50 mr-2">
