@@ -43,8 +43,15 @@ class Settings(BaseSettings):
     GPU_TEMP_CRITICAL_C: int = 90
     GPU_VRAM_WARNING_PERCENT: int = 85
 
-    # System Optimization
-    TTS_USE_DEEPSPEED: bool = False  # DeepSpeed devre dışı bırakıldı (XTTS uyumsuzluğu)
+    # F5-TTS Configuration
+    F5_MODEL_CKPT: str = "" # Optional custom checkpoint path
+    F5_VOCAB_FILE: str = "" # Optional vocab file
+
+    # Extra configs from .env
+    DATABASE_URL: str = "" # Will be ignored/overwritten by DB_URL property logic usually, but needed to avoid validation error
+    USE_GPU: bool = True
+    TTS_MODEL: str = "xtts"
+    LOG_LEVEL: str = "INFO"
 
     @property
     def UPLOAD_DIR(self) -> Path:
@@ -77,6 +84,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        extra = "ignore" # Ignore extra fields in .env file
 
 settings = Settings()
 # Trigger directory creation

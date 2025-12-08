@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .db.session import engine
 from .db import models
-from .routers import projects, audio, websocket
+from .routers import projects, audio, websocket, stream_f5
 from .core.logging import logger
 from .core.exceptions import global_exception_handler
 
@@ -33,6 +33,8 @@ app.add_middleware(
 app.include_router(projects.router, prefix="/api")
 app.include_router(audio.router, prefix="/api")
 app.include_router(websocket.router, prefix="/api")
+app.include_router(stream_f5.router) # WebSocket root path, no /api prefix usually for WS
+
 
 @app.get("/")
 def read_root():

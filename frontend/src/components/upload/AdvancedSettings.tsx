@@ -51,9 +51,11 @@ export function AdvancedSettings({
                 </AccordionTrigger>
                 <AccordionContent>
                     <div className="px-5 pb-5 space-y-6">
+                        
                         <div>
                             <Label className="mb-2">Language</Label>
                             <Select value={language} onValueChange={setLanguage}>
+
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select language" />
                                 </SelectTrigger>

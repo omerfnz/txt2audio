@@ -107,6 +107,8 @@ async def create_project(
     # TTS Preset (NEW)
     preset_id: str = Form("en_fiction"),
     content_type: Optional[str] = Form(None),
+    # TTS Model
+    modelType: str = Form("xtts"),
     # XTTS Parameters (can override preset)
     language: Optional[str] = Form(None),
     speed: Optional[float] = Form(None),
@@ -228,6 +230,7 @@ async def create_project(
             source_type=source_type,
             content_type=final_content_type,
             preset_id=preset_id,
+            tts_model=modelType,
             # XTTS Config
             language=final_language,
             speed=final_speed,

@@ -52,16 +52,15 @@ python -m pip install --upgrade pip setuptools wheel
 
 REM Check if PyTorch is already installed
 python -c "import torch; print('PyTorch already installed')" >nul 2>&1
-if errorlevel 1 (
-    echo Installing PyTorch (CUDA 12.1 Enabled)...
-    :: Windows'ta da varsayılan olarak GPU versiyonunu deniyoruz
+if %errorlevel% neq 0 (
+    echo Installing PyTorch with CUDA 12.1...
     pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 ) else (
     echo PyTorch already installed, skipping...
 )
 
 REM Check if requirements are installed
-python -c "import fastapi; import sqlalchemy; print('Requirements check')" >nul 2>&1
+python -c "import fastapi; import sqlalchemy; import f5_tts; print('Requirements check')" >nul 2>&1
 if errorlevel 1 (
     echo Installing requirements...
     pip install -r requirements.txt

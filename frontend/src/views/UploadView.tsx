@@ -12,6 +12,7 @@ export const UploadView = ({ onProjectCreated }: UploadViewProps) => {
         referenceVoicePath: string | null;
         useGpu: boolean;
         name: string;
+        modelType: string;
         presetId: string;
         language: string;
         speed: number;
@@ -25,6 +26,7 @@ export const UploadView = ({ onProjectCreated }: UploadViewProps) => {
             formData.append('name', data.name);
             formData.append('text_file', data.text);
             formData.append('use_gpu', String(data.useGpu));
+            formData.append('modelType', data.modelType);
             formData.append('preset_id', data.presetId);
             formData.append('language', data.language);
             formData.append('speed', String(data.speed));

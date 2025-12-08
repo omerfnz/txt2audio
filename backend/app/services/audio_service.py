@@ -14,11 +14,10 @@ from .websocket import manager
 # Retry configuration
 MAX_CHUNK_RETRIES = 3  # 3 kez deneme, başarısız olursa atla
 
-# Global instance for lazy loading
-tts_engine = None
-# Global GPU lock for serializing access to TTS engine
+# Global instances for model management
+active_engine = None
+active_model_type = None  # "xtts" or "f5"
 gpu_lock = asyncio.Lock()
-
 
 @dataclass
 class ChunkResult:
@@ -28,14 +27,63 @@ class ChunkResult:
     error: Optional[str] = None
     output_path: Optional[str] = None
 
+def unload_active_model():
+    """Unloads currently active model to free VRAM."""
+    global active_engine, active_model_type
+    
+    if active_engine:
+        if hasattr(active_engine, "unload_model"):
+            active_engine.unload_model()
+        elif hasattr(active_engine, "release_memory"):
+            # XTTS Engine cleanup
+            active_engine.release_memory()
+        # Force garbage collection
+        import gc
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            # TTSEngine doesn't have explicit unload, so we force cleanup
+            # Ideally TTSEngine should have an unload method, but for now we rely on gc
+            pass
+            
+        print(f"🧹 Unloaded model: {active_model_type}")
+        active_engine = None
+        active_model_type = None
+        torch.cuda.empty_cache()
+        import gc
+        gc.collect()
 
-def get_tts_engine(use_gpu: bool = False):
-    """Lazy loading for TTS engine"""
-    global tts_engine
-    if tts_engine is None:
+def get_tts_engine(use_gpu: bool = False, model_type: str = "xtts"):
+    """
+    Model Factory with VRAM management.
+    Ensures only one heavy model is loaded at a time.
+    """
+    global active_engine, active_model_type
+    
+    # If requested model is already active, return it
+    if active_engine is not None and active_model_type == model_type:
+        return active_engine
+        
+    # If another model is active, unload it first
+    if active_engine is not None:
+        print(f"🔄 Switching model from {active_model_type} to {model_type}...")
+        unload_active_model()
+        
+    # Load requested model
+    if model_type == "xtts":
         from ..ai.tts_engine import TTSEngine
-        tts_engine = TTSEngine(use_gpu=use_gpu)
-    return tts_engine
+        active_engine = TTSEngine(use_gpu=use_gpu)
+        active_model_type = "xtts"
+    elif model_type == "f5":
+        from ..ai.f5_engine import F5TTSEngine
+        active_engine = F5TTSEngine()
+        # F5 engine loads model explicitly via load_model() usually, 
+        # but let's ensure it's ready if needed here or let caller handle load
+        if not active_engine.is_loaded:
+            active_engine.load_model()
+        active_model_type = "f5"
+        
+    return active_engine
 
 
 async def _process_single_chunk(
@@ -56,7 +104,11 @@ async def _process_single_chunk(
     Returns:
         ChunkResult with success status and any error
     """
-    engine = get_tts_engine(use_gpu=use_gpu)
+    # Determine which model to use from project settings
+    # Default to 'xtts' if not specified (backward compatibility)
+    model_type = getattr(project, "tts_model", "xtts") or "xtts"
+    
+    engine = get_tts_engine(use_gpu=use_gpu, model_type=model_type)
     
     # Serialize GPU access
     async with gpu_lock:
@@ -66,20 +118,31 @@ async def _process_single_chunk(
         
         while attempt < MAX_CHUNK_RETRIES and not success:
             try:
-                success = await asyncio.to_thread(
-                    engine.generate_audio,
-                    text=chunk.text_content,
-                    speaker_wav=project.voice_ref_path,
-                    output_path=output_path,
-                    language=project.language or settings.DEFAULT_LANGUAGE,
-                    temperature=project.temperature or settings.DEFAULT_TEMPERATURE,
-                    top_p=project.top_p or settings.DEFAULT_TOP_P,
-                    repetition_penalty=(
-                        project.repetition_penalty 
-                        or settings.DEFAULT_REPETITION_PENALTY
-                    ),
-                    speed=project.speed or settings.DEFAULT_SPEED
-                )
+                if model_type == "f5":
+                    # F5-TTS Call
+                    success = await asyncio.to_thread(
+                        engine.generate_audio_file,
+                        text=chunk.text_content,
+                        ref_audio=project.voice_ref_path,
+                        output_path=output_path,
+                        speed=project.speed or settings.DEFAULT_SPEED
+                    )
+                else:
+                    # XTTS Call
+                    success = await asyncio.to_thread(
+                        engine.generate_audio,
+                        text=chunk.text_content,
+                        speaker_wav=project.voice_ref_path,
+                        output_path=output_path,
+                        language=project.language or settings.DEFAULT_LANGUAGE,
+                        temperature=project.temperature or settings.DEFAULT_TEMPERATURE,
+                        top_p=project.top_p or settings.DEFAULT_TOP_P,
+                        repetition_penalty=(
+                            project.repetition_penalty 
+                            or settings.DEFAULT_REPETITION_PENALTY
+                        ),
+                        speed=project.speed or settings.DEFAULT_SPEED
+                    )
                 
                 if success:
                     return ChunkResult(
@@ -398,8 +461,15 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
             # T4 has 16GB VRAM, frequent cleanup hurts performance (sync overhead)
             # Changed from 10 to 50 to speed up processing
             if chunk.index % 50 == 0:
-                engine = get_tts_engine(use_gpu=use_gpu)
-                engine.release_memory()
+                # Re-fetch engine with correct type to call release/unload
+                model_type = getattr(project, "tts_model", "xtts") or "xtts"
+                engine = get_tts_engine(use_gpu=use_gpu, model_type=model_type)
+                
+                if hasattr(engine, "release_memory"):
+                    engine.release_memory()
+                elif hasattr(engine, "_log_gpu_memory"):
+                     # F5 engine has no release_memory per chunk but we can log
+                     engine._log_gpu_memory("Periodic Check")
         
         # Eğer iptal edilmediyse normal tamamlanma ve merge
         db.refresh(project)

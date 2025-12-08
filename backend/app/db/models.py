@@ -51,6 +51,13 @@ class Project(Base):
         default="en_fiction",
         comment="TTS preset identifier (e.g., en_fiction, tr_nonfiction)"
     )
+
+    # TTS Model Engine (xtts vs f5)
+    tts_model = Column(
+        String,
+        default="xtts",
+        comment="TTS engine to use: 'xtts' or 'f5'"
+    )
     
     # XTTS v2 Parameters
     # These can override preset values if custom preset is used
