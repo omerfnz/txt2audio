@@ -191,26 +191,26 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
                                     )}
                                 >
                                     <div className="flex items-center justify-between gap-2 w-full overflow-hidden">
-                                        <div className="flex-1 min-w-0 overflow-hidden">
-                                            <div className="flex items-center gap-2 mb-1 w-full">
+                                        <div className="flex-1 min-w-0 flex flex-col gap-1">
+                                            <div className="flex items-center gap-2 w-full">
                                                 <div className="shrink-0">
                                                     {getStatusIcon(project.status, project.audio_path)}
                                                 </div>
-                                                <p className="text-sm font-medium text-foreground truncate w-full">
+                                                <p className="text-sm font-medium text-foreground truncate flex-1 min-w-0" title={project.name}>
                                                     {project.name}
                                                 </p>
                                             </div>
                                             <div className="flex items-center gap-2 text-xs">
-                                                <Badge variant="outline" className={cn('capitalize text-xs', getStatusColor(project.status, project.audio_path))}>
+                                                <Badge variant="outline" className={cn('capitalize text-xs shrink-0', getStatusColor(project.status, project.audio_path))}>
                                                     {getStatusText(project.status, project.audio_path)}
                                                 </Badge>
-                                                <span className="text-muted-foreground">•</span>
-                                                <span className="text-muted-foreground">
+                                                <span className="text-muted-foreground shrink-0">•</span>
+                                                <span className="text-muted-foreground truncate">
                                                     {formatDate(project.created_at)}
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                        <div className="flex items-center gap-2 shrink-0 pl-1">
                                             <span className="text-xs text-muted-foreground">#{project.id}</span>
                                             <Button
                                                 variant="ghost"
