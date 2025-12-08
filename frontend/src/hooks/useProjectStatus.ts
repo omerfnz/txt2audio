@@ -95,6 +95,17 @@ export const useProjectStatus = (projectId: number | null) => {
 
       if (lastMessage.type === 'status_update') {
       const newStatus = lastMessage.status || 'unknown';
+      
+      // Special handling for chunk_skipped: don't change the overall status
+      if (newStatus === 'chunk_skipped') {
+        // Just log the skipped chunk, don't change the overall status to "chunk_skipped"
+        const chunkIndex = lastMessage.chunk_index;
+        const message = lastMessage.message || `Chunk ${chunkIndex} skipped`;
+        addLog(`⚠️ ${message}`);
+        // Don't update status or processingStartTime - keep processing
+        return;
+      }
+      
       setStatus(newStatus);
       if (lastMessage.progress !== undefined) {
         setProgress(lastMessage.progress);

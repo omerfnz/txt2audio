@@ -139,12 +139,12 @@ class TextProcessor:
             
         return chunks
 
-    def split_into_chunks(self, text: str, max_chars: int = 350, min_chars: int = 50, language: str = "en", normalize: bool = True) -> List[str]:
+    def split_into_chunks(self, text: str, max_chars: int = 240, min_chars: int = 50, language: str = "en", normalize: bool = True) -> List[str]:
         """
         Metni mantıklı chunk'lara böler, birden fazla cümleyi birleştirir.
         
         Optimized for XTTS v2:
-        - Default max_chars reduced from 480 to 350 for better stability
+        - Default max_chars set to 240 (below XTTS 250 char limit) for maximum stability
         - Problematic chunks (lots of numbers, special chars) are split smaller
         """
         if not self.nlp:
