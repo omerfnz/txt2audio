@@ -2,9 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .db.session import engine
 from .db import models
-from .routers import projects, audio, websocket, stream_f5
+from .routers import projects, audio, websocket
 from .core.logging import logger
 from .core.exceptions import global_exception_handler
+from .core.config import settings
 
 # Veritabanı tablolarını oluştur
 models.Base.metadata.create_all(bind=engine)
@@ -23,7 +24,7 @@ logger.info("Application starting up...")
 # CORS Middleware - WEBSOCKER İÇİN KRITIK!
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "*"],
+    allow_origins=settings.ALLOW_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -33,8 +34,6 @@ app.add_middleware(
 app.include_router(projects.router, prefix="/api")
 app.include_router(audio.router, prefix="/api")
 app.include_router(websocket.router, prefix="/api")
-app.include_router(stream_f5.router) # WebSocket root path, no /api prefix usually for WS
-
 
 @app.get("/")
 def read_root():

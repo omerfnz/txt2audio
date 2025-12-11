@@ -92,8 +92,8 @@ class TTSEngine:
         self.min_chunk_duration_ms = 700
         self.min_chunk_rms_db = -50.0
         
-        # Model indirme dizini
-        self.model_path = os.path.join(os.getcwd(), "storage", "models")
+        # Model indirme dizini (settings.MODELS_DIR ile sabit)
+        self.model_path = str(settings.MODELS_DIR)
         os.environ["TTS_HOME"] = self.model_path
         os.environ["COQUI_TOS_AGREED"] = "1"
         # Disable DeepSpeed to prevent kernel crashes with XTTS v2

@@ -52,11 +52,11 @@ class Project(Base):
         comment="TTS preset identifier (e.g., en_fiction, tr_nonfiction)"
     )
 
-    # TTS Model Engine (xtts vs f5)
+    # TTS Model Engine (xtts only)
     tts_model = Column(
         String,
         default="xtts",
-        comment="TTS engine to use: 'xtts' or 'f5'"
+        comment="TTS engine to use: 'xtts'"
     )
     
     # XTTS v2 Parameters

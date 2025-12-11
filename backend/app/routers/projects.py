@@ -9,7 +9,7 @@ from ..core.config import settings
 from ..services.audio_service import process_audio_task
 from ..services.audio_analyzer import AudioAnalyzer
 from ..services.audio_mastering import AudioMastering
-from ..core.logger import default_logger as logger
+from ..core.logging import logger
 from ..services.websocket import manager
 from pydub import AudioSegment
 from typing import List, Dict, Any, Optional
@@ -107,7 +107,7 @@ async def create_project(
     # TTS Preset (NEW)
     preset_id: str = Form("en_fiction"),
     content_type: Optional[str] = Form(None),
-    # TTS Model
+    # TTS Model (legacy - XTTS only)
     modelType: str = Form("xtts"),
     # XTTS Parameters (can override preset)
     language: Optional[str] = Form(None),
@@ -230,7 +230,7 @@ async def create_project(
             source_type=source_type,
             content_type=final_content_type,
             preset_id=preset_id,
-            tts_model=modelType,
+            tts_model="xtts",
             # XTTS Config
             language=final_language,
             speed=final_speed,

@@ -15,6 +15,10 @@ def setup_logging():
     logger = logging.getLogger("ai_audiobook_studio")
     logger.setLevel(logging.INFO)
 
+    # Prevent duplicate handlers if setup_logging is called multiple times
+    if logger.handlers:
+        logger.handlers.clear()
+
     # Formatter
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

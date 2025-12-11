@@ -1,4 +1,101 @@
 @echo off
+setlocal enabledelayedexpansion
+
+echo ========================================
+echo AI Audiobook Studio - Otomatik Kurulum (Windows)
+echo ========================================
+echo.
+
+:: 1) Sistem bagimliliklari (uyari)
+for %%B in (espeak-ng ffmpeg) do (
+    where %%B >nul 2>&1
+    if errorlevel 1 (
+        echo [WARN] %%B bulunamadi. Lutfen winget/choco/brew ile kurun ve PATH'e ekleyin.
+    ) else (
+        echo [OK] %%B bulundu.
+    )
+)
+echo.
+
+:: 2) Backend kurulumu
+echo [2/5] Backend kurulumu...
+cd backend
+if defined CONDA_PREFIX (
+    echo Conda aktif: %CONDA_PREFIX%
+) else (
+    if not exist "venv\Scripts\activate.bat" (
+        echo Venv olusturuluyor...
+        python -m venv venv
+    )
+    echo Venv aktif ediliyor...
+    call venv\Scripts\activate
+)
+
+echo Pip guncelleniyor...
+python -m pip install --upgrade pip setuptools wheel
+
+echo Gerekli paketler yukleniyor...
+pip install -r requirements.txt
+
+echo Spacy modeli indiriliyor...
+python -m spacy download en_core_web_sm
+
+echo Opsiyonel duzeltmeler...
+pip uninstall -y torchcodec >nul 2>&1
+pip install ffmpeg-python
+
+if exist "storage\models" (
+    echo [INFO] Models klasoru mevcut (XTTS ilk calistirmada indirir veya mevcutsa kullanir).
+) else (
+    echo [INFO] Models klasoru olusturulacak/ilk calistirmada dolacak.
+)
+
+cd ..
+echo [OK] Backend tamam.
+echo.
+
+:: 3) Frontend kurulumu
+echo [3/5] Frontend kurulumu...
+cd frontend
+call npm install
+call npm run build
+cd ..
+echo [OK] Frontend tamam.
+echo.
+
+:: 4) run.cmd olustur
+echo [4/5] run.cmd olusturuluyor...
+(
+echo @echo off
+echo setlocal enabledelayedexpansion
+echo set ROOT=%%~dp0
+echo set BACKEND=%%ROOT%%backend
+echo set FRONTEND=%%ROOT%%frontend
+echo set VENV=%%BACKEND%%\venv
+echo if defined CONDA_PREFIX ^(
+echo ^  echo Using conda: %%CONDA_PREFIX%%
+echo ^) else ^
+echo ^( if exist "%%VENV%%\Scripts\activate.bat" ^( call "%%VENV%%\Scripts\activate.bat" ^&^& echo Using venv: %%VENV%% ^) ^)
+echo set TTS_HOME=%%BACKEND%%\storage\models
+echo set COQUI_TOS_AGREED=1
+echo set TTS_USE_DEEPSPEED=False
+echo start "backend" cmd /k "cd /d %%BACKEND%% ^& set TTS_HOME=%%TTS_HOME%% ^& set COQUI_TOS_AGREED=1 ^& set TTS_USE_DEEPSPEED=False ^& uvicorn app.main:app --host 0.0.0.0 --port 8000"
+echo start "frontend" cmd /k "cd /d %%FRONTEND%% ^& npm run dev -- --host --port 5173"
+echo echo Backend:  http://localhost:8000
+echo echo Frontend: http://localhost:5173
+) > run.cmd
+echo [OK] run.cmd olusturuldu.
+echo.
+
+:: 5) Bilgi
+echo ========================================
+echo Kurulum tamam. Calistirmak icin:
+echo   run.cmd
+echo Backend:  http://localhost:8000
+echo Frontend: http://localhost:5173
+echo ========================================
+pause
+@echo off
 setlocal
 
 echo ========================================
@@ -60,7 +157,7 @@ if %errorlevel% neq 0 (
 )
 
 REM Check if requirements are installed
-python -c "import fastapi; import sqlalchemy; import f5_tts; print('Requirements check')" >nul 2>&1
+python -c "import fastapi; import sqlalchemy; print('Requirements check')" >nul 2>&1
 if errorlevel 1 (
     echo Installing requirements...
     pip install -r requirements.txt

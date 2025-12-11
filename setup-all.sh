@@ -1,199 +1,152 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-# Colors
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
-NC='\033[0m' # No Color
+NC='\033[0m'
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND_DIR="$ROOT_DIR/backend"
+FRONTEND_DIR="$ROOT_DIR/frontend"
+VENV_DIR="$BACKEND_DIR/venv"
 
 echo "========================================"
-echo "AI Audiobook Studio - Unified Setup (Linux/Lightning AI)"
+echo "AI Audiobook Studio - Otomatik Kurulum (Linux/Lightning AI, sudo yok)"
 echo "========================================"
 echo ""
 
-# 1. System Dependencies (espeak-ng & ffmpeg)
-echo "[1/4] Checking system dependencies..."
-
-# Function to check and install package
-install_package() {
-    PACKAGE=$1
-    if ! command -v $PACKAGE &> /dev/null; then
-        echo -e "${YELLOW}$PACKAGE not found. Attempting to install...${NC}"
-        if [ -f /etc/debian_version ]; then
-            if command -v sudo &> /dev/null; then
-                sudo apt-get update && sudo apt-get install -y $PACKAGE
-            else
-                echo -e "${YELLOW}sudo not found. Trying to install without sudo...${NC}"
-                apt-get update && apt-get install -y $PACKAGE
-            fi
-        # Check for Fedora/RHEL/CentOS
-        elif [ -f /etc/redhat-release ]; then
-             if command -v sudo &> /dev/null; then
-                sudo dnf install -y $PACKAGE || sudo yum install -y $PACKAGE
-            else
-                dnf install -y $PACKAGE || yum install -y $PACKAGE
-            fi
-        else
-            echo -e "${RED}Please install $PACKAGE manually for your OS.${NC}"
-        fi
-    else
-        echo -e "${GREEN}✓ $PACKAGE found${NC}"
-    fi
-}
-
-install_package espeak-ng
-install_package ffmpeg
+echo "[1/5] Sistem bağımlılıkları kontrol (yalnızca uyarı)"
+for bin in espeak-ng ffmpeg; do
+  if ! command -v "$bin" >/dev/null 2>&1; then
+    echo -e "${YELLOW}⚠ $bin bulunamadı. Lütfen sistem paket yöneticisi ile kurun.${NC}"
+  else
+    echo -e "${GREEN}✓ $bin bulundu${NC}"
+  fi
+done
 echo ""
 
-# 2. Backend Setup
-echo "[2/4] Setting up Backend..."
-cd backend
-
-# Venv Handling
-USE_VENV=true
-
-if [ -d "venv" ]; then
-    echo -e "${GREEN}✓ Virtual environment found. Activating...${NC}"
-    source venv/bin/activate
+echo "[2/5] Python ortamı (conda varsa kullanır, yoksa venv oluşturur)"
+ACTIVATION_DONE=false
+if [ -n "${CONDA_PREFIX-}" ]; then
+  echo -e "${GREEN}✓ Conda ortamı aktif: ${CONDA_PREFIX}${NC}"
+  ACTIVATION_DONE=true
 else
-    echo "Creating virtual environment..."
-    if python3 -m venv venv 2>/dev/null; then
-        echo -e "${GREEN}✓ Virtual environment created.${NC}"
-        source venv/bin/activate
-    else
-        echo -e "${YELLOW}⚠ Virtual environment creation failed or restricted.${NC}"
-        echo -e "${YELLOW}ℹ Using system Python environment.${NC}"
-        USE_VENV=false
-    fi
+  if [ -d "$VENV_DIR" ]; then
+    echo -e "${GREEN}✓ Venv bulundu. Aktivasyon...${NC}"
+  else
+    echo -e "${YELLOW}Venv yok, oluşturuluyor...${NC}"
+    python3 -m venv "$VENV_DIR"
+  fi
+  # shellcheck disable=SC1091
+  source "$VENV_DIR/bin/activate"
+  ACTIVATION_DONE=true
+  echo -e "${GREEN}✓ Python ortamı aktif${NC}"
 fi
+echo ""
 
-echo "Installing/Updating Python dependencies..."
+echo "[3/5] Backend bağımlılıkları kuruluyor"
+cd "$BACKEND_DIR"
 pip install --upgrade pip setuptools wheel
-
-# PyTorch Installation - FORCE GPU (CUDA 12.1)
-# Check if torch is installed to avoid costly re-download
-if ! python -c "import torch" &> /dev/null; then
-    echo "Installing PyTorch (CUDA 12.1 Enabled)..."
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-else
-    echo -e "${GREEN}✓ PyTorch already installed.${NC}"
-fi
-
-# DeepSpeed REMOVED for Stability (XTTS v2 Incompatibility)
-# if ! python -c "import deepspeed" &> /dev/null; then ... fi
-
-# Other requirements
 pip install -r requirements.txt
-python -m spacy download en_core_web_sm
-
-# F5-TTS Dependencies & Setup (Linux Specific)
-# 1. Install F5-TTS from source (requires git)
-if ! pip show f5-tts &> /dev/null; then
-    echo "Installing F5-TTS from source..."
-    pip install git+https://github.com/SWivid/F5-TTS.git
-else
-    echo -e "${GREEN}✓ F5-TTS already installed.${NC}"
-fi
-
-# 2. Fix torchcodec/ffmpeg issues on Linux
-# Uninstall torchcodec if exists to avoid conflicts
+python -m spacy download en_core_web_sm || echo -e "${YELLOW}⚠ Spacy modeli indirilemedi, tekrar deneyin.${NC}"
 pip uninstall -y torchcodec || true
-# Install ffmpeg-python for backend audio handling
 pip install ffmpeg-python
-
-# Model Check
-MODEL_DIR="$(pwd)/storage/models"
-if [ ! -d "$MODEL_DIR" ] || [ -z "$(ls -A $MODEL_DIR)" ]; then
-    echo -e "${YELLOW}ℹ Models will be downloaded on first run.${NC}"
-fi
-
-cd ..
-echo -e "${GREEN}✓ Backend setup complete${NC}"
+echo -e "${GREEN}✓ Backend bağımlılıkları yüklendi${NC}"
 echo ""
 
-# 3. Frontend Setup
-echo "[3/4] Setting up Frontend..."
-cd frontend
-
-# node_modules kontrolü - paketlerin eksik olup olmadığını kontrol et
-if [ ! -d "node_modules" ] || [ ! -d "node_modules/@radix-ui" ] || [ ! -d "node_modules/class-variance-authority" ]; then
-    echo "Installing/Updating npm packages..."
-    if [ -d "node_modules" ]; then
-        echo "Cleaning old node_modules..."
-        rm -rf node_modules
-    fi
-    npm install
-else
-    echo -e "${GREEN}✓ node_modules found. Verifying packages...${NC}"
-    # Kritik paketlerin varlığını kontrol et
-    if [ ! -d "node_modules/@radix-ui/react-slot" ] || [ ! -d "node_modules/class-variance-authority" ]; then
-        echo -e "${YELLOW}⚠ Some packages missing. Reinstalling...${NC}"
-        npm install
-    else
-        echo -e "${GREEN}✓ All packages verified${NC}"
-    fi
-fi
-
-echo "Cleaning old build files..."
-rm -rf dist
-echo "Building frontend..."
+echo "[4/5] Frontend bağımlılıkları kuruluyor"
+cd "$FRONTEND_DIR"
+npm install
 npm run build
-cd ..
-echo -e "${GREEN}✓ Frontend setup complete${NC}"
+echo -e "${GREEN}✓ Frontend hazır (build alındı)${NC}"
 echo ""
 
-# 4. Create Start Script
-echo "[4/4] Creating start script..."
+echo "[5/5] Çalıştırma scriptleri oluşturuluyor"
+cd "$ROOT_DIR"
 
-# Start building start.sh
-echo "#!/bin/bash" > start.sh
-echo "# Start Backend" >> start.sh
-echo "cd backend" >> start.sh
+cat > run.sh <<'EOF'
+#!/bin/bash
+set -euo pipefail
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND_DIR="$ROOT_DIR/backend"
+FRONTEND_DIR="$ROOT_DIR/frontend"
+VENV_DIR="$BACKEND_DIR/venv"
 
-# Only activate venv if we created one
-if [ "$USE_VENV" = true ]; then
-    echo "source venv/bin/activate" >> start.sh
+# Ortam seçimi: conda > venv > sistem
+if [ -n "${CONDA_PREFIX-}" ]; then
+  echo "Using conda env: $CONDA_PREFIX"
+elif [ -d "$VENV_DIR" ]; then
+  # shellcheck disable=SC1091
+  source "$VENV_DIR/bin/activate"
+  echo "Using venv: $VENV_DIR"
+else
+  echo "No conda/venv detected; using system Python."
 fi
 
-# Continue building start.sh
-cat >> start.sh << 'EOF'
-# Prevent re-downloading models
-export TTS_HOME="$(pwd)/storage/models"
+export TTS_HOME="${TTS_HOME:-$BACKEND_DIR/storage/models}"
 export COQUI_TOS_AGREED=1
-# Disable DeepSpeed explicitly
 export TTS_USE_DEEPSPEED=False
 
-echo "Starting Backend..."
+echo "Backend starting on 0.0.0.0:8000 ..."
+cd "$BACKEND_DIR"
 uvicorn app.main:app --host 0.0.0.0 --port 8000 &
-BACKEND_PID=$!
+BACK_PID=$!
 
-# Start Frontend
-cd ../frontend
-echo "Ensuring frontend dependencies..."
-npm install
-echo "Cleaning old build files..."
-rm -rf dist
-echo "Building frontend..."
-npm run build
-echo "Starting Frontend Server..."
-npm run preview -- --host &
-FRONTEND_PID=$!
+echo "Frontend starting on 0.0.0.0:5173 ..."
+cd "$FRONTEND_DIR"
+npm run dev -- --host --port 5173 &
+FRONT_PID=$!
 
-echo "========================================"
-echo "🚀 App running!"
-echo "Backend API: http://localhost:8000"
-echo "Frontend UI: http://localhost:4173"
-echo "========================================"
+echo "Backend PID: $BACK_PID"
+echo "Frontend PID: $FRONT_PID"
+echo "Backend:  http://localhost:8000"
+echo "Frontend: http://localhost:5173"
 
-trap "kill $BACKEND_PID $FRONTEND_PID" EXIT
+trap "kill $BACK_PID $FRONT_PID" EXIT
 wait
 EOF
+chmod +x run.sh
 
-chmod +x start.sh
+cat > run.cmd <<'EOF'
+@echo off
+setlocal enabledelayedexpansion
+set ROOT=%~dp0
+set BACKEND=%ROOT%backend
+set FRONTEND=%ROOT%frontend
+set VENV=%BACKEND%\venv
+
+rem Kullanılacak Python ortamı
+if defined CONDA_PREFIX (
+  echo Using conda: %CONDA_PREFIX%
+) else (
+  if exist "%VENV%\Scripts\activate.bat" (
+    call "%VENV%\Scripts\activate.bat"
+    echo Using venv: %VENV%
+  ) else (
+    echo No conda/venv detected; using system Python.
+  )
+)
+
+set TTS_HOME=%BACKEND%\storage\models
+set COQUI_TOS_AGREED=1
+set TTS_USE_DEEPSPEED=False
+
+echo Starting backend on 0.0.0.0:8000 ...
+start "backend" cmd /k "cd /d %BACKEND% && set TTS_HOME=%TTS_HOME% && set COQUI_TOS_AGREED=1 && set TTS_USE_DEEPSPEED=False && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+echo Starting frontend on 0.0.0.0:5173 ...
+start "frontend" cmd /k "cd /d %FRONTEND% && npm run dev -- --host --port 5173"
+
+echo Backend:  http://localhost:8000
+echo Frontend: http://localhost:5173
+EOF
+
+echo -e "${GREEN}✓ run.sh ve run.cmd oluşturuldu${NC}"
+echo ""
 
 echo "========================================"
-echo -e "${GREEN}✅ Setup Completed Successfully!${NC}"
-echo "To start the application, run:"
-echo "  ./start.sh"
+echo -e "${GREEN}Kurulum tamamlandı. Çalıştırmak için: ${NC}"
+echo "Linux/macOS: ./run.sh"
+echo "Windows:     run.cmd"
 echo "========================================"

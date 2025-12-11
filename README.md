@@ -1,6 +1,6 @@
 # 🎙️ AI Audiobook Studio
 
-Modern bir sesli kitap oluşturma uygulaması. TXT/EPUB dosyalarınızı referans ses ile profesyonel kalitede sesli kitaba dönüştürün.
+Modern bir sesli kitap oluşturma uygulaması. TXT/EPUB dosyalarınızı referans ses ile profesyonel kalitede sesli kitaba dönüştürün. Yalnızca **XTTS v2** motoru desteklenir.
 
 ## 🚀 Özellikler
 
@@ -40,39 +40,46 @@ sudo apt-get update
 sudo apt-get install -y espeak-ng ffmpeg
 ```
 
-### 2. Projeyi Kur
+### 2. Projeyi Kur (tek komut)
 
-Windows:
-```cmd
-.\setup-all.cmd
-```
-
-Linux/Mac:
+**Linux/macOS:**
 ```bash
 chmod +x setup-all.sh
 ./setup-all.sh
 ```
 
-Bu komut sanal ortamı kurar, bağımlılıkları yükler ve modeli hazırlar.
+**Windows:**
+```cmd
+setup-all.cmd
+```
 
-## 🎬 Başlatma
+Notlar:
+- sudo gerektirmez; espeak-ng / ffmpeg için uyarı verir, kurulu değilse manuel kurmanız gerekir.
+- Conda açıksa onu kullanır; değilse `backend/venv` oluşturur.
+- Backend bağımlılıklarını (pip, requirements, spacy) ve frontend `npm install && npm run build` adımlarını otomatik yapar.
+- Kurulum sonunda hızlı başlatma scriptleri oluşturur: `run.sh` ve `run.cmd`.
 
-Kurulum tamamlandıktan sonra uygulamayı başlatmak için:
+## 🎬 Başlatma (tek komut)
+
+**Linux/macOS:**
+```bash
+./run.sh
+```
 
 **Windows:**
 ```cmd
-.\start_app.cmd
-```
-*(setup-all.cmd tarafından oluşturulur)*
-
-**Linux/Mac:**
-```bash
-chmod +x start.sh
-./start.sh
+run.cmd
 ```
 
+Ne yapar?
+- Ortam seçimi: conda > venv > sistem.
+- `TTS_HOME` ve `COQUI_TOS_AGREED` ayarları yapılır.
 - Backend: `http://localhost:8000`
-- Frontend: `http://localhost:5173`
+- Frontend: `http://localhost:5173` (dev server)
+
+Özelleştirme:
+- API/WS için env: `VITE_API_URL`, `VITE_WS_URL`
+- Vite dev portu varsayılan 5173, preview varsayılan 4173 (`npm run preview -- --host`).
 
 ## ⚡ Performans Optimizasyonları (Güncel)
 
@@ -82,7 +89,7 @@ Bu proje, XTTS v2 modelinin kararlılığı ve hızı için özel optimizasyonla
 2.  **Native FP16**: DeepSpeed yerine PyTorch native FP16 kullanılarak Tesla T4 gibi kartlarda 2x hız artışı sağlanmıştır.
 3.  **No-DeepSpeed**: XTTS ile uyumsuzluk yaratan DeepSpeed modülleri devre dışı bırakılmıştır.
 4.  **Auto-Recovery**: OOM (Out of Memory) durumlarında otomatik bellek temizliği yapılır.
-5.  **⭐ Gelişmiş Sayı Normalizasyonu (YENİ)**: Virgüllü büyük sayılar (140,000 → "one hundred and forty thousand"), ondalıklar, para birimleri ve sıra sayıları XTTS için optimize edildi. Detaylar: [`XTTS_SAYI_COZUMU_TR.md`](XTTS_SAYI_COZUMU_TR.md)
+5.  **⭐ Gelişmiş Sayı Normalizasyonu**: Virgüllü büyük sayılar (140,000 → "one hundred and forty thousand"), ondalıklar, para birimleri ve sıra sayıları XTTS için optimize edildi.
 
 ## 📁 Proje Yapısı
 
@@ -106,4 +113,4 @@ txt2audio/
 
 ## 📝 Lisans
 
-Bu proje Coqui TTS lisansına tabidir (CPML). Ticari kullanım için lisans gereklidir.
+Bu proje Coqui TTS lisansına tabidir (CPML).

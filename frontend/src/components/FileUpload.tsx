@@ -10,7 +10,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface ReferenceVoice {
     name: string;
@@ -29,7 +28,6 @@ interface FileUploadProps {
         referenceVoicePath: string | null;
         useGpu: boolean;
         name: string;
-        modelType: string;
         presetId: string;
         language: string;
         speed: number;
@@ -56,7 +54,6 @@ export function FileUpload({ onUpload }: FileUploadProps) {
 
     // Advanced Settings State
     const [language, setLanguage] = useState('en');
-    const [modelType, setModelType] = useState('xtts');
     const [speed, setSpeed] = useState(0.9);
     const [temperature, setTemperature] = useState(0.75);
     const [topK, setTopK] = useState(50);
@@ -131,7 +128,6 @@ export function FileUpload({ onUpload }: FileUploadProps) {
             referenceVoicePath: voiceMode === 'reference' ? selectedVoice : null,
             useGpu,
             name: projectName,
-            modelType,
             presetId: selectedPresetId,
             language,
             speed,
@@ -140,7 +136,7 @@ export function FileUpload({ onUpload }: FileUploadProps) {
             topP,
             repetitionPenalty
         });
-    }, [isSubmitting, textFile, projectName, voiceMode, audioFile, selectedVoice, useGpu, selectedPresetId, language, modelType, speed, temperature, topK, topP, repetitionPenalty, onUpload]);
+    }, [isSubmitting, textFile, projectName, voiceMode, audioFile, selectedVoice, useGpu, selectedPresetId, language, speed, temperature, topK, topP, repetitionPenalty, onUpload]);
 
     const canSubmit = textFile && projectName && (
         (voiceMode === 'upload' && audioFile) ||
@@ -193,49 +189,20 @@ export function FileUpload({ onUpload }: FileUploadProps) {
                         setAudioFile={setAudioFile}
                     />
 
-                    {/* TTS Model Selection */}
-                    <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border">
-                        <Label className="text-sm font-semibold">TTS Model Engine</Label>
-                        <RadioGroup value={modelType} onValueChange={setModelType} className="grid grid-cols-2 gap-4">
-                            <div className="relative">
-                                <RadioGroupItem value="xtts" id="xtts" className="peer sr-only" />
-                                <Label
-                                    htmlFor="xtts"
-                                    className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer h-full transition-all"
-                                >
-                                    <span className="text-sm font-bold">XTTS v2 (Standard)</span>
-                                    <span className="text-xs text-muted-foreground mt-1">High Quality, File Based</span>
-                                </Label>
-                            </div>
-                            <div className="relative">
-                                <RadioGroupItem value="f5" id="f5" className="peer sr-only" />
-                                <Label
-                                    htmlFor="f5"
-                                    className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer h-full transition-all"
-                                >
-                                    <span className="text-sm font-bold">F5-TTS (New)</span>
-                                    <span className="text-xs text-muted-foreground mt-1">Flow Matching, Streaming</span>
-                                </Label>
-                            </div>
-                        </RadioGroup>
+                    {/* TTS Preset Selector (XTTS) */}
+                    <div className="animate-fade-in">
+                        <PresetSelector
+                            selectedPresetId={selectedPresetId}
+                            setSelectedPresetId={setSelectedPresetId}
+                            language={language}
+                            onPresetChange={(params) => {
+                                setTemperature(params.temperature);
+                                setTopP(params.top_p);
+                                setRepetitionPenalty(params.repetition_penalty);
+                                setSpeed(params.speed);
+                            }}
+                        />
                     </div>
-
-                    {/* TTS Preset Selector - Only for XTTS */}
-                    {modelType === 'xtts' && (
-                        <div className="animate-fade-in">
-                            <PresetSelector
-                                selectedPresetId={selectedPresetId}
-                                setSelectedPresetId={setSelectedPresetId}
-                                language={language}
-                                onPresetChange={(params) => {
-                                    setTemperature(params.temperature);
-                                    setTopP(params.top_p);
-                                    setRepetitionPenalty(params.repetition_penalty);
-                                    setSpeed(params.speed);
-                                }}
-                            />
-                        </div>
-                    )}
 
                     {/* GPU/CPU Toggle */}
                     <Card className="p-5">

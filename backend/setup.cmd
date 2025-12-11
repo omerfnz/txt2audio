@@ -62,7 +62,7 @@ echo.
 
 REM Adım 5: requirements kontrol
 echo [5/7] Checking requirements...
-python -c "import fastapi; import sqlalchemy; import f5_tts; print('✓ Requirements already installed')" >nul 2>&1
+python -c "import fastapi; import sqlalchemy; print('✓ Requirements already installed')" >nul 2>&1
 if errorlevel 1 (
     echo Installing requirements...
     pip install -r requirements.txt --quiet

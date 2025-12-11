@@ -9,11 +9,16 @@ export const useWebSocket = () => {
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const getWsUrl = () => {
-    if (window.location.hostname === 'localhost') {
+    const envUrl = import.meta.env.VITE_WS_URL as string | undefined;
+    if (envUrl) return envUrl;
+
+    const isLocal = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+    if (isLocal) {
       return 'ws://localhost:8000/api/ws';
     }
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.hostname.replace('4173', '8000');
+    const host = window.location.host; // port dahil
     return `${protocol}//${host}/api/ws`;
   };
 

@@ -1,10 +1,16 @@
 import type { AxiosInstance } from "axios";
 import axios from "axios";
 
-// Lightning AI ve localhost uyumlu dinamik API URL
-const API_BASE = window.location.hostname === 'localhost' 
-  ? "http://localhost:8000/api"
-  : `${window.location.protocol}//${window.location.hostname.replace('4173', '8000')}/api`;
+// API tabanı: Önce env, yoksa akıllı varsayılan
+const API_BASE = (() => {
+  const envUrl = import.meta.env.VITE_API_URL as string | undefined;
+  if (envUrl) return envUrl.replace(/\/$/, '');
+  const isLocal = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+  if (isLocal) return 'http://localhost:8000/api';
+  const protocol = window.location.protocol;
+  const host = window.location.host; // port dahil
+  return `${protocol}//${host}/api`;
+})();
 
 interface ReferenceVoicesResponse {
   voices: Record<
@@ -61,7 +67,7 @@ async function retryRequest<T>(
 // Backend health check
 export async function checkBackendHealth(): Promise<boolean> {
   try {
-    const response = await axios.get(`${API_BASE.replace('/api', '')}/health`, {
+    const response = await axios.get(`${API_BASE.replace(/\/api$/, '')}/health`, {
       timeout: 2000
     });
     return response.status === 200;

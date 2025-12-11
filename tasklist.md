@@ -1,26 +1,11 @@
-# F5-TTS Entegrasyon Görev Listesi
+# txt2audio İyileştirme Görevleri
 
-Bu dosya, `txt2audio` projesine F5-TTS (Flow Matching) modelini entegre etmek için izlenecek adımları içerir. Hedef, mevcut XTTS v2 yapısını bozmadan, ikinci bir seçenek olarak F5-TTS'i eklemektir.
-
-## 1. Hazırlık ve Kurulum
-- [ ] **F5-TTS Kütüphanesini Kur:** Mevcut `venv` ortamına `f5-tts` paketini ve gerekli bağımlılıkları ekle.
-- [ ] **Uyumluluk Kontrolü:** Kurulum sonrası mevcut Coqui TTS'in bozulmadığını basit bir script ile test et.
-
-## 2. Backend Geliştirme (Python/FastAPI)
-- [ ] **Motor Sınıfı (`f5_engine.py`):** `backend/app/ai/` altında F5 modelini yönetecek singleton sınıfı oluştur.
-    - Model yükleme (Load)
-    - Ses sentezleme (Infer)
-    - Bellek temizleme (Unload)
-- [ ] **Model Yöneticisi (Model Manager):** XTTS ve F5 arasında geçiş yaparken VRAM'i boşaltacak mantığı `audio_service.py` veya yeni bir yönetici sınıfına ekle.
-- [ ] **WebSocket Endpoint:** `backend/app/routers/websocket.py` dosyasına F5 için streaming desteği sunan `/ws/generate-f5` endpoint'ini ekle.
-
-## 3. Frontend Geliştirme (React)
-- [ ] **Model Seçici:** `Sidebar.tsx` veya `AdvancedSettings.tsx` içine "Model Seçimi" (XTTS v2 / F5-TTS) dropdown'ı ekle.
-- [ ] **Hook Entegrasyonu:** Rehberdeki `useF5TTS` hook'unu `src/hooks/useF5TTS.ts` olarak projeye ekle.
-- [ ] **Player Güncellemesi:** `Player.tsx` bileşenini, seçili modele göre davranacak şekilde güncelle (XTTS ise dosya, F5 ise stream).
-
-## 4. Test ve Optimizasyon
-- [ ] **Akış Testi:** WebSocket üzerinden sesin kesintisiz gelip gelmediğini test et.
-- [ ] **VRAM Testi:** Modeller arası geçiş yaparken GPU belleğinin şişmediğini doğrula.
-- [ ] **UI Testi:** Kullanıcı arayüzündeki geçişlerin sorunsuz olduğunu onayla.
-
+1. [x] F5 TTS’yi tamamen kaldır, yalnızca XTTS kalsın.  
+2. [x] Logger’ı tekilleştir; çift handlerı kaldır, sorunsuz log yazımı.  
+3. [x] CORS’u sabitle; wildcard’ı kaldır, originleri env/sabit listeden besle.  
+4. [x] XTTS model yolu için `settings.MODELS_DIR` kullan; `os.getcwd()` bağımlılığını kaldır, `TTS_HOME`’u buna ayarla.  
+5. [x] Frontend API/WS URL’lerini `.env` tabanlı yap; port replace hack’ini kaldır.  
+6. [x] Vite portlarını varsayılan (dev=5173, preview=4173) tut; `.env` ile özelleştirilebilir yap.  
+7. [x] `setup-all.sh`’yi kılavuz moda çek (otomatik apt/sudo yok), venv/conda tarafsızlaştır.  
+8. [x] `start-backend.sh`’yi `set -euo pipefail` ve env/venv/conda kontrolleriyle sertleştir.  
+9. [ ] (Opsiyonel) Log rotasyonunu değerlendir; limit eklemeden sorunsuz yazımı doğrula.

@@ -13,6 +13,13 @@ class Settings(BaseSettings):
     
     # Database
     DB_NAME: str = "database.db"
+
+    # CORS
+    ALLOW_ORIGINS: list[str] = [
+        "http://localhost:5173",
+        "http://localhost:4173",
+        "http://localhost:3000",
+    ]  # Env ile override edilebilir (JSON veya virgülle ayrılmış liste)
     
     # TTS Defaults (XTTS v2)
     DEFAULT_LANGUAGE: str = "en"
