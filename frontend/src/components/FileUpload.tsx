@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Cpu, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getReferenceVoices } from '../api/client';
+import { getReferenceVoices, getMusicList } from '../api/client';
 import { DropZone } from './upload/DropZone';
 import { VoiceSelector } from './upload/VoiceSelector';
 import { PresetSelector } from './upload/PresetSelector';
@@ -10,6 +10,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 
 interface ReferenceVoice {
     name: string;
@@ -35,6 +37,9 @@ interface FileUploadProps {
         topK: number;
         topP: number;
         repetitionPenalty: number;
+        bgMusicEnabled: boolean;
+        bgMusicFile: string;
+        bgMusicVolume: number;
     }) => void;
 }
 
@@ -61,7 +66,13 @@ export function FileUpload({ onUpload }: FileUploadProps) {
     const [repetitionPenalty, setRepetitionPenalty] = useState(2.0);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Load reference voices on mount
+    // Background music
+    const [bgMusicEnabled, setBgMusicEnabled] = useState(false);
+    const [bgMusicFile, setBgMusicFile] = useState<string>('');
+    const [bgMusicVolume, setBgMusicVolume] = useState<number>(10); // UI 0-100
+    const [musicOptions, setMusicOptions] = useState<Array<{ name: string; filename: string; path: string }>>([]);
+
+    // Load reference voices and music on mount
     useEffect(() => {
         async function loadVoices() {
             try {
@@ -80,7 +91,17 @@ export function FileUpload({ onUpload }: FileUploadProps) {
                 console.error('Failed to load reference voices:', error);
             }
         }
+        async function loadMusic() {
+            try {
+                const data = await getMusicList();
+                setMusicOptions(data.music || []);
+            } catch (error) {
+                console.error('Failed to load music list:', error);
+                setMusicOptions([]);
+            }
+        }
         loadVoices();
+        loadMusic();
     }, []);
 
     const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -134,9 +155,12 @@ export function FileUpload({ onUpload }: FileUploadProps) {
             temperature,
             topK,
             topP,
-            repetitionPenalty
+            repetitionPenalty,
+            bgMusicEnabled,
+            bgMusicFile,
+            bgMusicVolume
         });
-    }, [isSubmitting, textFile, projectName, voiceMode, audioFile, selectedVoice, useGpu, selectedPresetId, language, speed, temperature, topK, topP, repetitionPenalty, onUpload]);
+    }, [isSubmitting, textFile, projectName, voiceMode, audioFile, selectedVoice, useGpu, selectedPresetId, language, speed, temperature, topK, topP, repetitionPenalty, onUpload, bgMusicEnabled, bgMusicFile, bgMusicVolume]);
 
     const canSubmit = textFile && projectName && (
         (voiceMode === 'upload' && audioFile) ||
@@ -244,6 +268,66 @@ export function FileUpload({ onUpload }: FileUploadProps) {
                         topP={topP} setTopP={setTopP}
                         repetitionPenalty={repetitionPenalty} setRepetitionPenalty={setRepetitionPenalty}
                     />
+
+                    {/* Background Music */}
+                    <Card className="p-5">
+                        <CardContent className="p-0 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <p className="text-sm font-semibold text-foreground">Background Music</p>
+                                    <p className="text-xs text-muted-foreground">Looped, sabit seviye (ducking yok)</p>
+                                </div>
+                                <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                                    <Input
+                                        type="checkbox"
+                                        checked={bgMusicEnabled}
+                                        onChange={(e) => setBgMusicEnabled(e.target.checked)}
+                                        className="h-4 w-4"
+                                    />
+                                    <span>Enable</span>
+                                </label>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Track</Label>
+                                    <Select
+                                        disabled={!bgMusicEnabled || musicOptions.length === 0}
+                                        value={bgMusicFile || 'none'}
+                                        onValueChange={(val) => setBgMusicFile(val === 'none' ? '' : val)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder={musicOptions.length === 0 ? "No music files found" : "Select track"} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">None</SelectItem>
+                                            {musicOptions.map((m) => (
+                                                <SelectItem key={m.filename} value={m.filename}>
+                                                    {m.name || m.filename}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {musicOptions.length === 0 && (
+                                        <p className="text-xs text-muted-foreground">`storage/music` boş; None ile devam eder.</p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Music Level ({bgMusicVolume}%)</Label>
+                                    <Slider
+                                        disabled={!bgMusicEnabled}
+                                        value={[bgMusicVolume]}
+                                        min={0}
+                                        max={100}
+                                        step={1}
+                                        onValueChange={(vals) => setBgMusicVolume(vals[0] ?? 0)}
+                                    />
+                                    <p className="text-xs text-muted-foreground">Varsayılan 10%. 0-100 arası.</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
 
                     {/* Submit Button */}
                     <Button

@@ -11,6 +11,7 @@ Modern bir sesli kitap oluşturma uygulaması. TXT/EPUB dosyalarınızı referan
 - ✅ **Canlı İzleme**: WebSocket ile gerçek zamanlı ilerleme takibi
 - ✅ **GPU/CPU Desteği**: Hem CPU hem de CUDA GPU desteği (T4 ve üzeri optimize)
 - ✅ **Modern UI**: React + Tailwind CSS ile tasarlanmış kullanıcı dostu arayüz
+- ✅ **Arka Plan Müziği (Opsiyonel)**: storage/music altına koyduğun MP3/WAV’i toggle + dropdown + seviye slider (0-100, varsayılan %10) ile seç; ducking yok, sabit seviyede loop’lanır.
 
 ## 📋 Gereksinimler
 
@@ -80,6 +81,13 @@ Ne yapar?
 Özelleştirme:
 - API/WS için env: `VITE_API_URL`, `VITE_WS_URL`
 - Vite dev portu varsayılan 5173, preview varsayılan 4173 (`npm run preview -- --host`).
+
+## 🎧 Arka Plan Müziği Kullanımı
+
+1) Dosya ekle: Müziği `backend/storage/music/` içine manuel kopyala (ör. `.mp3`, `.wav`).
+2) UI: “Background Music” toggle’ını aç, dropdown’dan parçayı seç, “Music Level” slider ile %0–100 arası ayarla (backend 0–1’e map; varsayılan %10).
+3) Kapatma: “None” seçebilir veya toggle’ı kapatabilirsin; müzik dosyası yoksa otomatik olarak sesli kitap yalnızca anlatım olarak üretilir.
+4) Teknik: FFmpeg `-stream_loop -1` + `amix duration=first` ile sabit seviyede loop’lanır; ducking uygulanmaz.
 
 ## ⚡ Performans Optimizasyonları (Güncel)
 

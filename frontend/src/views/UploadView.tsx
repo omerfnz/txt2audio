@@ -19,6 +19,9 @@ export const UploadView = ({ onProjectCreated }: UploadViewProps) => {
         topK: number;
         topP: number;
         repetitionPenalty: number;
+        bgMusicEnabled: boolean;
+        bgMusicFile: string;
+        bgMusicVolume: number; // 0-100
     }) => {
         try {
             const formData = new FormData();
@@ -32,6 +35,11 @@ export const UploadView = ({ onProjectCreated }: UploadViewProps) => {
             formData.append('top_k', String(data.topK));
             formData.append('top_p', String(data.topP));
             formData.append('repetition_penalty', String(data.repetitionPenalty));
+            formData.append('bg_music_enabled', String(data.bgMusicEnabled));
+            if (data.bgMusicEnabled && data.bgMusicFile) {
+                formData.append('bg_music_file', data.bgMusicFile);
+            }
+            formData.append('bg_music_volume', String(Math.max(0, Math.min(1, data.bgMusicVolume / 100))));
 
             if (data.audio) {
                 formData.append('voice_file', data.audio);

@@ -15,6 +15,7 @@ from pydub import AudioSegment
 from typing import List, Dict, Any, Optional
 import shutil
 import os
+from pathlib import Path
 
 router = APIRouter()
 text_processor = TextProcessor()
@@ -97,6 +98,28 @@ async def get_reference_voices() -> Dict[str, Any]:
     except Exception as e:
         return {"voices": {}, "error": str(e)}
 
+
+@router.get("/music")
+async def list_background_music() -> Dict[str, Any]:
+    """
+    storage/music içindeki dosyaları listeler.
+    Dosya yoksa boş liste döner, hata fırlatmaz.
+    """
+    music_dir: Path = settings.MUSIC_DIR
+    if not music_dir.exists():
+        return {"music": []}
+
+    music_files = []
+    for file_path in music_dir.iterdir():
+        if file_path.is_file() and file_path.suffix.lower() in {".mp3", ".wav", ".flac", ".m4a", ".aac", ".ogg"}:
+            music_files.append({
+                "name": file_path.stem,
+                "filename": file_path.name,
+                "path": str(file_path)
+            })
+
+    return {"music": music_files}
+
 @router.post("/projects/")
 async def create_project(
     name: str = Form(...),
@@ -116,6 +139,10 @@ async def create_project(
     top_k: int = Form(50),
     top_p: Optional[float] = Form(None),
     repetition_penalty: Optional[float] = Form(None),
+    # Background music
+    bg_music_enabled: bool = Form(False),
+    bg_music_file: Optional[str] = Form(None),
+    bg_music_volume: Optional[float] = Form(None),
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """
@@ -146,6 +173,10 @@ async def create_project(
         )
         final_speed = speed if speed is not None else preset.speed
         final_content_type = content_type or preset.content_type
+        # Background music config
+        final_bg_enabled = bg_music_enabled
+        final_bg_file = bg_music_file or settings.DEFAULT_BG_MUSIC_FILE
+        final_bg_volume = bg_music_volume if bg_music_volume is not None else settings.DEFAULT_BG_MUSIC_VOLUME
         
         # 4. Validate parameters
         is_valid, error_msg = validate_preset_params(
@@ -237,7 +268,11 @@ async def create_project(
             temperature=final_temperature,
             top_k=top_k,
             top_p=final_top_p,
-            repetition_penalty=final_repetition_penalty
+            repetition_penalty=final_repetition_penalty,
+            # Background music config
+            bg_music_enabled=final_bg_enabled,
+            bg_music_file=final_bg_file,
+            bg_music_volume=final_bg_volume
         )
         db.add(project)
         db.commit()

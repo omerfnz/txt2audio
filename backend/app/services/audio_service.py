@@ -2,53 +2,20 @@ import os
 import json
 import asyncio
 import subprocess
-import torch
-from typing import List, Tuple, Optional
-from dataclasses import dataclass
+from typing import List, Optional
+import logging
 from sqlalchemy.orm import Session
-from pydub import AudioSegment
 from ..db.models import Project, Chunk
 from ..core.config import settings
 from .websocket import manager
-from ..ai.text_processor import TextProcessor
-import logging
-from .audio_mastering import AudioMastering
+from .chunk_runner import process_chunks
+from .merge_concat import merge_project_audio
+from .background_music import mix_background_music
 
 logger = logging.getLogger("ai_audiobook_studio")
 
-# Retry configuration
-MAX_CHUNK_RETRIES = 3  # 3 kez deneme, başarısız olursa atla
-
-# Failed chunks debug log file
-FAILED_CHUNKS_LOG = "failed_chunks_log.txt"
-
-# Global instances for model management
+# Global instance for model management
 active_engine = None
-gpu_lock = asyncio.Lock()
-
-@dataclass
-class ChunkResult:
-    """Result of processing a single chunk."""
-    chunk_index: int
-    success: bool
-    error: Optional[str] = None
-    output_path: Optional[str] = None
-
-def unload_active_model():
-    """Unloads currently active model to free VRAM."""
-    global active_engine
-    
-    if active_engine:
-        if hasattr(active_engine, "unload_model"):
-            active_engine.unload_model()
-        elif hasattr(active_engine, "release_memory"):
-            active_engine.release_memory()
-        # Force garbage collection
-        import gc
-        gc.collect()
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-        active_engine = None
 
 def get_tts_engine(use_gpu: bool = False):
     """
@@ -64,478 +31,22 @@ def get_tts_engine(use_gpu: bool = False):
     from ..ai.tts_engine import TTSEngine
     active_engine = TTSEngine(use_gpu=use_gpu)
     return active_engine
-
-
-async def _process_single_chunk(
-    chunk: Chunk,
-    project: Project,
-    output_path: str,
-    use_gpu: bool
-) -> ChunkResult:
-    """
-    Process a single chunk with retry logic.
-    
-    Args:
-        chunk: Chunk to process
-        project: Parent project
-        output_path: Output file path
-        use_gpu: Whether to use GPU
-        
-    Returns:
-        ChunkResult with success status and any error
-    """
-    engine = get_tts_engine(use_gpu=use_gpu)
-    
-    # Serialize GPU access
-    async with gpu_lock:
-        attempt = 0
-        success = False
-        chunk_error = ""
-        
-        while attempt < MAX_CHUNK_RETRIES and not success:
-            try:
-                # Adaptive parameters for each retry attempt
-                base_temp = project.temperature or settings.DEFAULT_TEMPERATURE
-                base_speed = project.speed or settings.DEFAULT_SPEED
-                base_rep_penalty = project.repetition_penalty or settings.DEFAULT_REPETITION_PENALTY
-                
-                if attempt == 0:
-                    # First attempt: Use normal parameters
-                    temperature_adj = base_temp
-                    speed_adj = base_speed
-                    repetition_penalty_adj = base_rep_penalty
-                elif attempt == 1:
-                    # Second attempt: More conservative (slower, lower temperature)
-                    temperature_adj = max(0.35, base_temp * 0.7)
-                    speed_adj = base_speed * 0.85  # 15% slower
-                    repetition_penalty_adj = min(3.0, base_rep_penalty * 1.2)
-                    logger.info(f"  🔧 Retry with adjusted params: temp={temperature_adj:.2f}, speed={speed_adj:.2f}, rep_pen={repetition_penalty_adj:.2f}")
-                else:
-                    # Third attempt: Very conservative (safest settings)
-                    temperature_adj = 0.3
-                    speed_adj = 0.7
-                    repetition_penalty_adj = 2.8
-                    logger.info(f"  🔧 Final retry with conservative params: temp={temperature_adj:.2f}, speed={speed_adj:.2f}, rep_pen={repetition_penalty_adj:.2f}")
-                
-                # XTTS Call with adaptive parameters
-                success = await asyncio.to_thread(
-                    engine.generate_audio,
-                    text=chunk.text_content,
-                    speaker_wav=project.voice_ref_path,
-                    output_path=output_path,
-                    language=project.language or settings.DEFAULT_LANGUAGE,
-                    temperature=temperature_adj,
-                    top_p=project.top_p or settings.DEFAULT_TOP_P,
-                    repetition_penalty=repetition_penalty_adj,
-                    speed=speed_adj
-                )
-                
-                if success:
-                    if attempt > 0:
-                        logger.info(f"  ✅ Chunk {chunk.index} succeeded on attempt {attempt + 1}")
-                    return ChunkResult(
-                        chunk_index=chunk.index,
-                        success=True,
-                        output_path=output_path
-                    )
-                    
-            except torch.cuda.OutOfMemoryError as oom:
-                _handle_oom_error()
-                chunk_error = f"OOM: {str(oom)}"
-                # OOM sonrası retry şansı ver
-                
-            except Exception as e:
-                chunk_error = str(e)
-                
-            attempt += 1
-            
-            if attempt < MAX_CHUNK_RETRIES:
-                logger.warning(f"  🔁 Retry {attempt}/{MAX_CHUNK_RETRIES} for chunk {chunk.index}")
-                # Memory cleanup between retries
-                engine.release_memory()
-
-        # If all retries failed, try recursive splitting for long chunks
-        if not success and len(chunk.text_content) > 200:
-            logger.warning(f"  ✂️ All retries failed. Attempting recursive split for chunk {chunk.index}...")
-            try:
-                # Initialize text processor
-                processor = TextProcessor()
-                
-                # Split text into 2 smaller parts
-                split_text = processor._smart_split(chunk.text_content, len(chunk.text_content) // 2 + 50)
-                
-                if len(split_text) >= 2:
-                    logger.info(f"  🧩 Split into {len(split_text)} parts: {[len(t) for t in split_text]} chars")
-                    
-                    temp_files = []
-                    all_parts_success = True
-                    
-                    for i, part_text in enumerate(split_text):
-                        part_output = output_path.replace(".wav", f"_part{i}.wav")
-                        temp_files.append(part_output)
-                        
-                        # Generate audio for part
-                        part_success = False
-                        try:
-                            # Use safe settings for parts
-                            part_success = await asyncio.to_thread(
-                                engine.generate_audio,
-                                text=part_text,
-                                speaker_wav=project.voice_ref_path,
-                                output_path=part_output,
-                                language=project.language or settings.DEFAULT_LANGUAGE,
-                                temperature=0.3, # Conservative
-                                top_p=0.8,
-                                repetition_penalty=2.5,
-                                speed=settings.DEFAULT_SPEED
-                            )
-                        except Exception as e:
-                            logger.error(f"  ❌ Part {i} failed: {e}")
-                        
-                        if not part_success:
-                            all_parts_success = False
-                            break
-                    
-                    if all_parts_success:
-                        # Combine parts
-                        logger.info(f"  🔗 Combining {len(temp_files)} parts...")
-                        combined = AudioSegment.empty()
-                        for temp_file in temp_files:
-                            if os.path.exists(temp_file):
-                                combined += AudioSegment.from_wav(temp_file)
-                                # Add small silence between parts to prevent abrupt changes
-                                combined += AudioSegment.silent(duration=50)
-                                try:
-                                    os.remove(temp_file)
-                                except:
-                                    pass
-                        
-                        # Export final combined file
-                        combined.export(output_path, format="wav")
-                        logger.info(f"  ✅ Recursive split succeeded for chunk {chunk.index}")
-                        
-                        return ChunkResult(
-                            chunk_index=chunk.index,
-                            success=True,
-                            output_path=output_path
-                        )
-                    else:
-                        # Cleanup temp files if failed
-                        for temp_file in temp_files:
-                            if os.path.exists(temp_file):
-                                try:
-                                    os.remove(temp_file)
-                                except:
-                                    pass
-            except Exception as e:
-                logger.error(f"  ⚠ Recursive split failed: {e}")
-        
-    return ChunkResult(
-        chunk_index=chunk.index,
-        success=False,
-        error=chunk_error or "Unknown error"
-    )
-
-async def merge_audio_files(project_id: int, db: Session):
-    """
-    Merge all chunk audio files into a single MP3 file.
-    Deletes individual chunk files after merging to save disk space.
-    Sends progress updates via WebSocket.
-    """
-    # Check if ffmpeg is available
-    try:
-        subprocess.run(['ffmpeg', '-version'], capture_output=True, check=True)
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        print("⚠ ffmpeg not found, skipping merge")
-        return
-    
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        return
-    
-    chunks = db.query(Chunk).filter(
-        Chunk.project_id == project_id,
-        Chunk.is_processed == True
-    ).order_by(Chunk.index).all()
-    
-    if not chunks:
-        return
-    
-    project_output_dir = settings.OUTPUT_DIR / str(project_id)
-    project_output_dir.mkdir(exist_ok=True)
-    
-    # Check if merged file already exists
-    output_filename_mp3 = f"{project.name}_final.mp3"
-    output_path_mp3 = project_output_dir / output_filename_mp3
-    
-    if output_path_mp3.exists():
-        print(f"✓ Merged file already exists for project {project_id}")
-        project.audio_path = str(output_path_mp3)
-        db.commit()
-        return
-    
-    # Update status to merging
-    project.status = "merging"
-    db.commit()
-    
-    # Broadcast merging status
-    await manager.broadcast({
-        "type": "status_update",
-        "project_id": project_id,
-        "status": "merging",
-        "progress": 99.0  # Start at 99% (processing was 100%)
-    })
-    
-    print(f"🔄 Merging {len(chunks)} chunks for project {project_id}...")
-    
-    # Merge audio files using FFmpeg concat demuxer (memory efficient)
-    concat_list_path = project_output_dir / "concat_list.txt"
-    silence_cache = {}  # duration_ms -> file_path
-    
-    chunk_files_to_delete = []
-    
-    # Phase 1: Create concat list and generate silence files (99% to 99.5%)
-    valid_chunks = [chunk for chunk in chunks if chunk.chunk_audio_path and os.path.exists(chunk.chunk_audio_path)]
-    total_valid = len(valid_chunks)
-    
-    if total_valid == 0:
-        print(f"⚠ No valid audio chunks found to merge for project {project_id}")
-        project.status = "completed"
-        db.commit()
-        return
-
-    try:
-        with open(concat_list_path, "w", encoding="utf-8") as f:
-            for idx, chunk in enumerate(valid_chunks):
-                chunk_path = chunk.chunk_audio_path
-                chunk_files_to_delete.append(chunk_path)
-                
-                # Format path for ffmpeg (escape backslashes or use forward slashes)
-                # Windows paths need care in ffmpeg concat files
-                safe_chunk_path = str(chunk_path).replace("\\", "/")
-                f.write(f"file '{safe_chunk_path}'\n")
-                
-                # Add silence between chunks based on text content
-                silence_duration = settings.CHUNK_SILENCE_DURATION
-                if chunk.text_content:
-                    text = chunk.text_content.strip()
-                    # If chunk does not end with sentence terminator, reduce silence
-                    if text and not any(text.endswith(end) for end in ['.', '!', '?', '"', "'", '”', '’']):
-                        if text.endswith((',', ';', ':')):
-                            silence_duration = 50   # Short pause for sub-clauses
-                        else:
-                            silence_duration = 10   # Minimal pause for split sentences
-                
-                if silence_duration > 0:
-                    # Generate/get silence file
-                    if silence_duration not in silence_cache:
-                        silence_filename = f"silence_{silence_duration}ms.wav"
-                        silence_path = project_output_dir / silence_filename
-                        
-                        if not silence_path.exists():
-                            # Generate silence audio once
-                            AudioSegment.silent(duration=silence_duration).export(str(silence_path), format="wav")
-                        
-                        silence_cache[silence_duration] = str(silence_path).replace("\\", "/")
-                    
-                    f.write(f"file '{silence_cache[silence_duration]}'\n")
-                
-                # Update progress
-                if total_valid > 0 and idx % 10 == 0:  # Don't spam updates
-                    merge_progress = 99.0 + (idx / total_valid) * 0.5
-                    await manager.broadcast({
-                        "type": "progress_update",
-                        "project_id": project_id,
-                        "progress": merge_progress
-                    })
-        
-        # Phase 2: Run FFmpeg (99.5% to 99.8%)
-        await manager.broadcast({
-            "type": "progress_update",
-            "project_id": project_id,
-            "progress": 99.5
-        })
-        
-        print(f"💾 Exporting merged audio as MP3 via FFmpeg...")
-        
-        # FFmpeg command
-        cmd = [
-            'ffmpeg', '-y',
-            '-f', 'concat',
-            '-safe', '0',
-            '-i', str(concat_list_path),
-            '-c:a', 'libmp3lame',
-            '-b:a', settings.EXPORT_BITRATE,
-            str(output_path_mp3)
-        ]
-        
-        # Run ffmpeg in thread pool to avoid blocking event loop
-        await asyncio.to_thread(
-            subprocess.run, 
-            cmd, 
-            check=True, 
-            stdout=subprocess.PIPE, 
-            stderr=subprocess.PIPE
-        )
-        
-        print(f"✓ Merged audio saved: {output_path_mp3}")
-        
-        # ==========================================
-        # Phase 2.5: ACX Mastering (Auto Normalize) - DISABLED
-        # Timeout riskine karşı devre dışı bırakıldı. Manuel işlem önerilir.
-        # ==========================================
-        # try:
-        #     logger.info(f"🎚️ Applying automatic ACX mastering...")
-        #     await manager.broadcast({
-        #         "type": "progress_update",
-        #         "project_id": project_id,
-        #         "progress": 99.6
-        #     })
-        #     
-        #     # Create a backup of the raw merged file
-        #     raw_path = str(output_path_mp3).replace("_final.mp3", "_raw.mp3")
-        #     
-        #     # Rename current final to raw
-        #     if os.path.exists(output_path_mp3):
-        #         if os.path.exists(raw_path):
-        #             os.remove(raw_path)
-        #         os.rename(output_path_mp3, raw_path)
-        #         
-        #         # Apply mastering
-        #         mastering = AudioMastering()
-        #         # Use thread pool for blocking operation
-        #         success = await asyncio.to_thread(
-        #             mastering.normalize_for_acx,
-        #             input_path=raw_path,
-        #             output_path=str(output_path_mp3),
-        #             use_ffmpeg_normalize=True
-        #         )
-        #         
-        #         if success:
-        #             logger.info(f"✓ ACX Mastering complete: {output_path_mp3}")
-        #         else:
-        #             logger.warning(f"⚠ ACX Mastering failed, reverting to raw audio")
-        #             # Revert
-        #             if os.path.exists(raw_path):
-        #                 if os.path.exists(output_path_mp3):
-        #                     os.remove(output_path_mp3)
-        #                 os.rename(raw_path, output_path_mp3)
-        #     
-        # except Exception as e:
-        #     logger.warning(f"⚠ Auto-mastering error: {e}")
-        #     # Ensure we have a valid final file
-        #     if os.path.exists(raw_path) and not os.path.exists(output_path_mp3):
-        #         os.rename(raw_path, output_path_mp3)
-        
-        await manager.broadcast({
-            "type": "progress_update",
-            "project_id": project_id,
-            "progress": 99.8
-        })
-
-    except Exception as e:
-        print(f"❌ Error merging audio: {e}")
-        project.status = "failed"
-        db.commit()
-        await manager.broadcast({
-            "type": "status_update",
-            "project_id": project_id,
-            "status": "failed",
-            "error": str(e)
-        })
-        # Clean up concat list if exists
-        if concat_list_path.exists():
-            try:
-                os.remove(concat_list_path)
-            except:
-                pass
-        return
-
-    # Phase 3: Delete chunk files and temp files (99.8% to 100%)
-    # Delete silence files
-    for silence_file in silence_cache.values():
-        try:
-            if os.path.exists(silence_file):
-                os.remove(silence_file)
-        except:
-            pass
-            
-    # Delete concat list
-    if concat_list_path.exists():
-        try:
-            os.remove(concat_list_path)
-        except:
-            pass
-
-    deleted_count = 0
-    total_to_delete = len(chunk_files_to_delete)
-    for idx, chunk_file in enumerate(chunk_files_to_delete):
-        try:
-            if os.path.exists(chunk_file):
-                os.remove(chunk_file)
-                deleted_count += 1
-                
-                # Update progress: 99.8% + (idx/total_to_delete * 0.2) = 99.8% to 100%
-                if total_to_delete > 0:
-                    delete_progress = 99.8 + (idx / total_to_delete) * 0.2
-                    await manager.broadcast({
-                        "type": "progress_update",
-                        "project_id": project_id,
-                        "progress": delete_progress
-                    })
-        except Exception as e:
-            print(f"⚠ Could not delete chunk file {chunk_file}: {e}")
-    
-    print(f"🗑️ Deleted {deleted_count} chunk files")
-    
-    # Update project with merged file path
-    project.audio_path = str(output_path_mp3)
-    project.status = "completed"
-    db.commit()
-    
-    # Clear chunk_audio_path in database (files are deleted)
-    for chunk in chunks:
-        chunk.chunk_audio_path = None
-    db.commit()
-    
-    # Broadcast completion
-    await manager.broadcast({
-        "type": "status_update",
-        "project_id": project_id,
-        "status": "completed",
-        "progress": 100
-    })
-    
-    print(f"✅ Merge completed for project {project_id}")
-
 async def process_audio_task(project_id: int, use_gpu: bool = False):
     """
-    Process all unprocessed chunks for a project.
-    
-    Features:
-    - Skips already processed chunks (supports resume)
-    - Retries failed chunks up to MAX_CHUNK_RETRIES times
-    - Tracks permanently failed chunks in project.failed_chunks
-    - Updates progress from where it left off
-    - Concurrent processing support (configurable)
+    Chunk üretimi, merge ve opsiyonel BG müzik miks akışı.
     """
     from ..db.session import SessionLocal
     db = SessionLocal()
-    
-    # Track failed chunks during this processing session
-    session_failed_chunks: List[int] = []
-    last_error_message: str = ""
-    
+
     try:
         project = db.query(Project).filter(Project.id == project_id).first()
         if not project:
-            print(f"Project {project_id} not found")
+            logger.error("Project %s not found", project_id)
             return
 
         chunks = db.query(Chunk).filter(Chunk.project_id == project_id).order_by(Chunk.index).all()
         total_chunks = len(chunks)
-        
-        # Load existing failed chunks (from previous attempts)
+
         existing_failed: List[int] = []
         if project.failed_chunks:
             try:
@@ -543,21 +54,13 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
             except json.JSONDecodeError:
                 existing_failed = []
 
-        # Calculate initial progress (for resume support)
         already_processed = sum(1 for c in chunks if c.is_processed)
         initial_progress = (already_processed / total_chunks) * 100 if total_chunks > 0 else 0
 
-        print(f"Processing project {project_id}: {total_chunks} chunks, use_gpu={use_gpu}")
-        print(f"  Already processed: {already_processed}/{total_chunks} ({initial_progress:.1f}%)")
-        if existing_failed:
-            print(f"  Previously failed chunks: {existing_failed}")
-
-        # Status ve cancellation bayrağı güncelle
         project.status = "processing"
         project.is_cancelled = False
         db.commit()
 
-        # Broadcast with initial progress (resume support)
         await manager.broadcast({
             "type": "status_update",
             "project_id": project_id,
@@ -565,168 +68,85 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
             "progress": initial_progress
         })
 
-        # Get unprocessed chunks
-        unprocessed_chunks = [c for c in chunks if not c.is_processed]
-        
-        # Create project output directory
-        project_output_dir = settings.OUTPUT_DIR / str(project_id)
-        project_output_dir.mkdir(exist_ok=True)
-        
-        # Process chunks sequentially (XTTS v2 is not thread-safe)
-        for chunk in unprocessed_chunks:
-            # Check cancellation
-            db.refresh(project)
-            if project.is_cancelled or project.status == "cancelled":
-                print(f"Project {project_id} cancelled. Stopping processing.")
-                await manager.broadcast({
-                    "type": "status_update",
-                    "project_id": project_id,
-                    "status": "cancelled",
-                    "progress": (db.query(Chunk)
-                                 .filter(Chunk.project_id == project_id,
-                                         Chunk.is_processed == True)
-                                 .count() / max(total_chunks, 1)) * 100,
-                })
-                project.status = "cancelled"
-                db.commit()
-                return
-            
-            output_path = str(project_output_dir / f"chunk_{chunk.index}.wav")
-            print(f"  Processing chunk {chunk.index}/{total_chunks-1}")
-            
-            # Process single chunk
-            result = await _process_single_chunk(chunk, project, output_path, use_gpu)
-            
-            if result.success:
-                # Update chunk in database
-                chunk.is_processed = True
-                chunk.chunk_audio_path = result.output_path
-                db.commit()
-                
-                # Calculate and broadcast progress
-                processed_count = db.query(Chunk).filter(
-                    Chunk.project_id == project_id,
-                    Chunk.is_processed == True
-                ).count()
-                progress = (processed_count / total_chunks) * 100
-                
-                # HER CHUNK için WebSocket mesajı gönder
-                await manager.broadcast({
-                    "type": "progress_update",
-                    "project_id": project_id,
-                    "chunk_index": chunk.index,
-                    "chunk_text_preview": (chunk.text_content or "")[:120],
-                    "progress": progress,
-                })
-            else:
-                # Track failed chunk
-                session_failed_chunks.append(chunk.index)
-                if result.error:
-                    last_error_message = f"Chunk {chunk.index}: {result.error}"
-                
-                # Debug logging for failed chunks
-                print(f"❌ FAILED CHUNK #{chunk.index}")
-                print(f"   Text length: {len(chunk.text_content)} chars")
-                print(f"   Text preview: {chunk.text_content[:200]}...")
-                print(f"   Error: {result.error}")
-                
-                # Save failed chunk to log file for analysis
-                try:
-                    import os
-                    log_path = os.path.join(os.getcwd(), FAILED_CHUNKS_LOG)
-                    with open(log_path, "a", encoding="utf-8") as f:
-                        f.write(f"\n{'='*60}\n")
-                        f.write(f"Chunk #{chunk.index} - Project {project_id}\n")
-                        f.write(f"Text length: {len(chunk.text_content)} chars\n")
-                        f.write(f"Text: {chunk.text_content}\n")
-                        f.write(f"Error: {result.error}\n")
-                except Exception as log_error:
-                    print(f"⚠ Could not write to log file: {log_error}")
-                
-                await manager.broadcast({
-                    "type": "status_update",
-                    "project_id": project_id,
-                    "status": "chunk_skipped",
-                    "chunk_index": chunk.index,
-                    "chunk_text_preview": (chunk.text_content or "")[:120],
-                    "message": f"Chunk {chunk.index} skipped: {result.error}"
-                })
-            
-            # Memory cleanup periodically
-            # T4 has 16GB VRAM, frequent cleanup hurts performance (sync overhead)
-            # Optimized to 30 for better stability vs performance balance
-            if chunk.index % 30 == 0:
-                # Re-fetch engine with correct type to call release/unload
-                engine = get_tts_engine(use_gpu=use_gpu)
-                
-                if hasattr(engine, "release_memory"):
-                    engine.release_memory()
-        
-        # Eğer iptal edilmediyse normal tamamlanma ve merge
-        db.refresh(project)
-        if not project.is_cancelled and project.status != "cancelled":
-            # Update failed chunks list (combine existing + new)
-            all_failed = list(set(existing_failed + session_failed_chunks))
-            if all_failed:
-                project.failed_chunks = json.dumps(sorted(all_failed))
-                print(f"⚠ Project {project_id} completed with {len(all_failed)} failed chunks: {all_failed}")
-            else:
-                project.failed_chunks = None
-            
-            # Update last error if any
-            if last_error_message:
-                project.last_error = last_error_message
-            else:
-                project.last_error = None
-            
-            project.status = "completed"
+        run_result = await process_chunks(
+            project=project,
+            chunks=chunks,
+            use_gpu=use_gpu,
+            db=db,
+            engine_provider=get_tts_engine,
+        )
+
+        if run_result.cancelled:
+            return
+
+        all_failed = sorted(set(existing_failed + run_result.failed_chunks))
+        project.failed_chunks = json.dumps(all_failed) if all_failed else None
+        project.last_error = run_result.last_error
+
+        # FFmpeg availability
+        try:
+            subprocess.run(['ffmpeg', '-version'], capture_output=True, check=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            logger.error("ffmpeg not found, skipping merge")
+            project.status = "failed"
             db.commit()
-
-            # Calculate final progress (may be <100% if chunks failed)
-            processed_count = db.query(Chunk).filter(
-                Chunk.project_id == project_id,
-                Chunk.is_processed == True
-            ).count()
-            final_progress = (processed_count / total_chunks) * 100 if total_chunks > 0 else 100
-
             await manager.broadcast({
                 "type": "status_update",
                 "project_id": project_id,
-                "status": "completed",
-                "progress": final_progress,
-                "failed_chunks": all_failed if all_failed else None
+                "status": "failed",
+                "error": "ffmpeg not available"
             })
+            return
 
-            # Automatically merge audio files after processing completes
-            print(f"🔄 Starting automatic merge for project {project_id}...")
-            try:
-                await merge_audio_files(project_id, db)
-                print(f"✓ Merge completed for project {project_id}")
-            except Exception as merge_error:
-                print(f"⚠ Merge failed for project {project_id}: {merge_error}")
-                # Don't fail the whole process if merge fails
-        
-    except Exception as e:
-        error_msg = str(e)
-        print(f"Error processing project {project_id}: {error_msg}")
-        
-        # Save error and failed chunks info
-        project.status = "failed"
-        project.last_error = error_msg
-        
-        # Save any failed chunks from this session
-        all_failed = list(set(existing_failed + session_failed_chunks))
-        if all_failed:
-            project.failed_chunks = json.dumps(sorted(all_failed))
-        
+        project_output_dir = settings.OUTPUT_DIR / str(project_id)
+        project_output_dir.mkdir(exist_ok=True)
+
+        project.status = "merging"
         db.commit()
-        
         await manager.broadcast({
             "type": "status_update",
             "project_id": project_id,
-            "status": "failed",
-            "error": error_msg,
+            "status": "merging",
+            "progress": 99.0
+        })
+
+        merged_path = await merge_project_audio(
+            project=project,
+            chunks=chunks,
+            project_output_dir=project_output_dir,
+        )
+        db.commit()
+
+        final_path = await mix_background_music(
+            voice_mp3_path=merged_path,
+            bg_music_file=project.bg_music_file if project.bg_music_enabled else "",
+            volume=project.bg_music_volume or settings.DEFAULT_BG_MUSIC_VOLUME,
+        )
+
+        project.audio_path = str(final_path)
+        project.status = "completed"
+        db.commit()
+
+        await manager.broadcast({
+            "type": "status_update",
+            "project_id": project_id,
+            "status": "completed",
+            "progress": 100,
             "failed_chunks": all_failed if all_failed else None
         })
+
+    except Exception as e:
+        error_msg = str(e)
+        logger.error("Error processing project %s: %s", project_id, error_msg)
+        if 'project' in locals() and project:
+            project.status = "failed"
+            project.last_error = error_msg
+            db.commit()
+            await manager.broadcast({
+                "type": "status_update",
+                "project_id": project_id,
+                "status": "failed",
+                "error": error_msg
+            })
     finally:
         db.close()

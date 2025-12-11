@@ -68,6 +68,11 @@ class Project(Base):
     top_p = Column(Float, default=0.85)
     repetition_penalty = Column(Float, default=2.0)
 
+    # Background music
+    bg_music_enabled = Column(Boolean, default=False)
+    bg_music_file = Column(String, nullable=True)
+    bg_music_volume = Column(Float, default=0.10)  # 0-1 arası
+
     # Cancellation / control
     # When True, background processing should stop as soon as possible.
     is_cancelled = Column(Boolean, default=False)

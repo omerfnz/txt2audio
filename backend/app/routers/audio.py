@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from ..db.session import get_db
 from ..db.models import Project, Chunk
 from ..core.config import settings
-from ..services.audio_service import merge_audio_files
+from ..services.merge_concat import merge_project_audio
+from ..services.background_music import mix_background_music
 import os
 import asyncio
 from typing import AsyncGenerator
@@ -93,7 +94,19 @@ async def download_merged_audio(project_id: int, db: Session = Depends(get_db)):
         # Fallback: merge on-demand if file doesn't exist
         print(f"⚠ Merged file not found, merging on-demand...")
         try:
-            await merge_audio_files(project_id, db)
+            merged_path = await merge_project_audio(
+                project=project,
+                chunks=chunks,
+                project_output_dir=project_output_dir,
+            )
+            # Optional background music mix on-demand
+            final_path = await mix_background_music(
+                voice_mp3_path=merged_path,
+                bg_music_file=project.bg_music_file if project.bg_music_enabled else "",
+                volume=project.bg_music_volume or settings.DEFAULT_BG_MUSIC_VOLUME,
+            )
+            project.audio_path = str(final_path)
+            db.commit()
             db.refresh(project)
         except Exception as e:
             raise HTTPException(

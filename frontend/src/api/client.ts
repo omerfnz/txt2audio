@@ -39,6 +39,14 @@ interface ProjectStatusResponse {
   progress: number;
 }
 
+interface MusicListResponse {
+  music: Array<{
+    name: string;
+    filename: string;
+    path: string;
+  }>;
+}
+
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE,
   timeout: 300000, // 5 dakika timeout (büyük dosyalar için)
@@ -79,6 +87,13 @@ export async function checkBackendHealth(): Promise<boolean> {
 export async function getReferenceVoices(): Promise<ReferenceVoicesResponse> {
   return retryRequest(async () => {
     const response = await api.get<ReferenceVoicesResponse>("/reference-voices");
+    return response.data;
+  });
+}
+
+export async function getMusicList(): Promise<MusicListResponse> {
+  return retryRequest(async () => {
+    const response = await api.get<MusicListResponse>("/music");
     return response.data;
   });
 }

@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     CHUNK_SILENCE_DURATION: int = 350  # ms
     EXPORT_BITRATE: str = "192k"
     EXPORT_FORMAT: str = "mp3"
+
+    # Background music defaults
+    DEFAULT_BG_MUSIC_ENABLED: bool = False
+    DEFAULT_BG_MUSIC_FILE: str = ""  # None/empty means no music
+    DEFAULT_BG_MUSIC_VOLUME: float = 0.10  # 0-1 arası, UI 0-100'e maplenecek
     
     # Model Warm-up (AÇIK - güvenli)
     WARMUP_ON_LOAD: bool = True
@@ -72,6 +77,10 @@ class Settings(BaseSettings):
     @property
     def MODELS_DIR(self) -> Path:
         return self.STORAGE_DIR / "models"
+
+    @property
+    def MUSIC_DIR(self) -> Path:
+        return self.STORAGE_DIR / "music"
     
     @property
     def REFERENCE_VOICES_DIR(self) -> Path:
@@ -87,6 +96,7 @@ class Settings(BaseSettings):
         self.UPLOAD_DIR.mkdir(exist_ok=True)
         self.OUTPUT_DIR.mkdir(exist_ok=True)
         self.MODELS_DIR.mkdir(exist_ok=True)
+        self.MUSIC_DIR.mkdir(exist_ok=True)
         # Reference voices dir might be managed manually or by git
 
     class Config:
