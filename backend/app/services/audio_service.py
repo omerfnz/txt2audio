@@ -120,7 +120,7 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
         final_path = await mix_background_music(
             voice_mp3_path=merged_path,
             bg_music_file=project.bg_music_file if project.bg_music_enabled else "",
-            volume=project.bg_music_volume or settings.DEFAULT_BG_MUSIC_VOLUME,
+            volume=project.bg_music_volume if project.bg_music_volume is not None else settings.DEFAULT_BG_MUSIC_VOLUME,
         )
 
         project.audio_path = str(final_path)
