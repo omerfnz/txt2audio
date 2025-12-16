@@ -12,21 +12,30 @@ export const useWebSocket = () => {
     const envUrl = import.meta.env.VITE_WS_URL as string | undefined;
     if (envUrl) return envUrl;
 
-    const isLocal = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+    const hostname = window.location.hostname;
+    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0';
+    
     if (isLocal) {
       return 'ws://localhost:8000/api/ws';
     }
 
     // CloudSpaces/Lightning AI için aynı domain farklı port
-    if (window.location.hostname.includes('cloudspaces.litng.ai') || window.location.hostname.includes('litng.ai')) {
+    if (hostname.includes('cloudspaces.litng.ai') || hostname.includes('litng.ai')) {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const hostname = window.location.hostname;
-      // Frontend portundan backend portuna geçiş
-      const backendPort = hostname.includes('5173') ? hostname.replace('5173', '8000') :
-                         hostname.includes('4173') ? hostname.replace('4173', '8000') : hostname;
-      return `${protocol}//${backendPort}/api/ws`;
+      const port = window.location.port;
+      let backendPort = '8000';
+      
+      // Eğer port varsa ve 5173 veya 4173 ise, 8000'e çevir
+      if (port === '5173' || port === '4173') {
+        backendPort = '8000';
+      } else if (port) {
+        backendPort = port;
+      }
+      
+      return `${protocol}//${hostname}:${backendPort}/api/ws`;
     }
 
+    // Fallback: Aynı host ve port, sadece protocol değişikliği
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host; // port dahil
     return `${protocol}//${host}/api/ws`;

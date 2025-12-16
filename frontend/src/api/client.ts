@@ -2,30 +2,49 @@ import type { AxiosInstance } from "axios";
 import axios from "axios";
 
 // API tabanı: CloudSpaces için aynı domain, farklı port
-const API_BASE = (() => {
+export const getApiBase = () => {
   const envUrl = import.meta.env.VITE_API_URL;
   if (envUrl) {
     console.log('Using API_BASE from env:', envUrl);
     return envUrl.replace(/\/$/, '');
   }
 
+  // Localhost kontrolü - öncelikli
+  const hostname = window.location.hostname;
+  const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0';
+  
+  if (isLocal) {
+    const defaultUrl = 'http://localhost:8000/api';
+    console.log('Using localhost API_BASE:', defaultUrl);
+    return defaultUrl;
+  }
+
   // CloudSpaces/Lightning AI'da çalışıyorsak, aynı domain farklı port kullan
-  if (window.location.hostname.includes('cloudspaces.litng.ai') || window.location.hostname.includes('litng.ai')) {
+  if (hostname.includes('cloudspaces.litng.ai') || hostname.includes('litng.ai')) {
     const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
-    // Frontend portundan backend portuna geçiş (örn: 5173 → 8000)
-    const backendPort = hostname.includes('5173') ? hostname.replace('5173', '8000') :
-                       hostname.includes('4173') ? hostname.replace('4173', '8000') : hostname;
-    const backendUrl = `${protocol}//${backendPort}/api`;
+    // Port numarasını hostname'den değil, location'dan al
+    const port = window.location.port;
+    let backendPort = '8000';
+    
+    // Eğer port varsa ve 5173 veya 4173 ise, 8000'e çevir
+    if (port === '5173' || port === '4173') {
+      backendPort = '8000';
+    } else if (port) {
+      backendPort = port;
+    }
+    
+    const backendUrl = `${protocol}//${hostname}:${backendPort}/api`;
     console.log('Using CloudSpaces API_BASE:', backendUrl);
     return backendUrl;
   }
 
-  // Default: Local development
+  // Fallback: Local development
   const defaultUrl = 'http://localhost:8000/api';
-  console.log('Using default API_BASE:', defaultUrl);
+  console.log('Using fallback API_BASE:', defaultUrl);
   return defaultUrl;
-})();
+};
+
+const API_BASE = getApiBase();
 
 interface ReferenceVoicesResponse {
   voices: Record<

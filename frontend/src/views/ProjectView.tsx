@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Player } from '../components/Player';
 import { useProjectStatus } from '../hooks/useProjectStatus';
 import { Terminal, CheckCircle, Circle } from 'lucide-react';
-import { cancelProcessing, resumeProject } from '../api/client';
+import { cancelProcessing, resumeProject, getApiBase } from '../api/client';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,16 +13,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 interface ProjectViewProps {
     projectId: number;
 }
-
-// Helper to get API base URL
-const getApiBase = () => {
-    if (window.location.hostname === 'localhost') {
-        return 'http://localhost:8000/api';
-    }
-    const protocol = window.location.protocol;
-    const host = window.location.hostname.replace('4173', '8000');
-    return `${protocol}//${host}/api`;
-};
 
 export const ProjectView = ({ projectId }: ProjectViewProps) => {
     const { status, progress, chunks, logs, processingStartTime, estimatedEndTime } = useProjectStatus(projectId);
@@ -102,8 +92,8 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
                 <div className="flex items-center justify-between mb-6">
                     <div>
                         <h1 className="text-3xl font-bold text-foreground">Project View</h1>
-                        <p className="text-muted-foreground">
-                            ID: {projectId} • Status:{' '}
+                        <div className="text-muted-foreground flex items-center gap-2">
+                            <span>ID: {projectId} • Status:</span>
                             <Badge
                                 variant={
                                     status === 'completed' ? 'default' :
@@ -114,7 +104,7 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
                             >
                                 {status === 'merging' ? 'Merging' : status}
                             </Badge>
-                        </p>
+                        </div>
                     </div>
                     <div className="flex items-center gap-4">
                         {status === 'completed' && (
