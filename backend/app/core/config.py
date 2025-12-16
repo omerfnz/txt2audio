@@ -19,6 +19,10 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://localhost:4173",
         "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:4173",
+        "http://0.0.0.0:5173",
+        "*",  # Tüm origin'lere izin ver (development için)
     ]  # Env ile override edilebilir (JSON veya virgülle ayrılmış liste)
     
     # TTS Defaults (XTTS v2)

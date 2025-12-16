@@ -1,16 +1,10 @@
 import type { AxiosInstance } from "axios";
 import axios from "axios";
 
-// API tabanı: Önce env, yoksa akıllı varsayılan
-const API_BASE = (() => {
-  const envUrl = import.meta.env.VITE_API_URL as string | undefined;
-  if (envUrl) return envUrl.replace(/\/$/, '');
-  const isLocal = typeof window !== 'undefined' && window.location.hostname === 'localhost';
-  if (isLocal) return 'http://localhost:8000/api';
-  const protocol = window.location.protocol;
-  const host = window.location.host; // port dahil
-  return `${protocol}//${host}/api`;
-})();
+// API tabanı: Vite proxy ile çalışır
+const API_BASE = '/api';
+
+console.log('API_BASE set to:', API_BASE);
 
 interface ReferenceVoicesResponse {
   voices: Record<
@@ -86,14 +80,18 @@ export async function checkBackendHealth(): Promise<boolean> {
 
 export async function getReferenceVoices(): Promise<ReferenceVoicesResponse> {
   return retryRequest(async () => {
+    console.log('Calling getReferenceVoices API:', API_BASE + "/reference-voices");
     const response = await api.get<ReferenceVoicesResponse>("/reference-voices");
+    console.log('getReferenceVoices response:', response.data);
     return response.data;
   });
 }
 
 export async function getMusicList(): Promise<MusicListResponse> {
   return retryRequest(async () => {
+    console.log('Calling getMusicList API:', API_BASE + "/music");
     const response = await api.get<MusicListResponse>("/music");
+    console.log('getMusicList response:', response.data);
     return response.data;
   });
 }

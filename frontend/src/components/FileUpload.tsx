@@ -76,7 +76,10 @@ export function FileUpload({ onUpload }: FileUploadProps) {
     useEffect(() => {
         async function loadVoices() {
             try {
+                console.log('Loading reference voices...');
                 const data = await getReferenceVoices();
+                console.log('Reference voices data:', data);
+
                 if (data && data.voices) {
                     setReferenceVoices(data.voices);
 
@@ -88,26 +91,36 @@ export function FileUpload({ onUpload }: FileUploadProps) {
                             setSelectedVoice(data.voices[categories[0]][0].path);
                         }
                     }
+                    console.log('Reference voices loaded successfully:', categories.length, 'categories');
                 } else {
                     console.warn('Reference voices data is empty or invalid');
                     setReferenceVoices({});
                 }
             } catch (error) {
                 console.error('Failed to load reference voices:', error);
+                console.error('Error details:', error);
                 setReferenceVoices({}); // Ensure it's never undefined
             }
         }
         async function loadMusic() {
             try {
+                console.log('Loading music list...');
                 const data = await getMusicList();
+                console.log('Music list data:', data);
                 setMusicOptions(data.music || []);
+                console.log('Music list loaded successfully:', data.music?.length || 0, 'files');
             } catch (error) {
                 console.error('Failed to load music list:', error);
+                console.error('Error details:', error);
                 setMusicOptions([]);
             }
         }
         loadVoices();
         loadMusic();
+
+        // Debug: Test API connectivity
+        console.log('API Base URL:', import.meta.env.VITE_API_URL || 'http://localhost:8000/api');
+        console.log('Current location:', window.location.href);
     }, []);
 
     const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
