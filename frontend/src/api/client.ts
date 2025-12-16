@@ -1,10 +1,19 @@
 import type { AxiosInstance } from "axios";
 import axios from "axios";
 
-// API tabanı: Vite proxy ile çalışır
-const API_BASE = '/api';
+// API tabanı: Environment variable'dan oku, yoksa localhost kullan
+const API_BASE = (() => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl) {
+    console.log('Using API_BASE from env:', envUrl);
+    return envUrl.replace(/\/$/, '');
+  }
 
-console.log('API_BASE set to:', API_BASE);
+  // Default: Backend localhost'ta çalışıyor
+  const defaultUrl = 'http://localhost:8000/api';
+  console.log('Using default API_BASE:', defaultUrl);
+  return defaultUrl;
+})();
 
 interface ReferenceVoicesResponse {
   voices: Record<
