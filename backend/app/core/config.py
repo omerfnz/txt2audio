@@ -22,6 +22,8 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5173",
         "http://127.0.0.1:4173",
         "http://0.0.0.0:5173",
+        "https://*.cloudspaces.litng.ai",  # CloudSpaces HTTPS
+        "https://*.litng.ai",  # Lightning AI
         "*",  # Tüm origin'lere izin ver (development için)
     ]  # Env ile override edilebilir (JSON veya virgülle ayrılmış liste)
     
