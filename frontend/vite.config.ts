@@ -13,11 +13,12 @@ export default defineConfig({
   server: {
     host: true, // 0.0.0.0 - tüm network interface'lere izin ver
     strictPort: false,
+    allowedHosts: ['.litng.ai', '.lightning.ai', '.cloudspaces.litng.ai', 'localhost'], // Lightning AI ve cloudspaces domainlerini allow et
   },
   preview: {
     host: true, // Lightning AI gibi external hostları kabul et
     strictPort: false,
-    allowedHosts: ['.litng.ai', '.lightning.ai', 'localhost'], // Lightning AI domainlerini allow et
+    allowedHosts: ['.litng.ai', '.lightning.ai', '.cloudspaces.litng.ai', 'localhost'], // Lightning AI ve cloudspaces domainlerini allow et
   },
   build: {
     // Cache busting için her build'de yeni hash'ler oluştur
