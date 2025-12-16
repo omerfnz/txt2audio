@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Player } from '../components/Player';
 import { useProjectStatus } from '../hooks/useProjectStatus';
 import { Terminal, CheckCircle, Circle } from 'lucide-react';
-import { getAudioQuality, normalizeAudio, cancelProcessing, resumeProject, type AudioQualityResponse } from '../api/client';
+import { cancelProcessing, resumeProject } from '../api/client';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,10 +28,6 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
     const { status, progress, chunks, logs, processingStartTime, estimatedEndTime } = useProjectStatus(projectId);
     const [currentAudioUrl, setCurrentAudioUrl] = useState<string | null>(null);
     const [currentChunkIndex, setCurrentChunkIndex] = useState<number | null>(null);
-    const [quality, setQuality] = useState<AudioQualityResponse | null>(null);
-    const [qualityLoading, setQualityLoading] = useState(false);
-    const [normalizeLoading, setNormalizeLoading] = useState(false);
-    const [qualityError, setQualityError] = useState<string | null>(null);
     const [cancelLoading, setCancelLoading] = useState(false);
     const [resumeLoading, setResumeLoading] = useState(false);
 
@@ -54,41 +50,6 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
         setCurrentChunkIndex(null);
     };
 
-    const handleAnalyzeQuality = async () => {
-        try {
-            setQualityLoading(true);
-            setQualityError(null);
-            const result = await getAudioQuality(projectId);
-            setQuality(result);
-        } catch (error) {
-            console.error('Audio quality analysis failed:', error);
-            setQuality(null);
-            setQualityError(
-                error instanceof Error ? error.message : 'Audio quality analysis failed'
-            );
-        } finally {
-            setQualityLoading(false);
-        }
-    };
-
-    const handleNormalize = async () => {
-        try {
-            setNormalizeLoading(true);
-            setQualityError(null);
-            await normalizeAudio(projectId);
-
-            // Normalizasyon bittikten sonra kaliteyi tekrar ölçmek için kullanıcıyı yönlendirmek üzere
-            // sadece state'i resetliyoruz; kullanıcı yeniden "Analyze Quality" butonuna basabilir.
-            setQuality(null);
-        } catch (error) {
-            console.error('Audio normalization failed:', error);
-            setQualityError(
-                error instanceof Error ? error.message : 'Audio normalization failed'
-            );
-        } finally {
-            setNormalizeLoading(false);
-        }
-    };
 
     const handleCancel = async () => {
         try {
@@ -290,58 +251,16 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
                                 <CardTitle className="text-sm">Audio Tools</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                {/* ACX Quality Check */}
+                                {/* Auto ACX Mastering Status */}
                                 <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs font-medium">ACX Quality Check</span>
-                                        <Button 
-                                            variant="outline" 
-                                            size="sm" 
-                                            onClick={handleAnalyzeQuality}
-                                            disabled={qualityLoading || !status || status !== 'completed'}
-                                            className="h-7 text-xs"
-                                        >
-                                            {qualityLoading ? 'Analyzing...' : 'Analyze'}
-                                        </Button>
-                                    </div>
-                                    
-                                    {qualityError && (
-                                        <p className="text-xs text-destructive">{qualityError}</p>
-                                    )}
-
-                                    {quality && (
-                                        <div className="rounded-md bg-muted p-2 space-y-1">
-                                            <div className="flex justify-between text-xs">
-                                                <span>Overall:</span>
-                                                <Badge variant={quality.overall_acx_compliant ? "default" : "destructive"} className="h-5 text-[10px]">
-                                                    {quality.overall_acx_compliant ? "PASS" : "FAIL"}
-                                                </Badge>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-1 text-[10px] text-muted-foreground mt-1">
-                                                <div>RMS: {quality.analysis.rms_db}dB</div>
-                                                <div>Peak: {quality.analysis.peak_db}dB</div>
-                                                <div>Noise: {quality.analysis.noise_floor_db}dB</div>
-                                            </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-xs font-medium">Auto ACX Mastering</span>
+                                        <span className="text-[10px] text-muted-foreground">Applied automatically during processing</span>
+                                        <div className="mt-1">
+                                            <Badge variant="default" className="h-5 text-[10px]">
+                                                ✅ ACTIVE
+                                            </Badge>
                                         </div>
-                                    )}
-                                </div>
-
-                                {/* ACX Mastering */}
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex flex-col">
-                                            <span className="text-xs font-medium">Auto-Mastering</span>
-                                            <span className="text-[10px] text-muted-foreground">Normalize to ACX specs</span>
-                                        </div>
-                                        <Button 
-                                            variant="secondary" 
-                                            size="sm" 
-                                            onClick={handleNormalize}
-                                            disabled={normalizeLoading || !status || status !== 'completed'}
-                                            className="h-7 text-xs"
-                                        >
-                                            {normalizeLoading ? 'Processing...' : 'Normalize'}
-                                        </Button>
                                     </div>
                                 </div>
                             </CardContent>

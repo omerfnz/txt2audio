@@ -68,6 +68,9 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
             "progress": initial_progress
         })
 
+        if settings.DEBUG_MODE:
+            logger.info(f"🔍 DEBUG MODE: Processing {len(chunks)} chunks for project {project_id}")
+
         run_result = await process_chunks(
             project=project,
             chunks=chunks,
@@ -75,6 +78,10 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
             db=db,
             engine_provider=get_tts_engine,
         )
+
+        if settings.DEBUG_MODE:
+            logger.info(f"🔍 DEBUG MODE: Processing completed | Processed: {run_result.processed_count} | "
+                       f"Failed: {len(run_result.failed_chunks)} | Total: {run_result.total_chunks}")
 
         if run_result.cancelled:
             return

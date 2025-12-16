@@ -56,6 +56,9 @@ class Settings(BaseSettings):
     GPU_TEMP_CRITICAL_C: int = 90
     GPU_VRAM_WARNING_PERCENT: int = 85
 
+    # Debug Mode
+    DEBUG_MODE: bool = True
+
     # F5-TTS Configuration
     F5_MODEL_CKPT: str = "" # Optional custom checkpoint path
     F5_VOCAB_FILE: str = "" # Optional vocab file

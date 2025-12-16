@@ -88,9 +88,9 @@ class TTSEngine:
             self._speaker_cache = LRUCache(max_size=settings.SPEAKER_CACHE_MAX_SIZE)
             logger.info(f"✓ Speaker Embedding Cache aktif (max {settings.SPEAKER_CACHE_MAX_SIZE} speaker)")
 
-        # Quality thresholds for individual chunks
-        self.min_chunk_duration_ms = 700
-        self.min_chunk_rms_db = -50.0
+        # Quality thresholds for individual chunks (Sıkılaştırıldı: Sessiz chunk'ları önlemek için)
+        self.min_chunk_duration_ms = 300  # 700ms'den 500ms'ye düşürüldü (çok kısa chunk'ları önle)
+        self.min_chunk_rms_db = -35.0  # -50.0dB → -35.0dB (daha yüksek minimum ses seviyesi)
         
         # Model indirme dizini (settings.MODELS_DIR ile sabit)
         self.model_path = str(settings.MODELS_DIR)
@@ -420,10 +420,9 @@ class TTSEngine:
                 # Temel kalite kontrolü (çok kısa / sessiz)
                 if duration_ms < self.min_chunk_duration_ms or rms_db < self.min_chunk_rms_db:
                     logger.warning(
-                        "⚠ Chunk below quality thresholds "
-                        f"(duration={duration_ms}ms, rms={rms_db:.2f}dB, "
-                        f"min_duration={self.min_chunk_duration_ms}ms, "
-                        f"min_rms={self.min_chunk_rms_db}dB). Marking as failed."
+                        f"⚠️ QUALITY CONTROL FAILED | Chunk duration={duration_ms}ms rms={rms_db:.2f}dB | "
+                        f"Min duration={self.min_chunk_duration_ms}ms min_rms={self.min_chunk_rms_db}dB | "
+                        f"Text length: {len(text)} chars | Text preview: '{text[:50]}...'"
                     )
                     try:
                         os.remove(output_path)
@@ -441,12 +440,10 @@ class TTSEngine:
                     # Sadece uzun metinler için kontrol et (20+ kelime)
                     truncation_ratio = (duration_ms / expected_duration_ms) * 100
                     logger.warning(
-                        f"⚠ TRUNCATED AUDIO DETECTED! "
-                        f"Words: {words_count}, "
-                        f"Expected: ~{expected_duration_ms/1000:.1f}s, "
-                        f"Got: {duration_sec:.1f}s ({truncation_ratio:.0f}%)"
+                        f"⚠️ TRUNCATED AUDIO DETECTED! | Words: {words_count} | "
+                        f"Expected: ~{expected_duration_ms/1000:.1f}s | Got: {duration_sec:.1f}s ({truncation_ratio:.0f}%) | "
+                        f"Text: '{text[:80]}...'"
                     )
-                    logger.warning(f"   Text preview: {text[:80]}...")
                     # Yarıda kesik ses dosyasını sil ve retry tetikle
                     try:
                         os.remove(output_path)
@@ -493,7 +490,8 @@ class TTSEngine:
                 final_duration_sec = len(audio_with_pause) / 1000.0
                 final_size = os.path.getsize(output_path)
                 
-                logger.info(f"✓ Audio generated & trimmed: {final_duration_sec:.1f}s (was {duration_sec:.1f}s), {final_size:,} bytes")
+                logger.info(f"✅ Audio generated & trimmed | Duration: {final_duration_sec:.1f}s (was {duration_sec:.1f}s) | "
+                          f"Size: {final_size:,} bytes | RMS: {rms_db:.1f}dB | Text length: {len(text)} chars")
                 
             except Exception as silence_error:
                 logger.warning(f"⚠ Warning: Could not add silence / run quality check: {silence_error}")

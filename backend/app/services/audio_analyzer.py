@@ -4,7 +4,7 @@ ACX/Audible standartlarına uygunluk kontrolü.
 """
 import numpy as np
 from pydub import AudioSegment
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 import os
 
 
@@ -235,8 +235,128 @@ class AudioAnalyzer:
             }
         }
 
+    def detect_long_silences(self, wav_path: str, min_duration: float = 5.0) -> List[Tuple[float, float, float]]:
+        """
+        Uzun sessizlikleri tespit eder (Carmilla problemi için).
+
+        Args:
+            wav_path: Ses dosyası yolu
+            min_duration: Minimum sessizlik süresi (saniye)
+
+        Returns:
+            [(start_time, end_time, duration), ...] uzun sessizlik listesi
+        """
+        import librosa
+        from typing import List, Tuple
+
+        # Ses dosyasını yükle (düşük sample rate ile hızlı analiz)
+        y, sr = librosa.load(wav_path, sr=22050)
+
+        # RMS hesapla
+        hop_length = 512
+        frame_length = 2048
+        rms = librosa.feature.rms(y=y, frame_length=frame_length, hop_length=hop_length)[0]
+        times = librosa.times_like(rms, sr=sr, hop_length=hop_length)
+
+        # Sessizlik eşikleri
+        silence_threshold_linear = 10 ** (-35.0 / 20)  # -35dB
+
+        # Uzun sessizlikleri tespit et
+        long_silences = []
+        current_silence_start = None
+
+        for i, (time, is_silent) in enumerate(zip(times, rms < silence_threshold_linear)):
+            if is_silent and current_silence_start is None:
+                current_silence_start = time
+            elif not is_silent and current_silence_start is not None:
+                silence_duration = time - current_silence_start
+                if silence_duration >= min_duration:
+                    long_silences.append((current_silence_start, time, silence_duration))
+                current_silence_start = None
+
+        # Son sessizlik varsa
+        if current_silence_start is not None:
+            silence_duration = len(y) / sr - current_silence_start
+            if silence_duration >= min_duration:
+                long_silences.append((current_silence_start, len(y) / sr, silence_duration))
+
+        return long_silences
+
+    def get_silence_analysis(self, wav_path: str) -> Dict[str, any]:
+        """
+        Sessizlik analizi raporu.
+
+        Returns:
+            {
+                'total_silence_percentage': float,
+                'long_silences': [(start, end, duration), ...],
+                'long_silence_count': int,
+                'max_silence_duration': float
+            }
+        """
+        import librosa
+
+        # Temel analiz
+        y, sr = librosa.load(wav_path, sr=22050)
+        rms = librosa.feature.rms(y=y, frame_length=2048, hop_length=512)[0]
+
+        silence_threshold_linear = 10 ** (-35.0 / 20)
+        silent_frames = rms < silence_threshold_linear
+        silence_percentage = (np.sum(silent_frames) / len(rms)) * 100
+
+        # Uzun sessizlikler
+        long_silences = self.detect_long_silences(wav_path, min_duration=5.0)
+        max_silence = max([dur for _, _, dur in long_silences], default=0)
+
+        return {
+            'total_silence_percentage': round(silence_percentage, 2),
+            'long_silences': long_silences,
+            'long_silence_count': len(long_silences),
+            'max_silence_duration': round(max_silence, 1)
+        }
+
 
 def analyze_audio_file(wav_path: str) -> Dict[str, float]:
     """Helper function for quick analysis"""
     analyzer = AudioAnalyzer()
     return analyzer.analyze(wav_path)
+
+
+def analyze_silence_and_acx(wav_path: str) -> Dict[str, any]:
+    """
+    Hem sessizlik hem ACX analizi yapan kapsamlı fonksiyon.
+
+    Returns:
+        {
+            'acx_analysis': {...},  # ACX uyumluluk
+            'silence_analysis': {...},  # Sessizlik raporu
+            'overall_quality': 'GOOD'|'FAIR'|'POOR'
+        }
+    """
+    analyzer = AudioAnalyzer()
+
+    # ACX analizi
+    acx_results = analyzer.analyze(wav_path)
+    compliance_details = analyzer.get_compliance_details(acx_results)
+
+    # Sessizlik analizi
+    silence_results = analyzer.get_silence_analysis(wav_path)
+
+    # Genel kalite değerlendirmesi
+    acx_compliant = acx_results['acx_compliant']
+    long_silences = silence_results['long_silence_count']
+    silence_percentage = silence_results['total_silence_percentage']
+
+    if acx_compliant and long_silences == 0 and silence_percentage < 20:
+        overall_quality = 'GOOD'
+    elif acx_compliant and long_silences <= 2 and silence_percentage < 30:
+        overall_quality = 'FAIR'
+    else:
+        overall_quality = 'POOR'
+
+    return {
+        'acx_analysis': acx_results,
+        'compliance_details': compliance_details,
+        'silence_analysis': silence_results,
+        'overall_quality': overall_quality
+    }

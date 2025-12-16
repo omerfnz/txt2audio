@@ -163,52 +163,6 @@ export async function getTTSPresets(): Promise<{ presets: Record<string, any> }>
 }
 
 // ACX / Audio Quality
-export interface AudioQualityResponse {
-  project_id: number;
-  audio_path: string;
-  analysis: {
-    rms_db: number;
-    peak_db: number;
-    noise_floor_db: number;
-    acx_compliant: boolean;
-    duration_seconds: number;
-    sample_rate: number;
-    channels: number;
-  };
-  compliance_details: {
-    rms: {
-      value: number;
-      pass: boolean;
-      target: string;
-      description: string;
-    };
-    peak: {
-      value: number;
-      pass: boolean;
-      target: string;
-      description: string;
-    };
-    noise_floor: {
-      value: number;
-      pass: boolean;
-      target: string;
-      description: string;
-    };
-  };
-  overall_acx_compliant: boolean;
-}
-
-export async function getAudioQuality(projectId: number): Promise<AudioQualityResponse> {
-  const response = await api.get<AudioQualityResponse>(`/projects/${projectId}/audio-quality`);
-  return response.data;
-}
-
-export async function normalizeAudio(projectId: number): Promise<{ project_id: number; message: string; status: string }> {
-  const response = await api.post<{ project_id: number; message: string; status: string }>(
-    `/projects/${projectId}/normalize`
-  );
-  return response.data;
-}
 
 export async function cancelProcessing(projectId: number): Promise<{ project_id: number; status: string; message: string }> {
   const response = await api.post<{ project_id: number; status: string; message: string }>(
