@@ -6,11 +6,14 @@ import type { ChunkData, LogEntry } from '../types';
 
 // Helper to get API base URL
 const getApiBase = () => {
-  if (window.location.hostname === 'localhost') {
+  // Development mode
+  if (import.meta.env.DEV) {
     return 'http://localhost:8000/api';
   }
+
+  // Production mode - same domain, different port
   const protocol = window.location.protocol;
-  const host = window.location.hostname.replace('4173', '8000');
+  const host = window.location.hostname.replace('4173', '8000').replace('5173', '8000');
   return `${protocol}//${host}/api`;
 };
 

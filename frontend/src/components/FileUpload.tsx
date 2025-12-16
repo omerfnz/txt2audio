@@ -77,18 +77,24 @@ export function FileUpload({ onUpload }: FileUploadProps) {
         async function loadVoices() {
             try {
                 const data = await getReferenceVoices();
-                setReferenceVoices(data.voices);
+                if (data && data.voices) {
+                    setReferenceVoices(data.voices);
 
-                // Auto-select first category and voice
-                const categories = Object.keys(data.voices);
-                if (categories.length > 0) {
-                    setSelectedCategory(categories[0]);
-                    if (data.voices[categories[0]].length > 0) {
-                        setSelectedVoice(data.voices[categories[0]][0].path);
+                    // Auto-select first category and voice
+                    const categories = Object.keys(data.voices);
+                    if (categories.length > 0) {
+                        setSelectedCategory(categories[0]);
+                        if (data.voices[categories[0]] && data.voices[categories[0]].length > 0) {
+                            setSelectedVoice(data.voices[categories[0]][0].path);
+                        }
                     }
+                } else {
+                    console.warn('Reference voices data is empty or invalid');
+                    setReferenceVoices({});
                 }
             } catch (error) {
                 console.error('Failed to load reference voices:', error);
+                setReferenceVoices({}); // Ensure it's never undefined
             }
         }
         async function loadMusic() {
