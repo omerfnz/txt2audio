@@ -9,12 +9,14 @@ const API_BASE = (() => {
     return envUrl.replace(/\/$/, '');
   }
 
-  // CloudSpaces'ta çalışıyorsak, aynı domain farklı port kullan
-  if (window.location.hostname.includes('cloudspaces.litng.ai')) {
+  // CloudSpaces/Lightning AI'da çalışıyorsak, aynı domain farklı port kullan
+  if (window.location.hostname.includes('cloudspaces.litng.ai') || window.location.hostname.includes('litng.ai')) {
     const protocol = window.location.protocol;
     const hostname = window.location.hostname;
-    // Frontend portundan backend portuna geçiş
-    const backendUrl = `${protocol}//${hostname.replace('5173', '8000').replace('4173', '8000')}/api`;
+    // Frontend portundan backend portuna geçiş (örn: 5173 → 8000)
+    const backendPort = hostname.includes('5173') ? hostname.replace('5173', '8000') :
+                       hostname.includes('4173') ? hostname.replace('4173', '8000') : hostname;
+    const backendUrl = `${protocol}//${backendPort}/api`;
     console.log('Using CloudSpaces API_BASE:', backendUrl);
     return backendUrl;
   }

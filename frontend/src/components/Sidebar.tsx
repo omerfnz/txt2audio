@@ -200,11 +200,11 @@ export function Sidebar({ onNewProject, onProjectClick, currentProjectId }: Side
                                                 <p className="text-sm font-medium text-foreground truncate" title={project.name}>
                                                     {project.name}
                                                 </p>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-xs">
-                                                <Badge variant="outline" className={cn('capitalize text-xs shrink-0', getStatusColor(project.status, project.audio_path))}>
+                                                <Badge variant="outline" className={cn('capitalize text-xs shrink-0 ml-auto', getStatusColor(project.status, project.audio_path))}>
                                                     {getStatusText(project.status, project.audio_path)}
                                                 </Badge>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-xs">
                                                 <span className="text-muted-foreground shrink-0">•</span>
                                                 <span className="text-muted-foreground truncate">
                                                     {formatDate(project.created_at)}

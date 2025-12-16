@@ -17,6 +17,16 @@ export const useWebSocket = () => {
       return 'ws://localhost:8000/api/ws';
     }
 
+    // CloudSpaces/Lightning AI için aynı domain farklı port
+    if (window.location.hostname.includes('cloudspaces.litng.ai') || window.location.hostname.includes('litng.ai')) {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const hostname = window.location.hostname;
+      // Frontend portundan backend portuna geçiş
+      const backendPort = hostname.includes('5173') ? hostname.replace('5173', '8000') :
+                         hostname.includes('4173') ? hostname.replace('4173', '8000') : hostname;
+      return `${protocol}//${backendPort}/api/ws`;
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host; // port dahil
     return `${protocol}//${host}/api/ws`;
