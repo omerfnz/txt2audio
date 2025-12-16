@@ -1,7 +1,7 @@
 import type { AxiosInstance } from "axios";
 import axios from "axios";
 
-// API tabanı: Environment variable'dan oku, yoksa localhost kullan
+// API tabanı: CloudSpaces için aynı domain, farklı port
 const API_BASE = (() => {
   const envUrl = import.meta.env.VITE_API_URL;
   if (envUrl) {
@@ -9,7 +9,17 @@ const API_BASE = (() => {
     return envUrl.replace(/\/$/, '');
   }
 
-  // Default: Backend localhost'ta çalışıyor
+  // CloudSpaces'ta çalışıyorsak, aynı domain farklı port kullan
+  if (window.location.hostname.includes('cloudspaces.litng.ai')) {
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    // Frontend portundan backend portuna geçiş
+    const backendUrl = `${protocol}//${hostname.replace('5173', '8000').replace('4173', '8000')}/api`;
+    console.log('Using CloudSpaces API_BASE:', backendUrl);
+    return backendUrl;
+  }
+
+  // Default: Local development
   const defaultUrl = 'http://localhost:8000/api';
   console.log('Using default API_BASE:', defaultUrl);
   return defaultUrl;
