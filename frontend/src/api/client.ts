@@ -23,25 +23,21 @@ export const getApiBase = () => {
   if (hostname.includes('cloudspaces.litng.ai') || hostname.includes('litng.ai')) {
     const protocol = window.location.protocol;
     
-    // CloudSpaces'te iki olasılık var:
-    // 1. Her port için ayrı subdomain: 5173-xxx -> 8000-xxx
-    // 2. Aynı subdomain üzerinden port forwarding: 5173-xxx:8000
-    
     if (hostname.startsWith('5173-') || hostname.startsWith('4173-')) {
-      // Önce aynı subdomain üzerinden port 8000'i dene (CloudSpaces port forwarding)
-      // Bu genellikle daha yaygın bir yapılandırmadır
-      const sameDomainUrl = `${protocol}//${hostname}:8000/api`;
-      console.log('Using CloudSpaces API_BASE (same domain, port 8000):', sameDomainUrl);
-      return sameDomainUrl;
+      // CloudSpaces'te iki olasılık:
+      // 1. Vite proxy: Aynı origin, /api path'i Vite tarafından localhost:8000'e yönlendirilir
+      // 2. Backend subdomain: 8000-xxx.cloudspaces.litng.ai
       
-      // Alternatif: Farklı subdomain (yorum satırına alındı, gerekirse açılabilir)
-      // const backendHostname = hostname.replace(/^(5173|4173)-/, '8000-');
-      // const backendUrl = `${protocol}//${backendHostname}/api`;
-      // console.log('Using CloudSpaces API_BASE (port subdomain):', backendUrl);
-      // return backendUrl;
+      // Önce Vite proxy'yi dene (CloudSpaces'te aynı container içinde çalışıyorsa)
+      const proxyUrl = `${protocol}//${hostname}/api`;
+      console.log('Using CloudSpaces API_BASE (Vite proxy - same origin):', proxyUrl);
+      
+      // Eğer proxy çalışmazsa, backend subdomain'i de deneyebiliriz
+      // Ama şimdilik proxy'yi önceliklendiriyoruz
+      return proxyUrl;
     }
     
-    // Eğer zaten 8000- ile başlıyorsa
+    // Eğer zaten 8000- ile başlıyorsa (backend subdomain)
     if (hostname.startsWith('8000-')) {
       const backendUrl = `${protocol}//${hostname}/api`;
       console.log('Using CloudSpaces API_BASE (backend subdomain):', backendUrl);

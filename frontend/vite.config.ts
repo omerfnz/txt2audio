@@ -14,6 +14,15 @@ export default defineConfig({
     host: true, // 0.0.0.0 - tüm network interface'lere izin ver
     strictPort: false,
     allowedHosts: ['.litng.ai', '.lightning.ai', '.cloudspaces.litng.ai', 'localhost'], // Lightning AI ve cloudspaces domainlerini allow et
+    // CloudSpaces'te backend'e proxy ile erişim (localhost üzerinden)
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+        ws: true, // WebSocket desteği
+      }
+    }
   },
   preview: {
     host: true, // Lightning AI gibi external hostları kabul et
