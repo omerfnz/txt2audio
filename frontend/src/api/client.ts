@@ -19,13 +19,24 @@ export const getApiBase = () => {
     return defaultUrl;
   }
 
-  // CloudSpaces/Lightning AI'da çalışıyorsak, aynı domain farklı port kullan
+  // CloudSpaces/Lightning AI'da çalışıyorsak, port numarası subdomain'de
   if (hostname.includes('cloudspaces.litng.ai') || hostname.includes('litng.ai')) {
     const protocol = window.location.protocol;
-    // CloudSpaces'te backend her zaman port 8000'de çalışır
-    // Frontend port numarası URL'de olmayabilir (varsayılan HTTPS 443)
+    
+    // CloudSpaces'te her port için ayrı subdomain var
+    // Frontend: 5173-xxx.cloudspaces.litng.ai -> Backend: 8000-xxx.cloudspaces.litng.ai
+    if (hostname.startsWith('5173-') || hostname.startsWith('4173-')) {
+      // Frontend port numarasını backend port numarasıyla değiştir
+      const backendHostname = hostname.replace(/^(5173|4173)-/, '8000-');
+      const backendUrl = `${protocol}//${backendHostname}/api`;
+      console.log('Using CloudSpaces API_BASE (port subdomain):', backendUrl);
+      return backendUrl;
+    }
+    
+    // Eğer zaten 8000- ile başlıyorsa veya farklı bir format varsa
+    // Fallback: Aynı hostname, port 8000 ekle (eski yöntem)
     const backendUrl = `${protocol}//${hostname}:8000/api`;
-    console.log('Using CloudSpaces API_BASE:', backendUrl);
+    console.log('Using CloudSpaces API_BASE (port suffix):', backendUrl);
     return backendUrl;
   }
 
@@ -77,6 +88,14 @@ const api: AxiosInstance = axios.create({
   timeout: 300000, // 5 dakika timeout (büyük dosyalar için)
 });
 
+// Request interceptor: Her istekte güncel baseURL'i kullan
+api.interceptors.request.use((config) => {
+  // Her istekte güncel API base URL'i al (CloudSpaces'te subdomain değişebilir)
+  const currentApiBase = getApiBase();
+  config.baseURL = currentApiBase;
+  return config;
+});
+
 // Retry logic helper
 async function retryRequest<T>(
   requestFn: () => Promise<T>,
@@ -101,16 +120,33 @@ async function retryRequest<T>(
 export async function checkBackendHealth(): Promise<boolean> {
   try {
     // Health endpoint API prefix'i olmadan root'ta
-    const healthUrl = API_BASE.replace(/\/api$/, '') + '/health';
+    // getApiBase() kullanarak güncel URL'i al (modül seviyesindeki API_BASE eski olabilir)
+    const currentApiBase = getApiBase();
+    const healthUrl = currentApiBase.replace(/\/api$/, '') + '/health';
     console.log('Checking backend health at:', healthUrl);
+    
     const response = await axios.get(healthUrl, {
-      timeout: 5000, // Timeout'u artırdık
-      validateStatus: (status) => status < 500 // 4xx hataları da başarılı sayılabilir
+      timeout: 10000, // CloudSpaces'te ağ gecikmesi olabilir, timeout'u artırdık
+      validateStatus: (status) => status < 500, // 4xx hataları da başarılı sayılabilir
+      headers: {
+        'Accept': 'application/json',
+      }
     });
-    console.log('Backend health check response:', response.status);
+    
+    console.log('Backend health check response:', response.status, response.data);
     return response.status === 200;
   } catch (error: any) {
-    console.error('Backend health check failed:', error.message);
+    // Detaylı hata loglama
+    if (error.response) {
+      // Sunucu yanıt verdi ama hata kodu döndü
+      console.error('Backend health check failed:', error.response.status, error.response.data);
+    } else if (error.request) {
+      // İstek gönderildi ama yanıt alınamadı (timeout, network error)
+      console.error('Backend health check failed: No response received', error.message);
+    } else {
+      // İstek hazırlanırken hata oluştu
+      console.error('Backend health check failed:', error.message);
+    }
     return false;
   }
 }

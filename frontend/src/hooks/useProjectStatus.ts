@@ -1,21 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useWebSocket } from './useWebSocket';
-import { getProjectStatus } from '../api/client';
+import { getProjectStatus, getApiBase } from '../api/client';
 import axios from 'axios';
 import type { ChunkData, LogEntry } from '../types';
-
-// Helper to get API base URL
-const getApiBase = () => {
-  // Development mode
-  if (import.meta.env.DEV) {
-    return 'http://localhost:8000/api';
-  }
-
-  // Production mode - same domain, different port
-  const protocol = window.location.protocol;
-  const host = window.location.hostname.replace('4173', '8000').replace('5173', '8000');
-  return `${protocol}//${host}/api`;
-};
 
 export const useProjectStatus = (projectId: number | null) => {
   const [status, setStatus] = useState<string>('idle');

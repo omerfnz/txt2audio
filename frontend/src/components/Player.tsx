@@ -2,6 +2,7 @@ import { Play, Pause, SkipBack, SkipForward, Download, Volume2 } from 'lucide-re
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { getApiBase } from '../api/client';
 
 interface PlayerProps {
     audioUrl?: string | null;
@@ -95,11 +96,8 @@ export function Player({ audioUrl, projectId, onNext, onPrevious }: PlayerProps)
     const handleDownload = async () => {
         if (!projectId) return;
         try {
-            // Dynamic URL for localhost and Lightning AI
-            const apiBase = window.location.hostname === 'localhost'
-                ? 'http://localhost:8000/api'
-                : `${window.location.protocol}//${window.location.hostname.replace('4173', '8000')}/api`;
-
+            // Use getApiBase from client.ts for consistent URL handling
+            const apiBase = getApiBase();
             const url = `${apiBase}/audio/download/${projectId}`;
             const link = document.createElement('a');
             link.href = url;

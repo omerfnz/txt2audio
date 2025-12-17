@@ -27,7 +27,8 @@ class Settings(BaseSettings):
     ]  # Env ile override edilebilir (JSON veya virgülle ayrılmış liste)
     
     # CloudSpaces origin regex pattern (allow_origin_regex ile kullanılacak)
-    CLOUDSPACES_ORIGIN_REGEX: str = r"https://.*\.cloudspaces\.litng\.ai"
+    # Hem frontend (5173-, 4173-) hem backend (8000-) subdomain'lerini kapsar
+    CLOUDSPACES_ORIGIN_REGEX: str = r"https://\d+-.*\.cloudspaces\.litng\.ai"
     
     # TTS Defaults (XTTS v2)
     DEFAULT_LANGUAGE: str = "en"
