@@ -551,8 +551,11 @@ class TTSEngine:
                         avg_zcr = np.mean(zcr)
                         max_zcr = np.max(zcr)
                         
-                        # Eşikler: avg > 0.15 veya max > 0.25 → bozukluk var
-                        if avg_zcr > 0.15 or max_zcr > 0.25:
+                        # Eşikler: 
+                        # - avg > 0.20 → sürekli bozukluk (normal konuşma: 0.05-0.15)
+                        # - max > 0.80 → çok şiddetli anlık bozukluk (normal: 0.3-0.6 arası olabilir)
+                        # Sadece gerçekten bozuk olanları yakala
+                        if avg_zcr > 0.20 or max_zcr > 0.80:
                             logger.warning(
                                 f"⚠️ HIGH ZCR DETECTED (DISTORTION/CRACKLING)! | "
                                 f"Avg ZCR={avg_zcr:.4f} Max ZCR={max_zcr:.4f} | "
