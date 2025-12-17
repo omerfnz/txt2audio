@@ -22,9 +22,11 @@ app.add_exception_handler(Exception, global_exception_handler)
 logger.info("Application starting up...")
 
 # CORS Middleware - WEBSOCKER İÇİN KRITIK!
+# CloudSpaces origin'leri için regex kullanıyoruz (wildcard ile credentials uyumsuz)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOW_ORIGINS,
+    allow_origin_regex=settings.CLOUDSPACES_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

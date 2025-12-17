@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Cpu, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getReferenceVoices, getMusicList } from '../api/client';
+import { getReferenceVoices, getMusicList, getApiBase } from '../api/client';
 import { DropZone } from './upload/DropZone';
 import { VoiceSelector } from './upload/VoiceSelector';
 import { PresetSelector } from './upload/PresetSelector';
@@ -119,7 +119,7 @@ export function FileUpload({ onUpload }: FileUploadProps) {
         loadMusic();
 
         // Debug: Test API connectivity
-        console.log('API Base URL:', import.meta.env.VITE_API_URL || 'http://localhost:8000/api');
+        console.log('API Base URL:', getApiBase());
         console.log('Current location:', window.location.href);
     }, []);
 

@@ -22,18 +22,9 @@ export const getApiBase = () => {
   // CloudSpaces/Lightning AI'da çalışıyorsak, aynı domain farklı port kullan
   if (hostname.includes('cloudspaces.litng.ai') || hostname.includes('litng.ai')) {
     const protocol = window.location.protocol;
-    // Port numarasını hostname'den değil, location'dan al
-    const port = window.location.port;
-    let backendPort = '8000';
-    
-    // Eğer port varsa ve 5173 veya 4173 ise, 8000'e çevir
-    if (port === '5173' || port === '4173') {
-      backendPort = '8000';
-    } else if (port) {
-      backendPort = port;
-    }
-    
-    const backendUrl = `${protocol}//${hostname}:${backendPort}/api`;
+    // CloudSpaces'te backend her zaman port 8000'de çalışır
+    // Frontend port numarası URL'de olmayabilir (varsayılan HTTPS 443)
+    const backendUrl = `${protocol}//${hostname}:8000/api`;
     console.log('Using CloudSpaces API_BASE:', backendUrl);
     return backendUrl;
   }
@@ -109,11 +100,17 @@ async function retryRequest<T>(
 // Backend health check
 export async function checkBackendHealth(): Promise<boolean> {
   try {
-    const response = await axios.get(`${API_BASE.replace(/\/api$/, '')}/health`, {
-      timeout: 2000
+    // Health endpoint API prefix'i olmadan root'ta
+    const healthUrl = API_BASE.replace(/\/api$/, '') + '/health';
+    console.log('Checking backend health at:', healthUrl);
+    const response = await axios.get(healthUrl, {
+      timeout: 5000, // Timeout'u artırdık
+      validateStatus: (status) => status < 500 // 4xx hataları da başarılı sayılabilir
     });
+    console.log('Backend health check response:', response.status);
     return response.status === 200;
-  } catch {
+  } catch (error: any) {
+    console.error('Backend health check failed:', error.message);
     return false;
   }
 }

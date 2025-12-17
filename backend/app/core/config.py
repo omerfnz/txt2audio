@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     DB_NAME: str = "database.db"
 
     # CORS
+    # Not: Wildcard (*) ile allow_credentials=True kullanılamaz
+    # CloudSpaces origin'leri için regex kullanılacak
     ALLOW_ORIGINS: list[str] = [
         "http://localhost:5173",
         "http://localhost:4173",
@@ -22,10 +24,10 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5173",
         "http://127.0.0.1:4173",
         "http://0.0.0.0:5173",
-        "https://*.cloudspaces.litng.ai",  # CloudSpaces HTTPS
-        "https://*.litng.ai",  # Lightning AI
-        "*",  # Tüm origin'lere izin ver (development için)
     ]  # Env ile override edilebilir (JSON veya virgülle ayrılmış liste)
+    
+    # CloudSpaces origin regex pattern (allow_origin_regex ile kullanılacak)
+    CLOUDSPACES_ORIGIN_REGEX: str = r"https://.*\.cloudspaces\.litng\.ai"
     
     # TTS Defaults (XTTS v2)
     DEFAULT_LANGUAGE: str = "en"
