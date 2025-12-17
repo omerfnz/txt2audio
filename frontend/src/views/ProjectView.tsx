@@ -35,7 +35,9 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
     };
 
     const handlePlayFinal = () => {
-        const audioUrl = `${getApiBase()}/audio/download/${projectId}`;
+        // Use /audio/stream/ for playback (no download prompt, optimized for streaming)
+        // /audio/download/ is for actual downloads
+        const audioUrl = `${getApiBase()}/audio/stream/${projectId}`;
         setCurrentAudioUrl(audioUrl);
         setCurrentChunkIndex(null);
     };
