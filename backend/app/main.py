@@ -27,7 +27,23 @@ def _start_range_server():
         return
     
     try:
-        from RangeHTTPServer import RangeHTTPRequestHandler
+        # RangeHTTPServer import - farklı paket versiyonları için deneme
+        RangeHTTPRequestHandler = None
+        try:
+            from RangeHTTPServer import RangeHTTPRequestHandler
+        except ImportError:
+            try:
+                import RangeHTTPServer
+                RangeHTTPRequestHandler = RangeHTTPServer.RangeHTTPRequestHandler
+            except ImportError:
+                try:
+                    from rangehttpserver import RangeHTTPRequestHandler
+                except ImportError:
+                    raise ImportError("RangeHTTPServer modülü bulunamadı")
+        
+        if RangeHTTPRequestHandler is None:
+            raise ImportError("RangeHTTPRequestHandler sınıfı bulunamadı")
+        
         import socketserver
         
         # Serve edilecek dizin
@@ -63,8 +79,10 @@ def _start_range_server():
             # Cleanup: working directory'yi geri al
             os.chdir(original_cwd)
         
-    except ImportError:
-        logger.warning("⚠ RangeHTTPServer not installed. Install with: pip install rangehttpserver")
+    except ImportError as e:
+        logger.warning(f"⚠ RangeHTTPServer not installed or import failed: {e}")
+        logger.warning("   Install with: pip install rangehttpserver")
+        logger.warning("   Or check if you're using the correct Python environment")
     except OSError as e:
         if "Address already in use" in str(e):
             logger.warning(f"⚠ Port {settings.RANGE_SERVER_PORT} already in use. RangeHTTPServer not started.")
