@@ -129,10 +129,15 @@ async function retryRequest<T>(
 // Backend health check
 export async function checkBackendHealth(): Promise<boolean> {
   try {
-    // Health endpoint API prefix'i olmadan root'ta
+    // Health endpoint: Vite proxy kullanıyorsak /api/health, değilse /health
     // getApiBase() kullanarak güncel URL'i al (modül seviyesindeki API_BASE eski olabilir)
     const currentApiBase = getApiBase();
-    const healthUrl = currentApiBase.replace(/\/api$/, '') + '/health';
+    // Vite proxy kullanıyorsak (same origin, /api prefix var), /api/health kullan
+    // Değilse /health kullan (backend'in root endpoint'i)
+    const isProxy = currentApiBase.includes('/api') && !currentApiBase.includes(':8000');
+    const healthUrl = isProxy 
+      ? `${currentApiBase}/health`  // Vite proxy: /api/health
+      : currentApiBase.replace(/\/api$/, '') + '/health';  // Direct: /health
     console.log('Checking backend health at:', healthUrl);
     
     const response = await axios.get(healthUrl, {

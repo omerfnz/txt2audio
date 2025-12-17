@@ -23,13 +23,14 @@ export const useWebSocket = () => {
     if (hostname.includes('cloudspaces.litng.ai') || hostname.includes('litng.ai')) {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       
-      // CloudSpaces'te genellikle aynı subdomain üzerinden port forwarding kullanılır
+      // CloudSpaces'te Vite proxy kullanıyorsak, WebSocket de aynı origin üzerinden çalışır
       if (hostname.startsWith('5173-') || hostname.startsWith('4173-')) {
-        // Aynı subdomain üzerinden port 8000 (CloudSpaces port forwarding)
-        return `${protocol}//${hostname}:8000/api/ws`;
+        // Vite proxy WebSocket desteği: Aynı origin, /api/ws path'i
+        // Vite proxy ws: true ayarı ile WebSocket'i de yönlendirir
+        return `${protocol}//${hostname}/api/ws`;
       }
       
-      // Eğer zaten 8000- ile başlıyorsa
+      // Eğer zaten 8000- ile başlıyorsa (backend subdomain)
       if (hostname.startsWith('8000-')) {
         return `${protocol}//${hostname}/api/ws`;
       }

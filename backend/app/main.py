@@ -48,3 +48,8 @@ def read_root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+@app.get("/api/health")
+def health_check_api():
+    """Health check endpoint with /api prefix for Vite proxy compatibility"""
+    return {"status": "healthy"}
