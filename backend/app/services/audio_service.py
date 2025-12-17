@@ -2,6 +2,7 @@ import os
 import json
 import asyncio
 import subprocess
+from pathlib import Path
 from typing import List, Optional
 import logging
 from sqlalchemy.orm import Session
@@ -124,11 +125,86 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
         )
         db.commit()
 
-        final_path = await mix_background_music(
+        # Background music mixing (mastering'den ÖNCE)
+        mixed_path = await mix_background_music(
             voice_mp3_path=merged_path,
             bg_music_file=project.bg_music_file if project.bg_music_enabled else "",
             volume=project.bg_music_volume if project.bg_music_volume is not None else settings.DEFAULT_BG_MUSIC_VOLUME,
         )
+
+        # ACX Mastering (background music mixing'den SONRA)
+        await manager.broadcast({
+            "type": "status_update",
+            "project_id": project_id,
+            "status": "mastering",
+            "progress": 99.9
+        })
+
+        from .audio_mastering import AudioMastering
+        from .audio_analyzer import AudioAnalyzer
+
+        analyzer = AudioAnalyzer()
+        mastering = AudioMastering()
+
+        # Pre-mastering analizi
+        logger.info("🔍 Pre-mastering ACX analysis for project %s", project_id)
+        try:
+            pre_analysis = analyzer.analyze(str(mixed_path))
+            logger.info("📊 Pre-mastering ACX results | RMS: %.2f dB | Peak: %.2f dB | ACX Compliant: %s",
+                       pre_analysis['rms_db'], pre_analysis['peak_db'], pre_analysis['acx_compliant'])
+
+            if not pre_analysis['acx_compliant']:
+                logger.warning("⚠️ Pre-mastering: Audio not ACX compliant - applying mastering")
+            else:
+                logger.info("✅ Pre-mastering: Audio already ACX compliant")
+        except Exception as e:
+            logger.warning("⚠️ Pre-mastering analysis failed: %s", e)
+            pre_analysis = None
+
+        # Mastering uygula
+        mastered_output = Path(mixed_path).with_name(f"{Path(mixed_path).stem}_mastered{Path(mixed_path).suffix}")
+        logger.info("🎛️ Applying ACX audio mastering for project %s", project_id)
+        
+        success = await asyncio.to_thread(
+            mastering.normalize_for_acx,
+            str(mixed_path),
+            str(mastered_output)
+        )
+
+        if success:
+            # Post-mastering analizi
+            logger.info("✅ Audio mastering completed, analyzing results...")
+            try:
+                post_analysis = analyzer.analyze(str(mastered_output))
+                logger.info("📊 Post-mastering ACX results | RMS: %.2f dB | Peak: %.2f dB | ACX Compliant: %s",
+                           post_analysis['rms_db'], post_analysis['peak_db'], post_analysis['acx_compliant'])
+
+                if post_analysis['acx_compliant']:
+                    logger.info("🎉 SUCCESS: Audio now ACX compliant after mastering!")
+                else:
+                    logger.warning("⚠️ WARNING: Audio still not ACX compliant after mastering")
+
+                if pre_analysis:
+                    rms_improvement = post_analysis['rms_db'] - pre_analysis['rms_db']
+                    peak_improvement = post_analysis['peak_db'] - pre_analysis['peak_db']
+                    logger.info("📈 Mastering improvements | RMS change: %.2f dB | Peak change: %.2f dB",
+                               rms_improvement, peak_improvement)
+            except Exception as e:
+                logger.warning("⚠️ Post-mastering analysis failed: %s", e)
+
+            # Mastering başarılı, orijinal dosyayı değiştir
+            import shutil
+            shutil.move(str(mastered_output), str(mixed_path))
+            logger.info("✅ Final: Audio mastering workflow completed for project %s", project_id)
+            final_path = mixed_path
+        else:
+            logger.error("❌ Audio mastering failed for project %s, keeping mixed audio", project_id)
+            if mastered_output.exists():
+                try:
+                    mastered_output.unlink()
+                except:
+                    pass
+            final_path = mixed_path
 
         project.audio_path = str(final_path)
         project.status = "completed"
