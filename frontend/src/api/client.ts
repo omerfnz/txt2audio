@@ -19,24 +19,38 @@ export const getApiBase = () => {
     return defaultUrl;
   }
 
-  // CloudSpaces/Lightning AI'da çalışıyorsak, port numarası subdomain'de
+  // CloudSpaces/Lightning AI'da çalışıyorsak
   if (hostname.includes('cloudspaces.litng.ai') || hostname.includes('litng.ai')) {
     const protocol = window.location.protocol;
     
-    // CloudSpaces'te her port için ayrı subdomain var
-    // Frontend: 5173-xxx.cloudspaces.litng.ai -> Backend: 8000-xxx.cloudspaces.litng.ai
+    // CloudSpaces'te iki olasılık var:
+    // 1. Her port için ayrı subdomain: 5173-xxx -> 8000-xxx
+    // 2. Aynı subdomain üzerinden port forwarding: 5173-xxx:8000
+    
     if (hostname.startsWith('5173-') || hostname.startsWith('4173-')) {
-      // Frontend port numarasını backend port numarasıyla değiştir
-      const backendHostname = hostname.replace(/^(5173|4173)-/, '8000-');
-      const backendUrl = `${protocol}//${backendHostname}/api`;
-      console.log('Using CloudSpaces API_BASE (port subdomain):', backendUrl);
+      // Önce aynı subdomain üzerinden port 8000'i dene (CloudSpaces port forwarding)
+      // Bu genellikle daha yaygın bir yapılandırmadır
+      const sameDomainUrl = `${protocol}//${hostname}:8000/api`;
+      console.log('Using CloudSpaces API_BASE (same domain, port 8000):', sameDomainUrl);
+      return sameDomainUrl;
+      
+      // Alternatif: Farklı subdomain (yorum satırına alındı, gerekirse açılabilir)
+      // const backendHostname = hostname.replace(/^(5173|4173)-/, '8000-');
+      // const backendUrl = `${protocol}//${backendHostname}/api`;
+      // console.log('Using CloudSpaces API_BASE (port subdomain):', backendUrl);
+      // return backendUrl;
+    }
+    
+    // Eğer zaten 8000- ile başlıyorsa
+    if (hostname.startsWith('8000-')) {
+      const backendUrl = `${protocol}//${hostname}/api`;
+      console.log('Using CloudSpaces API_BASE (backend subdomain):', backendUrl);
       return backendUrl;
     }
     
-    // Eğer zaten 8000- ile başlıyorsa veya farklı bir format varsa
-    // Fallback: Aynı hostname, port 8000 ekle (eski yöntem)
+    // Fallback: Aynı hostname, port 8000 ekle
     const backendUrl = `${protocol}//${hostname}:8000/api`;
-    console.log('Using CloudSpaces API_BASE (port suffix):', backendUrl);
+    console.log('Using CloudSpaces API_BASE (port suffix fallback):', backendUrl);
     return backendUrl;
   }
 
