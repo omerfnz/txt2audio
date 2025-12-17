@@ -6,6 +6,7 @@ from ..db.models import Project, Chunk
 from ..core.config import settings
 from ..services.merge_concat import merge_project_audio
 from ..services.background_music import mix_background_music
+from pathlib import Path
 import os
 import asyncio
 from typing import AsyncGenerator
@@ -101,8 +102,9 @@ async def download_merged_audio(project_id: int, db: Session = Depends(get_db)):
     
     # Check if merged file already exists (from automatic merge)
     if project.audio_path and os.path.exists(project.audio_path):
-        output_path = project.audio_path
-        output_filename = os.path.basename(output_path)
+        # project.audio_path string olabilir, Path'e çevir
+        output_path = Path(project.audio_path)
+        output_filename = output_path.name
         print(f"✓ Using existing merged file: {output_path}")
     else:
         # Fallback: merge on-demand if file doesn't exist
@@ -129,16 +131,17 @@ async def download_merged_audio(project_id: int, db: Session = Depends(get_db)):
             )
         
         if project.audio_path and os.path.exists(project.audio_path):
-            output_path = project.audio_path
-            output_filename = os.path.basename(output_path)
+            # project.audio_path string olabilir, Path'e çevir
+            output_path = Path(project.audio_path)
+            output_filename = output_path.name
         else:
             raise HTTPException(status_code=500, detail="Failed to create merged audio file")
     
     # Verify file exists and get size
-    if not os.path.exists(str(output_path)):
+    if not output_path.exists():
         raise HTTPException(status_code=404, detail="Audio file not found on disk")
     
-    file_size = os.path.getsize(str(output_path))
+    file_size = output_path.stat().st_size
     
     # Media type'ı dosya uzantısına göre belirle
     if output_path.suffix.lower() == '.wav':
