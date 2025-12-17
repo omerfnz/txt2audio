@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Optional
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
@@ -68,6 +69,11 @@ class Settings(BaseSettings):
     # Debug Mode
     DEBUG_MODE: bool = True
 
+    # RangeHTTPServer Configuration (for large file streaming)
+    RANGE_SERVER_ENABLED: bool = True
+    RANGE_SERVER_PORT: int = 8080
+    RANGE_SERVER_DIR: Optional[Path] = None  # None = OUTPUT_DIR
+
     # F5-TTS Configuration
     F5_MODEL_CKPT: str = "" # Optional custom checkpoint path
     F5_VOCAB_FILE: str = "" # Optional vocab file
@@ -97,6 +103,11 @@ class Settings(BaseSettings):
     @property
     def REFERENCE_VOICES_DIR(self) -> Path:
         return self.STORAGE_DIR / "reference_voices"
+    
+    @property
+    def RANGE_SERVER_ROOT_DIR(self) -> Path:
+        """Directory to serve via RangeHTTPServer (defaults to OUTPUT_DIR)"""
+        return self.RANGE_SERVER_DIR if self.RANGE_SERVER_DIR else self.OUTPUT_DIR
         
     @property
     def DB_URL(self) -> str:
