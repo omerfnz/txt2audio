@@ -23,15 +23,23 @@ export function Player({ audioUrl, projectId, onNext, onPrevious }: PlayerProps)
     useEffect(() => {
         if (!audioRef.current) return;
 
-        if (audioUrl) {
-            audioRef.current.src = audioUrl;
-            audioRef.current.load();
-            // Auto play new audio
-            const playPromise = audioRef.current.play();
-            if (playPromise !== undefined) {
-                playPromise
-                    .then(() => setIsPlaying(true))
-                    .catch(() => setIsPlaying(false));
+        if (audioUrl && audioUrl.trim() !== '') {
+            try {
+                audioRef.current.src = audioUrl;
+                audioRef.current.load();
+                // Auto play new audio
+                const playPromise = audioRef.current.play();
+                if (playPromise !== undefined) {
+                    playPromise
+                        .then(() => setIsPlaying(true))
+                        .catch((err) => {
+                            console.warn('Auto-play prevented or failed:', err);
+                            setIsPlaying(false);
+                        });
+                }
+            } catch (error) {
+                console.error('Failed to set audio source:', error);
+                setIsPlaying(false);
             }
         } else {
             // Reset state when no audio URL
