@@ -301,8 +301,8 @@ class AudioAnalyzer:
         rms = librosa.feature.rms(y=y, frame_length=frame_length, hop_length=hop_length)[0]
         times = librosa.times_like(rms, sr=sr, hop_length=hop_length)
 
-        # Sessizlik eşikleri
-        silence_threshold_linear = 10 ** (-35.0 / 20)  # -35dB
+        # Sessizlik eşikleri (optimized: -40dB for more realistic silence detection)
+        silence_threshold_linear = 10 ** (-40.0 / 20)  # -40dB
 
         # Uzun sessizlikleri tespit et
         long_silences = []
@@ -343,7 +343,7 @@ class AudioAnalyzer:
         y, sr = librosa.load(wav_path, sr=22050)
         rms = librosa.feature.rms(y=y, frame_length=2048, hop_length=512)[0]
 
-        silence_threshold_linear = 10 ** (-35.0 / 20)
+        silence_threshold_linear = 10 ** (-40.0 / 20)  # -40dB (optimized for more realistic detection)
         silent_frames = rms < silence_threshold_linear
         silence_percentage = (np.sum(silent_frames) / len(rms)) * 100
 

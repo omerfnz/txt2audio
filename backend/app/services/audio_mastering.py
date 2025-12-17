@@ -16,7 +16,7 @@ class AudioMastering:
     """
     
     def __init__(self):
-        self.target_rms = -20.0  # ACX hedef RMS (dB)
+        self.target_rms = -20.5  # ACX hedef RMS (dB) - optimized: middle of -23.0 to -18.0 range
         self.target_peak = -3.0  # ACX hedef peak (dB)
         self.loudness_range = 7.0  # EBU R128 loudness range
     

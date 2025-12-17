@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     DEFAULT_REPETITION_PENALTY: float = 2.5
     
     # Audio Processing
-    CHUNK_SILENCE_DURATION: int = 350  # ms
+    CHUNK_SILENCE_DURATION: int = 250  # ms (optimized: reduced from 350ms to lower silence percentage)
     EXPORT_BITRATE: str = "192k"
     EXPORT_FORMAT: str = "mp3"
 

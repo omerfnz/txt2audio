@@ -523,6 +523,61 @@ class TTSEngine:
                         pass
                     return False
 
+                # ZCR (Zero-Crossing Rate) kontrolü - bozukluk/cızırtı tespiti
+                try:
+                    import librosa
+                    import numpy as np
+                    
+                    # AudioSegment'i numpy array'e çevir
+                    samples = np.array(audio.get_array_of_samples(), dtype=np.float32)
+                    if audio.channels == 2:
+                        # Stereo ise mono'ya çevir (ortalamasını al)
+                        samples = samples.reshape(-1, 2).mean(axis=1)
+                    
+                    # Sample rate'i al
+                    sr = audio.frame_rate
+                    
+                    # ZCR hesapla (frame_length ve hop_length optimize edilmiş)
+                    frame_length = min(2048, len(samples) // 4) if len(samples) > 2048 else len(samples)
+                    hop_length = min(512, len(samples) // 8) if len(samples) > 512 else len(samples) // 4
+                    
+                    if frame_length > 0 and hop_length > 0 and len(samples) >= frame_length:
+                        zcr = librosa.feature.zero_crossing_rate(
+                            samples, 
+                            frame_length=frame_length, 
+                            hop_length=hop_length
+                        )[0]
+                        
+                        avg_zcr = np.mean(zcr)
+                        max_zcr = np.max(zcr)
+                        
+                        # Eşikler: avg > 0.15 veya max > 0.25 → bozukluk var
+                        if avg_zcr > 0.15 or max_zcr > 0.25:
+                            logger.warning(
+                                f"⚠️ HIGH ZCR DETECTED (DISTORTION/CRACKLING)! | "
+                                f"Avg ZCR={avg_zcr:.4f} Max ZCR={max_zcr:.4f} | "
+                                f"Duration: {duration_sec:.1f}s | "
+                                f"Text: '{text[:80]}...'"
+                            )
+                            try:
+                                os.remove(output_path)
+                            except OSError:
+                                pass
+                            return False  # Retry mekanizması devreye girer
+                        else:
+                            logger.debug(
+                                f"✓ ZCR OK | Avg={avg_zcr:.4f} Max={max_zcr:.4f}"
+                            )
+                    else:
+                        # Çok kısa ses için ZCR kontrolü atla
+                        logger.debug("⚠ Skipping ZCR check (audio too short)")
+                        
+                except ImportError:
+                    logger.warning("⚠ librosa not available, skipping ZCR check")
+                except Exception as zcr_error:
+                    logger.warning(f"⚠ ZCR check failed (non-critical): {zcr_error}")
+                    # ZCR kontrolü başarısız olsa bile devam et (kritik değil)
+
                 # Task 1.3.3: Cümle sonlarına çok kısa sessizlik ekle (tıklamaları önlemek için)
                 # Dinamik silence padding: uzun chunk'larda bile minimum tutalım
                 # Sessizlikleri merge aşamasında yönetmek daha sağlıklı
