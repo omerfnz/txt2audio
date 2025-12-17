@@ -19,9 +19,6 @@ ebooklib>=0.18
 # Audio Mastering (Optional - pydub fallback available)
 ffmpeg-normalize>=1.27.0
 
-# HTTP Range Request Support (for large file streaming)
-rangehttpserver>=0.3.3
-
 # PyTorch - Platform-specific kurulum gerekir
 # CPU: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 # GPU (CUDA 12.1): pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
