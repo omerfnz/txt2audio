@@ -32,8 +32,8 @@ async def merge_project_audio(
     if total_valid == 0:
         raise RuntimeError(f"No valid audio chunks to merge for project {project.id}")
 
-    output_filename_mp3 = f"{project.name}_final.mp3"
-    output_path_mp3 = project_output_dir / output_filename_mp3
+    output_filename_wav = f"{project.name}_final.wav"
+    output_path_wav = project_output_dir / output_filename_wav
 
     with open(concat_list_path, "w", encoding="utf-8") as f:
         for idx, chunk in enumerate(valid_chunks):
@@ -80,15 +80,14 @@ async def merge_project_audio(
         '-safe', '0',
         '-i', str(concat_list_path),
         '-ar', '44100',  # Sample rate'i zorla 44.1kHz'e çıkar (audiobook standardı)
-        '-c:a', 'libmp3lame',
-        '-b:a', settings.EXPORT_BITRATE,
-        str(output_path_mp3)
+        '-c:a', 'pcm_s16le',  # WAV formatında çıktı (MP3 yerine)
+        str(output_path_wav)
     ]
 
     await asyncio.to_thread(
         _run_ffmpeg,
         cmd,
-        output_path_mp3,
+        output_path_wav,
     )
 
     # Cleanup silence files and concat list
@@ -136,7 +135,7 @@ async def merge_project_audio(
     logger.info("🔍 Pre-mastering ACX analysis for project %s", project.id)
     try:
         analyzer = AudioAnalyzer()
-        pre_analysis = analyzer.analyze(str(output_path_mp3))
+        pre_analysis = analyzer.analyze(str(output_path_wav))
         compliance_details = analyzer.get_compliance_details(pre_analysis)
 
         logger.info("📊 Pre-mastering ACX results | RMS: %.2f dB | Peak: %.2f dB | ACX Compliant: %s",
@@ -152,12 +151,12 @@ async def merge_project_audio(
 
     # Audio mastering uygula
     mastering = AudioMastering()
-    mastered_output = output_path_mp3.with_name(f"{output_path_mp3.stem}_mastered{output_path_mp3.suffix}")
+    mastered_output = output_path_wav.with_name(f"{output_path_wav.stem}_mastered{output_path_wav.suffix}")
 
     logger.info("🎛️ Applying ACX audio mastering for project %s", project.id)
     success = await asyncio.to_thread(
         mastering.normalize_for_acx,
-        str(output_path_mp3),
+        str(output_path_wav),
         str(mastered_output)
     )
 
@@ -188,7 +187,7 @@ async def merge_project_audio(
 
         # Mastering başarılı, orijinal dosyayı değiştir
         import shutil
-        shutil.move(str(mastered_output), str(output_path_mp3))
+        shutil.move(str(mastered_output), str(output_path_wav))
         logger.info("✅ Final: Audio mastering workflow completed for project %s", project.id)
 
     else:
@@ -200,7 +199,7 @@ async def merge_project_audio(
             except:
                 pass
 
-    return output_path_mp3
+    return output_path_wav
 
 
 def _run_ffmpeg(cmd: List[str], output_path: Path):

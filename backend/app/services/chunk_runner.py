@@ -50,7 +50,7 @@ async def _process_single_chunk(
         success = False
         chunk_error = ""
 
-        while attempt < 3 and not success:
+        while attempt < 5 and not success:
             try:
                 base_temp = project.temperature or settings.DEFAULT_TEMPERATURE
                 base_speed = project.speed or settings.DEFAULT_SPEED
@@ -65,7 +65,29 @@ async def _process_single_chunk(
                     speed_adj = base_speed * 0.85
                     repetition_penalty_adj = min(3.0, base_rep_penalty * 1.2)
                     logger.info(
-                        "Retry with adjusted params | chunk=%s temp=%.2f speed=%.2f rep=%.2f",
+                        "Retry 1/5 with adjusted params | chunk=%s temp=%.2f speed=%.2f rep=%.2f",
+                        chunk.index,
+                        temperature_adj,
+                        speed_adj,
+                        repetition_penalty_adj,
+                    )
+                elif attempt == 2:
+                    temperature_adj = 0.35
+                    speed_adj = 0.8
+                    repetition_penalty_adj = 2.8
+                    logger.info(
+                        "Retry 2/5 with conservative params | chunk=%s temp=%.2f speed=%.2f rep=%.2f",
+                        chunk.index,
+                        temperature_adj,
+                        speed_adj,
+                        repetition_penalty_adj,
+                    )
+                elif attempt == 3:
+                    temperature_adj = 0.3
+                    speed_adj = 0.75
+                    repetition_penalty_adj = 3.0
+                    logger.info(
+                        "Retry 3/5 with very conservative params | chunk=%s temp=%.2f speed=%.2f rep=%.2f",
                         chunk.index,
                         temperature_adj,
                         speed_adj,
@@ -76,7 +98,7 @@ async def _process_single_chunk(
                     speed_adj = 0.7
                     repetition_penalty_adj = 2.8
                     logger.info(
-                        "Final retry with conservative params | chunk=%s temp=%.2f speed=%.2f rep=%.2f",
+                        "Final retry 4/5 with ultra conservative params | chunk=%s temp=%.2f speed=%.2f rep=%.2f",
                         chunk.index,
                         temperature_adj,
                         speed_adj,
@@ -117,12 +139,20 @@ async def _process_single_chunk(
 
             attempt += 1
 
-            if attempt < 3:
-                logger.warning("Retry %s/3 for chunk %s", attempt, chunk.index)
+            if attempt < 5:
+                logger.warning("Retry %s/5 for chunk %s", attempt, chunk.index)
                 if hasattr(engine, "release_memory"):
                     engine.release_memory()
 
-        # Recursive split fallback
+        # 5 deneme başarısız olduysa chunk'ı atla
+        if not success:
+            logger.error(
+                "❌ Chunk %s failed after 5 attempts, skipping...",
+                chunk.index
+            )
+            return False, f"Failed after 5 retries", None
+
+        # Recursive split fallback (artık kullanılmayacak çünkü 5 deneme yeterli)
         if not success and len(chunk.text_content) > 200:
             logger.warning("All retries failed. Attempting split for chunk %s", chunk.index)
             try:

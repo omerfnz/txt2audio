@@ -3,7 +3,7 @@ import sys
 import torch
 import gc
 import platform
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any, Tuple, List
 from collections import OrderedDict
 import shutil
 
@@ -339,6 +339,44 @@ class TTSEngine:
         
         return trimmed_audio
 
+    def _detect_internal_long_silences(self, audio: Any, min_duration_ms: int = 3000, threshold_db: float = -50.0) -> List[Tuple[int, int]]:
+        """
+        Chunk içindeki uzun sessizlikleri tespit eder.
+        
+        Args:
+            audio: Pydub AudioSegment nesnesi
+            min_duration_ms: Minimum sessizlik süresi (ms) - varsayılan 3 saniye
+            threshold_db: Sessizlik eşiği (dB)
+            
+        Returns:
+            [(start_ms, end_ms), ...] uzun sessizlik listesi
+        """
+        chunk_size_ms = 200  # 200ms frame'ler ile analiz
+        long_silences = []
+        current_silence_start = None
+        
+        for i in range(0, len(audio), chunk_size_ms):
+            segment = audio[i:i+chunk_size_ms]
+            segment_rms = segment.dBFS if segment.dBFS != float("-inf") else -100.0
+            
+            if segment_rms < threshold_db:
+                if current_silence_start is None:
+                    current_silence_start = i
+            else:
+                if current_silence_start is not None:
+                    silence_duration = i - current_silence_start
+                    if silence_duration >= min_duration_ms:
+                        long_silences.append((current_silence_start, i))
+                    current_silence_start = None
+        
+        # Son sessizlik varsa kontrol et
+        if current_silence_start is not None:
+            silence_duration = len(audio) - current_silence_start
+            if silence_duration >= min_duration_ms:
+                long_silences.append((current_silence_start, len(audio)))
+        
+        return long_silences
+
     def generate_audio(
         self,
         text: str,
@@ -470,6 +508,20 @@ class TTSEngine:
                         except OSError:
                             pass
                         return False
+
+                # Chunk içindeki uzun sessizlik kontrolü (3+ saniye)
+                long_silences = self._detect_internal_long_silences(audio, min_duration_ms=3000, threshold_db=-50.0)
+                if long_silences:
+                    silence_details = ", ".join([f"{start/1000:.1f}s-{end/1000:.1f}s ({(end-start)/1000:.1f}s)" 
+                                                for start, end in long_silences])
+                    logger.warning(
+                        f"⚠️ LONG SILENCE IN CHUNK DETECTED! Found {len(long_silences)} silence(s) ≥3s: {silence_details}"
+                    )
+                    try:
+                        os.remove(output_path)
+                    except OSError:
+                        pass
+                    return False
 
                 # Task 1.3.3: Cümle sonlarına çok kısa sessizlik ekle (tıklamaları önlemek için)
                 # Dinamik silence padding: uzun chunk'larda bile minimum tutalım

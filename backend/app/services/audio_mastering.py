@@ -20,6 +20,33 @@ class AudioMastering:
         self.target_peak = -3.0  # ACX hedef peak (dB)
         self.loudness_range = 7.0  # EBU R128 loudness range
     
+    def _get_output_codec(self, output_path: str) -> tuple[str, bool]:
+        """
+        Çıktı formatına göre codec ve WAV olup olmadığını döndürür.
+        
+        Returns:
+            (codec, is_wav) tuple
+        """
+        is_wav = output_path.endswith('.wav')
+        codec = 'pcm_s16le' if is_wav else 'libmp3lame'
+        return codec, is_wav
+    
+    def _build_ffmpeg_cmd_with_bitrate(self, base_cmd: list, is_wav: bool, bitrate: str = '192k') -> list:
+        """
+        FFmpeg komutuna bitrate parametresini ekler (WAV için eklemez).
+        
+        Args:
+            base_cmd: Temel FFmpeg komutu listesi
+            is_wav: WAV formatı mı?
+            bitrate: Bitrate değeri
+            
+        Returns:
+            Temizlenmiş komut listesi
+        """
+        if not is_wav:
+            base_cmd.extend(['-b:a', bitrate])
+        return [c for c in base_cmd if c is not None]
+    
     def normalize_for_acx(
         self,
         input_path: str,
@@ -66,13 +93,15 @@ class AudioMastering:
         try:
             print(f"🎚️ Normalizing with ffmpeg-normalize...")
             
+            # Çıktı formatına göre codec belirle
+            codec, is_wav = self._get_output_codec(output_path)
+            
             # ffmpeg-normalize parametreleri (EBU R128 standardı)
             cmd = [
                 'ffmpeg-normalize',
                 input_path,
                 '-o', output_path,
-                '-c:a', 'libmp3lame',
-                '-b:a', '192k',
+                '-c:a', codec,
                 '--normalization-type', 'ebu',
                 '--target-level', str(self.target_rms),
                 '--loudness-range-target', str(self.loudness_range),
@@ -81,6 +110,9 @@ class AudioMastering:
                 '--keep-loudness-range-target',
                 '--progress'
             ]
+            
+            # WAV için bitrate ekleme, MP3 için ekle
+            cmd = self._build_ffmpeg_cmd_with_bitrate(cmd, is_wav, '192k')
             
             result = subprocess.run(
                 cmd,
@@ -121,15 +153,27 @@ class AudioMastering:
             # TP (True Peak) -> -3.0
             # LRA (Loudness Range) -> 7.0
             
+            # Peak limiter ekle: alimiter ile peak'i -3.0 dB altına indir
+            # loudnorm + alimiter kombinasyonu
+            af_filter = (
+                f'loudnorm=I={self.target_rms}:TP={self.target_peak}:LRA={self.loudness_range}:print_format=json,'
+                f'alimiter=level_in=1:level_out=1:limit={self.target_peak}:attack=7:release=100:level=disabled'
+            )
+            
+            # Çıktı formatına göre codec belirle
+            codec, is_wav = self._get_output_codec(output_path)
+            
             cmd = [
                 'ffmpeg', '-y',
                 '-i', input_path,
-                '-af', f'loudnorm=I={self.target_rms}:TP={self.target_peak}:LRA={self.loudness_range}:print_format=json',
-                '-c:a', 'libmp3lame',
-                '-b:a', '192k',
+                '-af', af_filter,
+                '-c:a', codec,
                 '-ar', '44100',
-                output_path
             ]
+            
+            # WAV için bitrate ekleme, MP3 için ekle
+            cmd = self._build_ffmpeg_cmd_with_bitrate(cmd, is_wav, '192k')
+            cmd.append(output_path)
             
             # 1 saatlik ses için timeout süresini uzat (10 dakika)
             result = subprocess.run(
