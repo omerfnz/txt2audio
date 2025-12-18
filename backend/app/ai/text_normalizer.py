@@ -24,62 +24,80 @@ class AdvancedTextNormalizer:
             "Sr.": "Senior",
             "Inc.": "Incorporated",
             "Ltd.": "Limited",
-            "Co.": "Company"
+            "Co.": "Company",
+            "Vol.": "Volume",
+            "vols.": "volumes",
+            "Chap.": "Chapter",
+            "Ch.": "Chapter",
+            "p.": "page",
+            "pp.": "pages",
+            "ed.": "edition",
+            "etc.": "et cetera",
+            "e.g.": "for example",
+            "i.e.": "that is",
+            "viz.": "namely",
+            "Fig.": "Figure",
+            "Figs.": "Figures",
+            "Rev.": "Reverend",
+            "Hon.": "Honorable",
+            "Gen.": "General",
+            "Col.": "Colonel",
+            "Maj.": "Major",
+            "Sgt.": "Sergeant"
         }
 
-        # Roman bölümü çevirileri (Roma rakamları)
-        self.roman_numerals = {
-            'I': 'Chapter One', 'II': 'Chapter Two', 'III': 'Chapter Three',
-            'IV': 'Chapter Four', 'V': 'Chapter Five', 'VI': 'Chapter Six',
-            'VII': 'Chapter Seven', 'VIII': 'Chapter Eight', 'IX': 'Chapter Nine',
-            'X': 'Chapter Ten', 'XI': 'Chapter Eleven', 'XII': 'Chapter Twelve',
-            'XIII': 'Chapter Thirteen', 'XIV': 'Chapter Fourteen', 'XV': 'Chapter Fifteen',
-            'XVI': 'Chapter Sixteen', 'XVII': 'Chapter Seventeen', 'XVIII': 'Chapter Eighteen',
-            'XIX': 'Chapter Nineteen', 'XX': 'Chapter Twenty'
+        # Grekçe karakter eşleme
+        self.greek_map = {
+            'Α': 'A', 'Β': 'B', 'Γ': 'G', 'Δ': 'D', 'Ε': 'E', 'Ζ': 'Z', 'Η': 'E', 'Θ': 'Th',
+            'Ι': 'I', 'Κ': 'K', 'Λ': 'L', 'Μ': 'M', 'Ν': 'N', 'Ξ': 'X', 'Ο': 'O', 'Π': 'P',
+            'Ρ': 'R', 'Σ': 'S', 'Τ': 'T', 'Υ': 'Y', 'Φ': 'Ph', 'Χ': 'Ch', 'Ψ': 'Ps', 'Ω': 'O',
+            'α': 'a', 'β': 'b', 'γ': 'g', 'δ': 'd', 'ε': 'e', 'ζ': 'z', 'η': 'e', 'θ': 'th',
+            'ι': 'i', 'κ': 'k', 'λ': 'l', 'μ': 'm', 'ν': 'n', 'ξ': 'x', 'ο': 'o', 'π': 'p',
+            'ρ': 'r', 'ς': 's', 'σ': 's', 'τ': 't', 'υ': 'y', 'φ': 'ph', 'χ': 'ch', 'ψ': 'ps', 'ω': 'o'
         }
 
-    def clean_gutenberg_style(self, text: str) -> str:
+
+    def roman_to_int(self, roman: str) -> int:
+        """Roma rakamını tam sayıya çevirir."""
+        roman = roman.upper()
+        values = {'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000}
+        res = 0
+        for i in range(len(roman)):
+            if i > 0 and values[roman[i]] > values[roman[i - 1]]:
+                res += values[roman[i]] - 2 * values[roman[i - 1]]
+            else:
+                res += values[roman[i]]
+        return res
+
+    def transliterate_greek(self, text: str) -> str:
+        """Grekçe karakterleri Latin alfabesine çevirir."""
+        return "".join(self.greek_map.get(c, c) for c in text)
+
+    def clean_footnotes(self, text: str) -> str:
+        """Metindeki dipnot ve referans numaralarını temizler."""
+        # 1. Köşeli parantez içindeki rakamlar [1], [12]
+        text = re.sub(r'\[\d+\]', '', text)
+        # 2. Kelime sonuna bitişik rakamlar (örn: vampire2 -> vampire)
+        # Sadece harf ile biten kelimelerin sonundaki rakamları yakala
+        text = re.sub(r'([a-zA-Z])\d+\b', r'\1', text)
+        return text
+
+
+    def clean_text_formatting(self, text: str) -> str:
         """
-        Project Gutenberg ve benzeri kaynaklardan gelen metinleri temizler.
-        Header/Footer, lisans metinleri ve satır sonu bozukluklarını düzeltir.
+        Metindeki genel format bozukluklarını düzeltir.
+        Gereksiz satır sonlarını birleştirir ve özel vurgu işaretlerini temizler.
         """
         if not text:
             return ""
 
-        # 1. Gutenberg Header/Footer temizliği (Basit yaklaşım)
-        # Genellikle "*** START OF" ve "*** END OF" işaretleri olur
-        start_markers = [
-            r"\*\*\* START OF (THE|THIS) PROJECT GUTENBERG EBOOK",
-            r"\*\*\*START OF (THE|THIS) PROJECT GUTENBERG EBOOK",
-        ]
-        end_markers = [
-            r"\*\*\* END OF (THE|THIS) PROJECT GUTENBERG EBOOK",
-            r"\*\*\*END OF (THE|THIS) PROJECT GUTENBERG EBOOK",
-        ]
-
-        for marker in start_markers:
-            match = re.search(marker, text, re.IGNORECASE)
-            if match:
-                text = text[match.end():]
-                break
-        
-        for marker in end_markers:
-            match = re.search(marker, text, re.IGNORECASE)
-            if match:
-                text = text[:match.start()]
-                break
-
-        # 2. İtalik vurguları temizle (_word_ -> word)
+        # 1. İtalik vurguları temizle (_word_ -> word)
         text = re.sub(r'_(.*?)_', r'\1', text)
         
-        # 3. Köşeli parantez içindeki notları sil (örn. [Illustration])
+        # 2. Köşeli parantez içindeki teknik notları sil (örn. [Illustration])
         text = re.sub(r'\[.*?\]', '', text)
 
-        # 4. Satır birleştirme (Line Unwrapping)
-        # Gutenberg metinlerinde paragraflar çift satır sonu (\n\n) ile ayrılır.
-        # Tek satır sonları (\n) ise cümle içindeki devamlılığı gösterir.
-        
-        # Önce tüm \r karakterlerini sil
+        # 3. Satır birleştirme (Line Unwrapping)
         text = text.replace('\r', '')
         
         # Paragrafları (çift enter) geçici bir belirteçle koru
@@ -88,35 +106,59 @@ class AdvancedTextNormalizer:
         # Tek satır sonlarını boşlukla değiştir (Cümleleri birleştir)
         text = text.replace('\n', ' ')
         
-        # Fazla boşlukları temizle (tab ve çoklu boşlukları tek boşluğa indir)
-        # \s yerine [ \t] kullanarak satır sonlarını etkilememesini sağla, 
-        # ama zaten şu an metinde \n yok (placeholder hariç)
+        # Fazla boşlukları temizle
         text = re.sub(r'\s+', ' ', text).strip()
         
-        # Paragrafları geri getir
+        # Paragrafları geri getir (Seslendirme için paragraf arası önemlidir)
         text = text.replace('<PARAGRAPH_BREAK>', '\n\n')
         
         return text
 
+
     def normalize(self, text: str, lang: str = "en") -> str:
         """Dile göre metni normalize eder."""
-        # 0. Roman bölümlerini normalize et (EN ÖNEMLİ - temizlik öncesi)
+        if not text:
+            return ""
+
+        # Özel imza korunması: Kanal ismini placeholder ile koru
+        signature = "from the library of archive key"
+        has_signature = False
+        if signature in text:
+            has_signature = True
+            text = text.replace(signature, "[[MY_YOUTUBE_CHANNEL]]")
+
+        # 0. Temel temizlikler
+        text = self.transliterate_greek(text)
+        text = self.clean_footnotes(text)
+        
+        # 1. Roma rakamlarını ve bölümleri işle
         text = self.normalize_roman_chapters(text)
 
-        # 1. Genel temizlik yap
-        text = self.clean_gutenberg_style(text)
+        # 2. Genel format düzeltmesi yap
+        text = self.clean_text_formatting(text)
+
         
+        # 3. Dile özel normalizasyon
         if lang == "tr":
-            return self.normalize_turkish(text)
-        return self.normalize_english(text)
+            text = self.normalize_turkish(text)
+        else:
+            text = self.normalize_english(text)
+
+        # 4. Fazla boşlukları son kez temizle
+        text = re.sub(r'\s+', ' ', text).strip()
+
+        # İmza placeholder'ını geri getir
+        if has_signature:
+            text = text.replace("[[MY_YOUTUBE_CHANNEL]]", signature)
+
+        return text
+
     
     def normalize_english(self, text: str) -> str:
         """İngilizce metin normalizasyonu - XTTS için optimize edilmiş."""
         if not text:
             return ""
 
-        # 0. Roman bölümlerini normalize et (EN ÖNEMLİ - en başta yap)
-        text = self.normalize_roman_chapters(text)
 
         # 1. Kısaltmaları genişlet
         for abbr, full in self.abbreviations.items():
@@ -241,7 +283,7 @@ class AdvancedTextNormalizer:
             '—',  # Em dash (U+2014)
             '–',  # En dash (U+2013)
             '―',  # Horizontal bar (U+2015)
-            '⸺',  # Two-em dash (U+2E3A)
+            '⸻',  # Three-em dash (U+2E3A)
             '⸻',  # Three-em dash (U+2E3B) - kullanıcının bahsettiği
             '〜',  # Wave dash (U+301C)
             '～',  # Fullwidth tilde (U+FF5E)
@@ -251,7 +293,10 @@ class AdvancedTextNormalizer:
             '֊',  # Armenian hyphen (U+058A)
             '־',  # Hebrew punctuation maqaf (U+05BE)
             '᐀',  # Canadian syllabics hyphen (U+1400)
+            '′',  # Prime symbol (Flatland'de var)
+            '″',  # Double prime
         ]
+
 
         # Çizgileri boşlukla değiştir (hafif pause etkisi)
         for dash in dash_characters:
@@ -299,16 +344,21 @@ class AdvancedTextNormalizer:
             return ""
 
         # 1. Tek başına Roma rakamı bölümler (örn: ^I$ veya I\n)
-        # Satır başındaki veya paragraf başındaki yalnız Roma rakamlarını yakala
         def standalone_roman_replacer(match):
             roman = match.group(1).strip()
-            if roman in self.roman_numerals:
-                # Satır sonunu koru
-                return f"\n\n{self.roman_numerals[roman]}\n\n"
+            # 1-3999 arası geçerli bir Roma rakamı mı kontrol et (basit regex)
+            if re.match(r'^M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$', roman):
+                try:
+                    num = self.roman_to_int(roman)
+                    if num > 0:
+                        return f"\n\nChapter {num2words(num, lang='en', to='ordinal').title()}\n\n"
+                except:
+                    pass
             return match.group(0)
 
         # Satır başındaki veya paragraf başındaki yalnız Roma rakamları
         text = re.sub(r'(?:^|\n\n)\s*([IVXLCDM]{1,10})\s*(?:\n|$)', standalone_roman_replacer, text, flags=re.MULTILINE)
+
 
         # 2. "Chapter X" formatını normalize et
         def chapter_replacer(match):

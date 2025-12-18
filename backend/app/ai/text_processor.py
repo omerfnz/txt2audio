@@ -6,33 +6,38 @@ import re
 from .text_normalizer import AdvancedTextNormalizer
 
 class TextProcessor:
-    def __init__(self, model_name="en_core_web_sm"):
-        self.nlp = None
+    def __init__(self):
         self.normalizer = AdvancedTextNormalizer()
-        self._load_model(model_name)
+        self.models = {}  # { 'en': nlp_model, 'tr': nlp_model }
 
-    def _load_model(self, model_name: str):
-        """Model yükle, başarısız olursa fallback kullan"""
+
+    def _get_model(self, lang: str):
+        """Dile göre Spacy modelini getir, yüklü değilse yükle."""
+        model_name = "en_core_web_sm" if lang != "tr" else "tr_core_news_sm"
+        
+        if model_name in self.models:
+            return self.models[model_name]
+
         try:
-            self.nlp = spacy.load(model_name)
+            nlp = spacy.load(model_name)
+            self.models[model_name] = nlp
             print(f"✓ Model loaded: {model_name}")
+            return nlp
         except OSError:
             print(f"⚠ Model {model_name} not found. Attempting download...")
             try:
                 from spacy.cli import download
                 download(model_name)
-                self.nlp = spacy.load(model_name)
+                nlp = spacy.load(model_name)
+                self.models[model_name] = nlp
                 print(f"✓ Model downloaded and loaded: {model_name}")
+                return nlp
             except Exception as download_error:
                 print(f"✗ Model download failed: {download_error}")
-                print(f"⚠ Python version: {sys.version}")
                 raise RuntimeError(
-                    f"Failed to load Spacy model. "
-                    f"Run: python -m spacy download en_core_web_sm"
+                    f"Failed to load Spacy model {model_name}."
                 ) from download_error
-        except Exception as e:
-            print(f"✗ Unexpected error loading model: {e}")
-            raise
+
 
     def is_chunk_problematic(self, chunk: str) -> bool:
         """
@@ -161,19 +166,19 @@ class TextProcessor:
         """
         Metni mantıklı chunk'lara böler, birden fazla cümleyi birleştirir.
         
-        Optimized for XTTS v2:
-        - Default max_chars increased to 650 (Safe limit for XTTS v2)
-        - Problematic chunks (lots of numbers, special chars) are split smaller
+        Optimized for XTTS v2 and multi-language:
+        - Dinamik Spacy model yükleme
+        - Geliştirilmiş normalizasyon
         """
-        if not self.nlp:
-            raise RuntimeError("NLP model not loaded")
+        nlp = self._get_model(language)
             
         # Normalizasyon
         if normalize:
             text = self.normalizer.normalize(text, language)
             
-        doc = self.nlp(text)
+        doc = nlp(text)
         sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
+
         
         if not sentences:
             return [""]
