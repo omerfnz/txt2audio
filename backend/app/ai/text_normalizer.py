@@ -75,12 +75,13 @@ class AdvancedTextNormalizer:
 
     def clean_footnotes(self, text: str) -> str:
         """Metindeki dipnot ve referans numaralarını temizler."""
-        # 1. Köşeli parantez içindeki rakamlar [1], [12]
+        # 1. Köşeli parantez içindeki rakamlar [1], [12] - Sadece rakam varsa sil
         text = re.sub(r'\[\d+\]', '', text)
-        # 2. Kelime sonuna bitişik rakamlar (örn: vampire2 -> vampire)
-        # Sadece harf ile biten kelimelerin sonundaki rakamları yakala
-        text = re.sub(r'([a-zA-Z])\d+\b', r'\1', text)
+        # 2. Kelime sonuna bitişik rakamlar (örn: parents.2 -> parents.)
+        # Sadece sonu nokta veya harf ile biten kelimelerin sonundaki tekil rakamları yakala
+        text = re.sub(r'([a-zA-Z\.])\d+\b', r'\1', text)
         return text
+
 
 
     def clean_text_formatting(self, text: str) -> str:
@@ -120,38 +121,27 @@ class AdvancedTextNormalizer:
         if not text:
             return ""
 
-        # Özel imza korunması: Kanal ismini placeholder ile koru
-        signature = "from the library of archive key"
-        has_signature = False
-        if signature in text:
-            has_signature = True
-            text = text.replace(signature, "[[MY_YOUTUBE_CHANNEL]]")
-
-        # 0. Temel temizlikler
+        # 1. Temel temizlikler (Grekçe ve dipnotlar)
         text = self.transliterate_greek(text)
         text = self.clean_footnotes(text)
         
-        # 1. Roma rakamlarını ve bölümleri işle
+        # 2. Roma rakamlarını ve bölümleri işle
         text = self.normalize_roman_chapters(text)
 
-        # 2. Genel format düzeltmesi yap
+        # 3. Genel format düzeltmesi yap (Satır sonları vb.)
         text = self.clean_text_formatting(text)
-
         
-        # 3. Dile özel normalizasyon
+        # 4. Dile özel normalizasyon (Sayılar, kısaltmalar)
         if lang == "tr":
             text = self.normalize_turkish(text)
         else:
             text = self.normalize_english(text)
 
-        # 4. Fazla boşlukları son kez temizle
+        # 5. Fazla boşlukları son kez temizle
         text = re.sub(r'\s+', ' ', text).strip()
 
-        # İmza placeholder'ını geri getir
-        if has_signature:
-            text = text.replace("[[MY_YOUTUBE_CHANNEL]]", signature)
-
         return text
+
 
     
     def normalize_english(self, text: str) -> str:
