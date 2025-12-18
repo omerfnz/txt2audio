@@ -67,7 +67,7 @@ class AudioAnalyzer:
                     cmd_convert,
                     capture_output=True,
                     text=True,
-                    timeout=60
+                    timeout=600
                 )
                 if result_convert.returncode != 0:
                     raise Exception(f"Failed to convert to WAV: {result_convert.stderr}")
@@ -117,7 +117,7 @@ class AudioAnalyzer:
                         '-sample_fmt', 's16',
                         temp_wav_path
                     ]
-                    subprocess.run(cmd_convert, capture_output=True, timeout=60, check=True)
+                    subprocess.run(cmd_convert, capture_output=True, timeout=600, check=True)
                     return self._analyze_chunked(temp_wav_path)
                 except Exception:
                     pass

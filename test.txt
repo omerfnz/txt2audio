@@ -1,1 +1,3 @@
 In the hush of the night, a lone wanderer walked through an old library, counting his steps as dustlit beams slipped between the shelves, whispering the stories they held. Far off, a tall clock ticked in time with the soft rustle of unseen pages; from the shadows, a gentle melody seeped out as if the walls themselves remembered it. When he finally found the small leather-bound journal, a note in the margin read: “The strongest magic is remembering.”
+pip install rangehttpserver
+python -m RangeHTTPServer 8080

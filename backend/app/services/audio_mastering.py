@@ -4,9 +4,12 @@ ACX/Audible standartlarına uygun ses normalleştirme.
 """
 import subprocess
 import os
+import logging
 from pathlib import Path
 from typing import Optional
 from pydub import AudioSegment
+
+logger = logging.getLogger("ai_audiobook_studio")
 
 
 class AudioMastering:
@@ -65,6 +68,7 @@ class AudioMastering:
             Başarılı ise True
         """
         if not os.path.exists(input_path):
+            logger.error(f"Input file not found: {input_path}")
             raise FileNotFoundError(f"Input file not found: {input_path}")
         
         # Çıkış dizinini oluştur
@@ -91,7 +95,7 @@ class AudioMastering:
     def _normalize_with_ffmpeg(self, input_path: str, output_path: str) -> bool:
         """ffmpeg-normalize ile profesyonel normalizasyon"""
         try:
-            print(f"🎚️ Normalizing with ffmpeg-normalize...")
+            logger.info("🎚️ Normalizing with ffmpeg-normalize...")
             
             # Çıktı formatına göre codec belirle
             codec, is_wav = self._get_output_codec(output_path)
@@ -114,25 +118,27 @@ class AudioMastering:
             # WAV için bitrate ekleme, MP3 için ekle
             cmd = self._build_ffmpeg_cmd_with_bitrate(cmd, is_wav, '192k')
             
+            # 1 saatlik ses için timeout süresini uzat (3600 saniye)
+            # 4-5 saatlik kitaplar için yeterli olmalı
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=300  # 5 dakika max
+                timeout=3600
             )
             
             if result.returncode == 0:
-                print(f"✓ Normalization complete: {output_path}")
+                logger.info(f"✓ Normalization complete: {output_path}")
                 return True
             else:
-                print(f"⚠ ffmpeg-normalize failed: {result.stderr}")
+                logger.error(f"⚠ ffmpeg-normalize failed: {result.stderr}")
                 return False
                 
         except subprocess.TimeoutExpired:
-            print(f"❌ Normalization timeout")
+            logger.error("❌ Normalization timeout (files too large or processing slow)")
             return False
         except Exception as e:
-            print(f"❌ Normalization error: {e}")
+            logger.error(f"❌ Normalization error: {e}")
             return False
     
     def _normalize_with_pydub(self, input_path: str, output_path: str) -> bool:
@@ -141,7 +147,7 @@ class AudioMastering:
         Pydub yerine FFmpeg kullanarak bellek sorunlarını (OOM) önler.
         """
         try:
-            print(f"🎚️ Normalizing with FFmpeg loudnorm filter...")
+            logger.info("🎚️ Normalizing with FFmpeg loudnorm filter...")
             
             # ACX Hedefleri:
             # RMS: -23dB ile -18dB arası (Hedef -20dB)
@@ -154,7 +160,6 @@ class AudioMastering:
             # LRA (Loudness Range) -> 7.0
             
             # Peak limiter ekle: alimiter ile peak'i -3.0 dB altına indir
-            # loudnorm + alimiter kombinasyonu
             af_filter = (
                 f'loudnorm=I={self.target_rms}:TP={self.target_peak}:LRA={self.loudness_range}:print_format=json,'
                 f'alimiter=level_in=1:level_out=1:limit={self.target_peak}:attack=7:release=100:level=disabled'
@@ -175,28 +180,28 @@ class AudioMastering:
             cmd = self._build_ffmpeg_cmd_with_bitrate(cmd, is_wav, '192k')
             cmd.append(output_path)
             
-            # 1 saatlik ses için timeout süresini uzat (10 dakika)
+            # 1 saatlik ses için timeout süresini uzat (3600 saniye)
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=600,
+                timeout=3600,
                 encoding='utf-8',
                 errors='ignore'
             )
             
             if result.returncode == 0:
-                print(f"✓ FFmpeg loudnorm complete: {output_path}")
+                logger.info(f"✓ FFmpeg loudnorm complete: {output_path}")
                 return True
             else:
-                print(f"⚠ FFmpeg loudnorm failed: {result.stderr}")
+                logger.error(f"⚠ FFmpeg loudnorm failed: {result.stderr}")
                 return False
             
         except subprocess.TimeoutExpired:
-            print(f"❌ Normalization timeout (files too large?)")
+            logger.error("❌ Normalization timeout (files too large?)")
             return False
         except Exception as e:
-            print(f"❌ FFmpeg normalization error: {e}")
+            logger.error(f"❌ FFmpeg normalization error: {e}")
             return False
     
     def apply_compression(
@@ -207,17 +212,7 @@ class AudioMastering:
     ) -> AudioSegment:
         """
         Basit compression uygula.
-        
-        Args:
-            audio: Ses segment
-            threshold: Threshold (dB)
-            ratio: Compression ratio
-            
-        Returns:
-            Compressed audio
         """
-        # pydub ile basit compression
-        # Not: Gerçek compression için ffmpeg kullanılmalı
         compressed = audio.compress_dynamic_range(
             threshold=threshold,
             ratio=ratio
