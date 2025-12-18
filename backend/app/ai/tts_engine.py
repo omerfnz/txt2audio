@@ -579,7 +579,43 @@ class TTSEngine:
                     logger.warning("⚠ librosa not available, skipping ZCR check")
                 except Exception as zcr_error:
                     logger.warning(f"⚠ ZCR check failed (non-critical): {zcr_error}")
-                    # ZCR kontrolü başarısız olsa bile devam et (kritik değil)
+
+                # Stuttering / Mechanical Sound Check (Autocorrelation & Spectral Flatness)
+                try:
+                    import librosa
+                    import numpy as np
+
+                    samples = np.array(audio.get_array_of_samples(), dtype=np.float32)
+                    if audio.channels == 2:
+                        samples = samples.reshape(-1, 2).mean(axis=1)
+
+                    # 1. Spectral Flatness (Gürültü ve metalik ses tespiti)
+                    flatness = librosa.feature.spectral_flatness(y=samples)
+                    avg_flatness = np.mean(flatness)
+                    
+                    # 2. Autocorrelation (Mekanik takılma / loop tespiti)
+                    # Sesin belli bir periyotta takılıp takılmadığını kontrol eder
+                    sr = audio.frame_rate
+                    # 0.5 saniyeye kadar olan tekrarları ara
+                    r = librosa.autocorrelate(samples, max_size=int(sr/2))
+                    # Zirveleri bul
+                    peaks = librosa.util.peak_pick(
+                        r, pre_max=20, post_max=20, pre_avg=100, post_avg=100, delta=0.5, wait=100
+                    )
+
+                    if len(peaks) > 100 or avg_flatness > 0.05:
+                        logger.warning(
+                            f"⚠️ MECHANICAL STUTTERING DETECTED! | "
+                            f"Peaks: {len(peaks)} Flatness: {avg_flatness:.6f} | "
+                            f"Text: '{text[:80]}...'"
+                        )
+                        try:
+                            os.remove(output_path)
+                        except OSError:
+                            pass
+                        return False # Retry tetikler
+                except Exception as quality_error:
+                    logger.warning(f"⚠ Advanced quality check failed: {quality_error}")
 
                 # Task 1.3.3: Cümle sonlarına çok kısa sessizlik ekle (tıklamaları önlemek için)
                 # Dinamik silence padding: uzun chunk'larda bile minimum tutalım

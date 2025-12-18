@@ -123,13 +123,11 @@ async def _process_single_chunk(
                         logger.info(f"✅ Chunk {chunk.index} quality OK | temp={temperature_adj:.2f} speed={speed_adj:.2f}")
                     return True, None, output_path
 
-                # KALİTE KONTROL BAŞARISIZLIĞINI YAKALA VE RETRY TETİKLE
-                # TTS engine kalite kontrolü nedeniyle başarısız olursa, farklı parametrelerle tekrar dene
-                if err and ("below quality thresholds" in err or "too silent" in err or "too short" in err):
-                    logger.warning(f"⚠️ Quality control failed for chunk {chunk.index} | temp={temperature_adj:.2f} speed={speed_adj:.2f} | {err}")
-                    # Retry counter'ı SIFIRLA ki farklı parametrelerle tekrar denensin
-                    attempt = 0
-                    continue
+                if not success:
+                    logger.warning(f"⚠️ Quality control failed for chunk {chunk.index} | temp={temperature_adj:.2f} speed={speed_adj:.2f} | Audio discarded by engine")
+                    # Retry counter implicitly increases via while loop end, but we can be explicit if needed
+                    # as attempt is incremented at the end of the loop.
+                    pass
 
             except torch.cuda.OutOfMemoryError as oom:
                 _handle_oom_error()
