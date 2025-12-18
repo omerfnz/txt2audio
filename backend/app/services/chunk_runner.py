@@ -61,42 +61,47 @@ async def _process_single_chunk(
                     speed_adj = base_speed
                     repetition_penalty_adj = base_rep_penalty
                 elif attempt == 1:
-                    temperature_adj = max(0.35, base_temp * 0.7)
-                    speed_adj = base_speed * 0.85
-                    repetition_penalty_adj = min(3.0, base_rep_penalty * 1.2)
+                    # İlk denemede hızı bozmadan sadece temperature ve rep_penalty ile oyna.
+                    # Çoğu zaman küçük bir parametre değişikliği hallüsinasyonu çözer.
+                    temperature_adj = max(0.4, base_temp * 0.8)
+                    speed_adj = base_speed 
+                    repetition_penalty_adj = min(3.0, base_rep_penalty * 1.1)
                     logger.info(
-                        "Retry 1/5 with adjusted params | chunk=%s temp=%.2f speed=%.2f rep=%.2f",
+                        "Retry 1/5 (Keeping speed) | chunk=%s temp=%.2f speed=%.2f rep=%.2f",
                         chunk.index,
                         temperature_adj,
                         speed_adj,
                         repetition_penalty_adj,
                     )
                 elif attempt == 2:
-                    temperature_adj = 0.35
-                    speed_adj = 0.8
+                    # Hızı çok az düşür (max %5)
+                    temperature_adj = 0.4
+                    speed_adj = max(0.85, base_speed * 0.95)
                     repetition_penalty_adj = 2.8
                     logger.info(
-                        "Retry 2/5 with conservative params | chunk=%s temp=%.2f speed=%.2f rep=%.2f",
+                        "Retry 2/5 (Slight speed adj) | chunk=%s temp=%.2f speed=%.2f rep=%.2f",
                         chunk.index,
                         temperature_adj,
                         speed_adj,
                         repetition_penalty_adj,
                     )
                 elif attempt == 3:
-                    temperature_adj = 0.3
-                    speed_adj = 0.75
+                    # Daha korumacı hıza geç
+                    temperature_adj = 0.35
+                    speed_adj = max(0.8, base_speed * 0.85)
                     repetition_penalty_adj = 3.0
                     logger.info(
-                        "Retry 3/5 with very conservative params | chunk=%s temp=%.2f speed=%.2f rep=%.2f",
+                        "Retry 3/5 with conservative params | chunk=%s temp=%.2f speed=%.2f rep=%.2f",
                         chunk.index,
                         temperature_adj,
                         speed_adj,
                         repetition_penalty_adj,
                     )
                 else:
+                    # Son deneme: En güvenli mod
                     temperature_adj = 0.3
-                    speed_adj = 0.7
-                    repetition_penalty_adj = 2.8
+                    speed_adj = 0.75
+                    repetition_penalty_adj = 3.2
                     logger.info(
                         "Final retry 4/5 with ultra conservative params | chunk=%s temp=%.2f speed=%.2f rep=%.2f",
                         chunk.index,

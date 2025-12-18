@@ -1,0 +1,1136 @@
+2025-12-18 14:08:10,105 - ai_audiobook_studio - INFO - Application starting up...
+2025-12-18 14:09:04,223 - ai_audiobook_studio - INFO - Reference voice stats | project_name=greatgod-pan duration=14.10s rms=-17.01dB path=/teamspace/studios/this_studio/txt2audio/backend/storage/reference_voices/adult/male/DionisioSchuyler.wav
+2025-12-18 14:09:08,627 - ai_audiobook_studio - INFO - Text chunking stats | project_id=5 total_chunks=208 min_len=253 max_len=648 avg_len=564.19 language=en
+2025-12-18 14:09:08,997 - ai_audiobook_studio - INFO - 🔍 DEBUG MODE: Processing 208 chunks for project 5
+2025-12-18 14:09:09,094 - ai_audiobook_studio - INFO - ✓ Speaker Embedding Cache aktif (max 10 speaker)
+2025-12-18 14:09:09,096 - ai_audiobook_studio - INFO - ✓ GPU Modu: Tesla T4
+2025-12-18 14:09:09,097 - ai_audiobook_studio - INFO -   VRAM: 15.83 GB
+2025-12-18 14:09:19,757 - ai_audiobook_studio - INFO - 📦 Loading XTTS v2 model on CUDA...
+2025-12-18 14:09:35,310 - ai_audiobook_studio - INFO - 🔄 Moving model to CUDA...
+2025-12-18 14:09:35,900 - ai_audiobook_studio - INFO - ✓ Model loaded successfully.
+2025-12-18 14:09:35,900 - ai_audiobook_studio - INFO - 🔄 Model warm-up başlatılıyor...
+2025-12-18 14:09:38,334 - ai_audiobook_studio - INFO -   ✓ Model warm-up tamamlandı (2.43s)
+2025-12-18 14:09:38,341 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:09:38,341 - ai_audiobook_studio - INFO -    Text: from the library of archive key. The Great God Pan...
+2025-12-18 14:09:56,638 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 16.2s-38.6s (22.4s)
+2025-12-18 14:09:56,639 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 0 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:09:56,639 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 0
+2025-12-18 14:09:56,936 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=0 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:09:56,936 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:09:56,937 - ai_audiobook_studio - INFO -    Text: from the library of archive key. The Great God Pan...
+2025-12-18 14:10:10,440 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 37.8s (was 38.3s) | Size: 1,812,472 bytes | RMS: -17.0dB | Text length: 412 chars
+2025-12-18 14:10:10,440 - ai_audiobook_studio - INFO - ✅ Chunk 0 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:10:10,733 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:10:10,734 - ai_audiobook_studio - INFO -    Text: The sun still hung above the western mountain-line...
+2025-12-18 14:10:34,936 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 29.2s-46.2s (17.0s)
+2025-12-18 14:10:34,938 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 1 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:10:34,938 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 1
+2025-12-18 14:10:35,223 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=1 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:10:35,224 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:10:35,224 - ai_audiobook_studio - INFO -    Text: The sun still hung above the western mountain-line...
+2025-12-18 14:10:55,611 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 58.0s (was 58.4s) | Size: 2,782,360 bytes | RMS: -17.2dB | Text length: 608 chars
+2025-12-18 14:10:55,611 - ai_audiobook_studio - INFO - ✅ Chunk 1 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:10:55,628 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:10:55,628 - ai_audiobook_studio - INFO -    Text: “And there is no danger at any other stage?”
+
+“Non...
+2025-12-18 14:11:10,425 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 24.4s-30.4s (6.0s)
+2025-12-18 14:11:10,426 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 2 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:11:10,427 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 2
+2025-12-18 14:11:10,713 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=2 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:11:10,713 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:11:10,713 - ai_audiobook_studio - INFO -    Text: “And there is no danger at any other stage?”
+
+“Non...
+2025-12-18 14:11:25,554 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 41.9s (was 42.4s) | Size: 2,008,888 bytes | RMS: -17.4dB | Text length: 583 chars
+2025-12-18 14:11:25,554 - ai_audiobook_studio - INFO - ✅ Chunk 2 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:11:25,572 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:11:25,572 - ai_audiobook_studio - INFO -    Text: “Are you perfectly sure, Raymond, that your theory...
+2025-12-18 14:11:48,614 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 16.4s-41.8s (25.4s)
+2025-12-18 14:11:48,615 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 3 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:11:48,615 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 3
+2025-12-18 14:11:48,929 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=3 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:11:48,929 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:11:48,930 - ai_audiobook_studio - INFO -    Text: “Are you perfectly sure, Raymond, that your theory...
+2025-12-18 14:12:05,646 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 46.3s (was 46.8s) | Size: 2,222,008 bytes | RMS: -16.8dB | Text length: 543 chars
+2025-12-18 14:12:05,646 - ai_audiobook_studio - INFO - ✅ Chunk 3 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:12:05,668 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:12:05,668 - ai_audiobook_studio - INFO -    Text: You see me standing here beside you, and hear my v...
+2025-12-18 14:12:28,265 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 11.8s-28.4s (16.6s)
+2025-12-18 14:12:28,266 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 4 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:12:28,266 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 4
+2025-12-18 14:12:28,551 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=4 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:12:28,552 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:12:28,553 - ai_audiobook_studio - INFO -    Text: You see me standing here beside you, and hear my v...
+2025-12-18 14:12:48,250 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 54.5s (was 55.0s) | Size: 2,615,080 bytes | RMS: -17.2dB | Text length: 610 chars
+2025-12-18 14:12:48,250 - ai_audiobook_studio - INFO - ✅ Chunk 4 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:12:48,265 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:12:48,265 - ai_audiobook_studio - INFO -    Text: You may think all this strange nonsense; it may be...
+2025-12-18 14:13:06,463 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 43.4s (was 43.9s) | Size: 2,082,760 bytes | RMS: -16.3dB | Text length: 605 chars
+2025-12-18 14:13:06,463 - ai_audiobook_studio - INFO - ✅ Chunk 5 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:13:06,479 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:13:06,479 - ai_audiobook_studio - INFO -    Text: I don’t want to bother you with ‘shop,’ Clarke; I ...
+2025-12-18 14:13:22,329 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 37.6s (was 38.1s) | Size: 1,804,504 bytes | RMS: -16.7dB | Text length: 588 chars
+2025-12-18 14:13:22,329 - ai_audiobook_studio - INFO - ✅ Chunk 6 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:13:22,343 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:13:22,344 - ai_audiobook_studio - INFO -    Text: It will be enough if I say that five years ago I m...
+2025-12-18 14:13:38,649 - ai_audiobook_studio - WARNING - ⚠ END-OF-FILE SILENCE DETECTED! Last 5.0s is silent (-90.3dB). Model likely stopped early.
+2025-12-18 14:13:38,650 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 7 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:13:38,650 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 7
+2025-12-18 14:13:38,963 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=7 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:13:38,963 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:13:38,963 - ai_audiobook_studio - INFO -    Text: It will be enough if I say that five years ago I m...
+2025-12-18 14:13:52,968 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 39.3s (was 39.8s) | Size: 1,885,384 bytes | RMS: -17.0dB | Text length: 500 chars
+2025-12-18 14:13:52,968 - ai_audiobook_studio - INFO - ✅ Chunk 7 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:13:52,983 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:13:52,983 - ai_audiobook_studio - INFO -    Text: By what seemed then and still seems a chance, the ...
+2025-12-18 14:14:07,668 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 34.1s (was 34.6s) | Size: 1,637,560 bytes | RMS: -16.9dB | Text length: 556 chars
+2025-12-18 14:14:07,668 - ai_audiobook_studio - INFO - ✅ Chunk 8 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:14:07,683 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:14:07,683 - ai_audiobook_studio - INFO -    Text: And yet; I do not know whether what I am hinting a...
+2025-12-18 14:14:17,697 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 23.7s (was 24.2s) | Size: 1,136,344 bytes | RMS: -16.8dB | Text length: 344 chars
+2025-12-18 14:14:17,698 - ai_audiobook_studio - INFO - ✅ Chunk 9 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:14:17,712 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:14:17,712 - ai_audiobook_studio - INFO -    Text: Suppose that an electrician of today were suddenly...
+2025-12-18 14:14:29,309 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 27.2s (was 27.7s) | Size: 1,304,200 bytes | RMS: -17.3dB | Text length: 424 chars
+2025-12-18 14:14:29,309 - ai_audiobook_studio - INFO - ✅ Chunk 10 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:14:29,326 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:14:29,327 - ai_audiobook_studio - INFO -    Text: As analogies go, that is a pretty good analogy of ...
+2025-12-18 14:14:41,500 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 28.5s (was 28.9s) | Size: 1,367,800 bytes | RMS: -17.4dB | Text length: 524 chars
+2025-12-18 14:14:41,501 - ai_audiobook_studio - INFO - ✅ Chunk 11 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:14:41,517 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:14:41,517 - ai_audiobook_studio - INFO -    Text: You may look in Browne Faber’s book, if you like, ...
+2025-12-18 14:14:53,990 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 29.5s (was 30.0s) | Size: 1,415,512 bytes | RMS: -15.9dB | Text length: 469 chars
+2025-12-18 14:14:53,991 - ai_audiobook_studio - INFO - ✅ Chunk 12 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:14:54,009 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:14:54,010 - ai_audiobook_studio - INFO -    Text: With a touch I can bring them into play, with a to...
+2025-12-18 14:15:14,161 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 49.1s (was 49.5s) | Size: 2,354,488 bytes | RMS: -18.1dB | Text length: 647 chars
+2025-12-18 14:15:14,162 - ai_audiobook_studio - INFO - ✅ Chunk 13 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:15:14,177 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:15:14,178 - ai_audiobook_studio - INFO -    Text: Indeed, it is better as it is; I am quite certain ...
+2025-12-18 14:15:34,853 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 21.4s-38.4s (17.0s)
+2025-12-18 14:15:34,854 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 14 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:15:34,854 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 14
+2025-12-18 14:15:35,131 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=14 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:15:35,131 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:15:35,131 - ai_audiobook_studio - INFO -    Text: Indeed, it is better as it is; I am quite certain ...
+2025-12-18 14:15:54,802 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 55.6s (was 56.1s) | Size: 2,667,448 bytes | RMS: -18.0dB | Text length: 639 chars
+2025-12-18 14:15:54,802 - ai_audiobook_studio - INFO - ✅ Chunk 14 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:15:54,822 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:15:54,823 - ai_audiobook_studio - INFO -    Text: It had once been a billiard-room, and was lighted ...
+2025-12-18 14:16:11,742 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 40.8s (was 41.3s) | Size: 1,960,120 bytes | RMS: -16.9dB | Text length: 613 chars
+2025-12-18 14:16:11,742 - ai_audiobook_studio - INFO - ✅ Chunk 15 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:16:11,760 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:16:11,760 - ai_audiobook_studio - INFO -    Text: That is a strange saying of his: ‘In every grain o...
+2025-12-18 14:16:29,331 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 42.8s (was 43.3s) | Size: 2,052,040 bytes | RMS: -16.7dB | Text length: 644 chars
+2025-12-18 14:16:29,332 - ai_audiobook_studio - INFO - ✅ Chunk 16 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:16:29,346 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:16:29,346 - ai_audiobook_studio - INFO -    Text: It looked comfortable enough, and Clarke passed hi...
+2025-12-18 14:16:39,965 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 25.0s (was 25.5s) | Size: 1,200,376 bytes | RMS: -16.7dB | Text length: 398 chars
+2025-12-18 14:16:39,966 - ai_audiobook_studio - INFO - ✅ Chunk 17 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:16:39,985 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:16:39,985 - ai_audiobook_studio - INFO -    Text: The doctor had a small hand-lamp, shaded as the la...
+2025-12-18 14:16:54,381 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 33.8s (was 34.3s) | Size: 1,623,304 bytes | RMS: -16.5dB | Text length: 472 chars
+2025-12-18 14:16:54,381 - ai_audiobook_studio - INFO - ✅ Chunk 18 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:16:54,396 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:16:54,396 - ai_audiobook_studio - INFO -    Text: Clarke found himself idly endeavouring to analyse ...
+2025-12-18 14:17:12,498 - ai_audiobook_studio - WARNING - ⚠ END-OF-FILE SILENCE DETECTED! Last 5.0s is silent (-74.7dB). Model likely stopped early.
+2025-12-18 14:17:12,499 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 19 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:17:12,499 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 19
+2025-12-18 14:17:12,786 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=19 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:17:12,786 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:17:12,787 - ai_audiobook_studio - INFO -    Text: Clarke found himself idly endeavouring to analyse ...
+2025-12-18 14:17:25,007 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 34.3s (was 34.8s) | Size: 1,646,296 bytes | RMS: -15.8dB | Text length: 457 chars
+2025-12-18 14:17:25,008 - ai_audiobook_studio - INFO - ✅ Chunk 19 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:17:25,023 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:17:25,023 - ai_audiobook_studio - INFO -    Text: Strangely that wonderful hot day of the ’fifties r...
+2025-12-18 14:17:41,408 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 38.8s (was 39.3s) | Size: 1,860,808 bytes | RMS: -16.5dB | Text length: 618 chars
+2025-12-18 14:17:41,409 - ai_audiobook_studio - INFO - ✅ Chunk 20 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:17:41,430 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:17:41,430 - ai_audiobook_studio - INFO -    Text: He could only think of the lonely walk he had take...
+2025-12-18 14:17:57,170 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 37.6s (was 38.1s) | Size: 1,804,984 bytes | RMS: -17.1dB | Text length: 529 chars
+2025-12-18 14:17:57,171 - ai_audiobook_studio - INFO - ✅ Chunk 21 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:17:57,188 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:17:57,188 - ai_audiobook_studio - INFO -    Text: His fancies made him wander, as he had wandered lo...
+2025-12-18 14:18:13,831 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 39.4s (was 39.9s) | Size: 1,889,464 bytes | RMS: -16.4dB | Text length: 604 chars
+2025-12-18 14:18:13,832 - ai_audiobook_studio - INFO - ✅ Chunk 22 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:18:13,850 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:18:13,850 - ai_audiobook_studio - INFO -    Text: Clarke, in the deep folds of dream, was conscious ...
+2025-12-18 14:18:25,859 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 28.0s (was 28.8s) | Size: 1,344,664 bytes | RMS: -17.3dB | Text length: 522 chars
+2025-12-18 14:18:25,859 - ai_audiobook_studio - INFO - ✅ Chunk 23 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:18:25,875 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:18:25,875 - ai_audiobook_studio - INFO -    Text: And in that moment, the sacrament of body and soul...
+2025-12-18 14:18:49,905 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 6.4s-28.4s (22.0s)
+2025-12-18 14:18:49,907 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 24 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:18:49,907 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 24
+2025-12-18 14:18:50,198 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=24 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:18:50,199 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:18:50,199 - ai_audiobook_studio - INFO -    Text: And in that moment, the sacrament of body and soul...
+2025-12-18 14:19:07,730 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 50.1s (was 50.6s) | Size: 2,404,216 bytes | RMS: -17.2dB | Text length: 578 chars
+2025-12-18 14:19:07,730 - ai_audiobook_studio - INFO - ✅ Chunk 24 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:19:07,746 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:19:07,746 - ai_audiobook_studio - INFO -    Text: He half expected to see the walls of the laborator...
+2025-12-18 14:19:27,242 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 47.7s (was 48.2s) | Size: 2,288,104 bytes | RMS: -16.5dB | Text length: 633 chars
+2025-12-18 14:19:27,242 - ai_audiobook_studio - INFO - ✅ Chunk 25 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:19:27,259 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:19:27,260 - ai_audiobook_studio - INFO -    Text: Just sit in it and lean back. Are you ready?”
+
+“Ye...
+2025-12-18 14:19:45,015 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 43.2s (was 43.7s) | Size: 2,075,416 bytes | RMS: -18.1dB | Text length: 518 chars
+2025-12-18 14:19:45,015 - ai_audiobook_studio - INFO - ✅ Chunk 26 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:19:45,030 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:19:45,030 - ai_audiobook_studio - INFO -    Text: The bright light of the lamp beat full upon her, a...
+2025-12-18 14:20:01,824 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 40.7s (was 41.2s) | Size: 1,952,632 bytes | RMS: -16.0dB | Text length: 627 chars
+2025-12-18 14:20:01,825 - ai_audiobook_studio - INFO - ✅ Chunk 27 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:20:01,839 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:20:01,839 - ai_audiobook_studio - INFO -    Text: “She will awake in five minutes.” Raymond was stil...
+2025-12-18 14:20:15,852 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 34.1s (was 34.6s) | Size: 1,637,752 bytes | RMS: -16.7dB | Text length: 496 chars
+2025-12-18 14:20:15,853 - ai_audiobook_studio - INFO - ✅ Chunk 28 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:20:15,870 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:20:15,870 - ai_audiobook_studio - INFO -    Text: They shone with an awful light, looking far away, ...
+2025-12-18 14:20:32,186 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 39.5s (was 40.0s) | Size: 1,897,720 bytes | RMS: -16.5dB | Text length: 605 chars
+2025-12-18 14:20:32,187 - ai_audiobook_studio - INFO - ✅ Chunk 29 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:20:32,203 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:20:32,203 - ai_audiobook_studio - INFO -    Text: “Yes,” said the doctor, still quite cool, “it is a...
+2025-12-18 14:20:51,866 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 47.5s (was 48.0s) | Size: 2,280,136 bytes | RMS: -17.3dB | Text length: 627 chars
+2025-12-18 14:20:51,866 - ai_audiobook_studio - INFO - ✅ Chunk 30 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:20:52,171 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:20:52,171 - ai_audiobook_studio - INFO -    Text: The latter tendency had prevailed when he accepted...
+2025-12-18 14:21:07,100 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 35.1s (was 35.6s) | Size: 1,683,112 bytes | RMS: -16.2dB | Text length: 557 chars
+2025-12-18 14:21:07,100 - ai_audiobook_studio - INFO - ✅ Chunk 31 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:21:07,116 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:21:07,116 - ai_audiobook_studio - INFO -    Text: Indeed, on some homœopathic principle, he for some...
+2025-12-18 14:21:20,595 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 32.0s (was 32.4s) | Size: 1,535,512 bytes | RMS: -16.0dB | Text length: 485 chars
+2025-12-18 14:21:20,596 - ai_audiobook_studio - INFO - ✅ Chunk 32 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:21:20,611 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:21:20,612 - ai_audiobook_studio - INFO -    Text: Occupied all day in pursuits both serious and lucr...
+2025-12-18 14:21:36,023 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 36.7s (was 37.2s) | Size: 1,759,480 bytes | RMS: -16.6dB | Text length: 561 chars
+2025-12-18 14:21:36,024 - ai_audiobook_studio - INFO - ✅ Chunk 33 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:21:36,038 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:21:36,038 - ai_audiobook_studio - INFO -    Text: Like a boy before a jam-closet, for a few minutes ...
+2025-12-18 14:21:47,001 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 25.7s (was 26.2s) | Size: 1,233,496 bytes | RMS: -16.5dB | Text length: 392 chars
+2025-12-18 14:21:47,001 - ai_audiobook_studio - INFO - ✅ Chunk 34 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:21:47,019 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:21:47,019 - ai_audiobook_studio - INFO -    Text: Clarke had a fine contempt for published literatur...
+2025-12-18 14:22:03,045 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 37.2s (was 37.7s) | Size: 1,784,440 bytes | RMS: -16.6dB | Text length: 566 chars
+2025-12-18 14:22:03,045 - ai_audiobook_studio - INFO - ✅ Chunk 35 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:22:03,063 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:22:03,064 - ai_audiobook_studio - INFO -    Text: He paced two or three times up and down the room, ...
+2025-12-18 14:22:15,339 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 29.0s (was 29.5s) | Size: 1,390,312 bytes | RMS: -15.8dB | Text length: 452 chars
+2025-12-18 14:22:15,339 - ai_audiobook_studio - INFO - ✅ Chunk 36 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:22:15,351 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:22:15,351 - ai_audiobook_studio - INFO -    Text: He assures me that all the facts related therein a...
+2025-12-18 14:22:27,842 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 29.5s (was 30.0s) | Size: 1,416,280 bytes | RMS: -16.4dB | Text length: 524 chars
+2025-12-18 14:22:27,843 - ai_audiobook_studio - INFO - ✅ Chunk 37 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:22:27,859 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:22:27,859 - ai_audiobook_studio - INFO -    Text: He read the following story:⁠ 
+
+The persons concer...
+2025-12-18 14:22:45,369 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 42.2s (was 42.7s) | Size: 2,027,272 bytes | RMS: -16.3dB | Text length: 599 chars
+2025-12-18 14:22:45,369 - ai_audiobook_studio - INFO - ✅ Chunk 38 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:22:45,385 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:22:45,385 - ai_audiobook_studio - INFO -    Text: Some eleven years ago, Helen V. came to the villag...
+2025-12-18 14:23:00,816 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 36.8s (was 37.3s) | Size: 1,768,552 bytes | RMS: -16.3dB | Text length: 545 chars
+2025-12-18 14:23:00,817 - ai_audiobook_studio - INFO - ✅ Chunk 39 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:23:00,831 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:23:00,831 - ai_audiobook_studio - INFO -    Text: His references proving satisfactory, the gentleman...
+2025-12-18 14:23:13,079 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 28.7s (was 29.2s) | Size: 1,379,512 bytes | RMS: -16.1dB | Text length: 490 chars
+2025-12-18 14:23:13,080 - ai_audiobook_studio - INFO - ✅ Chunk 40 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:23:13,096 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:23:13,096 - ai_audiobook_studio - INFO -    Text: Mister R. duly met her at the nearest station, a t...
+2025-12-18 14:23:29,553 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 39.7s (was 40.2s) | Size: 1,904,392 bytes | RMS: -16.9dB | Text length: 618 chars
+2025-12-18 14:23:29,553 - ai_audiobook_studio - INFO - ✅ Chunk 41 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:23:29,572 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:23:29,572 - ai_audiobook_studio - INFO -    Text: Mister R. states that he has known her go out by h...
+2025-12-18 14:23:42,808 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 31.3s (was 31.8s) | Size: 1,503,928 bytes | RMS: -16.5dB | Text length: 470 chars
+2025-12-18 14:23:42,809 - ai_audiobook_studio - INFO - ✅ Chunk 42 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:23:42,825 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:23:42,826 - ai_audiobook_studio - INFO -    Text: It was on one of these expeditions to the forest t...
+2025-12-18 14:23:58,406 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 37.2s (was 37.8s) | Size: 1,787,704 bytes | RMS: -16.1dB | Text length: 573 chars
+2025-12-18 14:23:58,407 - ai_audiobook_studio - INFO - ✅ Chunk 43 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:23:58,424 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:23:58,424 - ai_audiobook_studio - INFO -    Text: She was seen by some men in the fields making for ...
+2025-12-18 14:24:10,684 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 28.8s (was 29.3s) | Size: 1,384,600 bytes | RMS: -16.0dB | Text length: 449 chars
+2025-12-18 14:24:10,684 - ai_audiobook_studio - INFO - ✅ Chunk 44 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:24:10,701 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:24:10,701 - ai_audiobook_studio - INFO -    Text: After the meal, the boy, who was about seven years...
+2025-12-18 14:24:24,099 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 32.0s (was 32.5s) | Size: 1,535,656 bytes | RMS: -16.6dB | Text length: 482 chars
+2025-12-18 14:24:24,100 - ai_audiobook_studio - INFO - ✅ Chunk 45 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:24:24,118 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:24:24,118 - ai_audiobook_studio - INFO -    Text: Tracing his path by the sound, he met the little b...
+2025-12-18 14:24:41,437 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 41.3s (was 41.8s) | Size: 1,983,688 bytes | RMS: -16.3dB | Text length: 576 chars
+2025-12-18 14:24:41,437 - ai_audiobook_studio - INFO - ✅ Chunk 46 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:24:41,452 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:24:41,452 - ai_audiobook_studio - INFO -    Text: Joseph W. proceeded in the direction indicated by ...
+2025-12-18 14:24:58,456 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 40.7s (was 41.2s) | Size: 1,953,592 bytes | RMS: -16.2dB | Text length: 632 chars
+2025-12-18 14:24:58,457 - ai_audiobook_studio - INFO - ✅ Chunk 47 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:24:58,473 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:24:58,473 - ai_audiobook_studio - INFO -    Text: For many weeks, however, the boy gave his parents ...
+2025-12-18 14:25:15,509 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 19.2s-28.8s (9.6s)
+2025-12-18 14:25:15,510 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 48 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:25:15,510 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 48
+2025-12-18 14:25:15,821 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=48 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:25:15,822 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:25:15,822 - ai_audiobook_studio - INFO -    Text: For many weeks, however, the boy gave his parents ...
+2025-12-18 14:25:31,393 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 44.2s (was 44.7s) | Size: 2,120,920 bytes | RMS: -17.0dB | Text length: 479 chars
+2025-12-18 14:25:31,393 - ai_audiobook_studio - INFO - ✅ Chunk 48 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:25:31,409 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:25:31,409 - ai_audiobook_studio - INFO -    Text: The man was shown into the study, and the little b...
+2025-12-18 14:25:43,740 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 29.1s (was 29.6s) | Size: 1,395,352 bytes | RMS: -15.9dB | Text length: 492 chars
+2025-12-18 14:25:43,740 - ai_audiobook_studio - INFO - ✅ Chunk 49 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:25:43,757 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:25:43,757 - ai_audiobook_studio - INFO -    Text: The boy was taken to one of the bedrooms, and afte...
+2025-12-18 14:26:00,557 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 40.1s (was 40.6s) | Size: 1,923,256 bytes | RMS: -16.8dB | Text length: 627 chars
+2025-12-18 14:26:00,558 - ai_audiobook_studio - INFO - ✅ Chunk 50 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:26:00,573 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:26:00,573 - ai_audiobook_studio - INFO -    Text: It seems that the owner of the house had recently ...
+2025-12-18 14:26:14,666 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 33.5s (was 34.0s) | Size: 1,606,360 bytes | RMS: -16.5dB | Text length: 562 chars
+2025-12-18 14:26:14,666 - ai_audiobook_studio - INFO - ✅ Chunk 51 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:26:14,686 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:26:14,686 - ai_audiobook_studio - INFO -    Text: The matter caused a good deal of sensation at the ...
+2025-12-18 14:26:29,012 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 34.0s (was 34.5s) | Size: 1,633,960 bytes | RMS: -15.9dB | Text length: 540 chars
+2025-12-18 14:26:29,013 - ai_audiobook_studio - INFO - ✅ Chunk 52 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:26:29,033 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:26:29,034 - ai_audiobook_studio - INFO -    Text: This girl, who was a year younger than Helen, was ...
+2025-12-18 14:26:40,599 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 27.4s (was 27.9s) | Size: 1,316,440 bytes | RMS: -16.3dB | Text length: 414 chars
+2025-12-18 14:26:40,600 - ai_audiobook_studio - INFO - ✅ Chunk 53 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:26:40,613 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:26:40,614 - ai_audiobook_studio - INFO -    Text: It must be stated that the payments made to Mister...
+2025-12-18 14:26:55,608 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 35.7s (was 36.2s) | Size: 1,712,440 bytes | RMS: -15.5dB | Text length: 620 chars
+2025-12-18 14:26:55,609 - ai_audiobook_studio - INFO - ✅ Chunk 54 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:26:55,623 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:26:55,623 - ai_audiobook_studio - INFO -    Text: Once or twice after these excursions Missus M. tho...
+2025-12-18 14:27:16,818 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 11.0s-27.0s (16.0s)
+2025-12-18 14:27:16,819 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 55 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:27:16,820 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 55
+2025-12-18 14:27:17,115 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=55 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:27:17,115 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:27:17,115 - ai_audiobook_studio - INFO -    Text: Once or twice after these excursions Missus M. tho...
+2025-12-18 14:27:33,307 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 45.6s (was 46.2s) | Size: 2,190,232 bytes | RMS: -16.1dB | Text length: 603 chars
+2025-12-18 14:27:33,307 - ai_audiobook_studio - INFO - ✅ Chunk 55 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:27:33,320 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:27:33,320 - ai_audiobook_studio - INFO -    Text: Missus M. was astonished at so strange a question,...
+2025-12-18 14:27:47,358 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 34.0s (was 34.6s) | Size: 1,633,624 bytes | RMS: -16.8dB | Text length: 451 chars
+2025-12-18 14:27:47,358 - ai_audiobook_studio - INFO - ✅ Chunk 56 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:27:47,378 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:27:47,378 - ai_audiobook_studio - INFO -    Text: It is too incredible, too monstrous; such things c...
+2025-12-18 14:28:05,716 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 44.5s (was 44.9s) | Size: 2,133,688 bytes | RMS: -16.7dB | Text length: 634 chars
+2025-12-18 14:28:05,717 - ai_audiobook_studio - INFO - ✅ Chunk 57 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:28:05,732 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:28:05,732 - ai_audiobook_studio - INFO -    Text: Clarke tried to conceive the thing again, as he sa...
+2025-12-18 14:28:20,467 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 34.4s (was 35.6s) | Size: 1,651,096 bytes | RMS: -16.5dB | Text length: 511 chars
+2025-12-18 14:28:20,468 - ai_audiobook_studio - INFO - ✅ Chunk 58 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:28:20,482 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:28:20,482 - ai_audiobook_studio - INFO -    Text: One was Rachel, but the other?
+
+Clarke had tried h...
+2025-12-18 14:28:42,496 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 53.9s (was 54.4s) | Size: 2,587,528 bytes | RMS: -17.5dB | Text length: 621 chars
+2025-12-18 14:28:42,497 - ai_audiobook_studio - INFO - ✅ Chunk 59 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:28:42,514 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:28:42,514 - ai_audiobook_studio - INFO -    Text: My rooms are close by, but we won’t go there just ...
+2025-12-18 14:28:58,396 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 38.7s (was 39.2s) | Size: 1,858,312 bytes | RMS: -16.4dB | Text length: 515 chars
+2025-12-18 14:28:58,397 - ai_audiobook_studio - INFO - ✅ Chunk 60 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:28:58,764 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:28:58,764 - ai_audiobook_studio - INFO -    Text: Villiers had emerged from his restaurant after an ...
+2025-12-18 14:29:15,961 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 40.7s (was 41.2s) | Size: 1,955,944 bytes | RMS: -16.3dB | Text length: 601 chars
+2025-12-18 14:29:15,961 - ai_audiobook_studio - INFO - ✅ Chunk 61 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:29:15,977 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:29:15,977 - ai_audiobook_studio - INFO -    Text: Thus he stood beside the lamppost surveying the pa...
+2025-12-18 14:29:30,756 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 16.0s-20.2s (4.2s)
+2025-12-18 14:29:30,757 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 62 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:29:30,757 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 62
+2025-12-18 14:29:31,055 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=62 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:29:31,055 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:29:31,055 - ai_audiobook_studio - INFO -    Text: Thus he stood beside the lamppost surveying the pa...
+2025-12-18 14:29:45,619 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 41.1s (was 41.6s) | Size: 1,971,928 bytes | RMS: -17.1dB | Text length: 551 chars
+2025-12-18 14:29:45,620 - ai_audiobook_studio - INFO - ✅ Chunk 62 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:29:45,638 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:29:45,638 - ai_audiobook_studio - INFO -    Text: There, close beside him, his face altered and disf...
+2025-12-18 14:30:02,752 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 41.4s (was 41.8s) | Size: 1,986,904 bytes | RMS: -16.8dB | Text length: 605 chars
+2025-12-18 14:30:02,753 - ai_audiobook_studio - INFO - ✅ Chunk 63 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:30:02,769 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:30:02,769 - ai_audiobook_studio - INFO -    Text: Villiers felt together with compassion all the rel...
+2025-12-18 14:30:18,616 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 38.4s (was 39.0s) | Size: 1,845,112 bytes | RMS: -16.3dB | Text length: 610 chars
+2025-12-18 14:30:18,617 - ai_audiobook_studio - INFO - ✅ Chunk 64 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:30:18,637 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:30:18,637 - ai_audiobook_studio - INFO -    Text: Surely not?”
+
+“No, Villiers; I came into all the p...
+2025-12-18 14:30:37,742 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 46.1s (was 46.6s) | Size: 2,213,272 bytes | RMS: -17.1dB | Text length: 604 chars
+2025-12-18 14:30:37,744 - ai_audiobook_studio - INFO - ✅ Chunk 65 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:30:37,762 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:30:37,762 - ai_audiobook_studio - INFO -    Text: It was in my second season that the tide turned. O...
+2025-12-18 14:30:56,345 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 45.1s (was 45.6s) | Size: 2,166,616 bytes | RMS: -16.9dB | Text length: 639 chars
+2025-12-18 14:30:56,345 - ai_audiobook_studio - INFO - ✅ Chunk 66 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:30:56,364 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:30:56,364 - ai_audiobook_studio - INFO -    Text: I was standing by the door talking to a friend, wh...
+2025-12-18 14:31:13,696 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 41.5s (was 42.0s) | Size: 1,993,048 bytes | RMS: -16.3dB | Text length: 634 chars
+2025-12-18 14:31:13,697 - ai_audiobook_studio - INFO - ✅ Chunk 67 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:31:13,715 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:31:13,715 - ai_audiobook_studio - INFO -    Text: You, Villiers, you may think you know life, and Lo...
+2025-12-18 14:31:34,697 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 9.0s-28.4s (19.4s)
+2025-12-18 14:31:34,698 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 68 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:31:34,698 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 68
+2025-12-18 14:31:35,007 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=68 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:31:35,008 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:31:35,008 - ai_audiobook_studio - INFO -    Text: You, Villiers, you may think you know life, and Lo...
+2025-12-18 14:31:54,796 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 55.8s (was 56.3s) | Size: 2,677,048 bytes | RMS: -17.6dB | Text length: 644 chars
+2025-12-18 14:31:54,796 - ai_audiobook_studio - INFO - ✅ Chunk 68 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:31:54,810 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:31:54,810 - ai_audiobook_studio - INFO -    Text: You had land in Dorset.” “I sold it all; the field...
+2025-12-18 14:32:10,944 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 15.6s-36.6s (21.0s)
+2025-12-18 14:32:10,946 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 69 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:32:10,946 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 69
+2025-12-18 14:32:11,256 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=69 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:32:11,257 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:32:11,257 - ai_audiobook_studio - INFO -    Text: You had land in Dorset.” “I sold it all; the field...
+2025-12-18 14:32:26,411 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 42.7s (was 43.2s) | Size: 2,048,200 bytes | RMS: -17.3dB | Text length: 641 chars
+2025-12-18 14:32:26,411 - ai_audiobook_studio - INFO - ✅ Chunk 69 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:32:26,430 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:32:26,430 - ai_audiobook_studio - INFO -    Text: Villiers took the unfortunate man to his rooms, an...
+2025-12-18 14:32:44,125 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 43.0s (was 43.5s) | Size: 2,061,688 bytes | RMS: -16.8dB | Text length: 618 chars
+2025-12-18 14:32:44,126 - ai_audiobook_studio - INFO - ✅ Chunk 70 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:32:44,144 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:32:44,144 - ai_audiobook_studio - INFO -    Text: Goodbye; yes, I will not fail to call if I see any...
+2025-12-18 14:33:00,763 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 40.1s (was 40.6s) | Size: 1,923,928 bytes | RMS: -16.9dB | Text length: 604 chars
+2025-12-18 14:33:00,764 - ai_audiobook_studio - INFO - ✅ Chunk 71 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:33:00,783 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:33:00,783 - ai_audiobook_studio - INFO -    Text: His story needed no confirmation: he himself was t...
+2025-12-18 14:33:18,176 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 42.0s (was 42.6s) | Size: 2,017,576 bytes | RMS: -16.3dB | Text length: 605 chars
+2025-12-18 14:33:18,177 - ai_audiobook_studio - INFO - ✅ Chunk 72 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:33:18,195 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:33:18,195 - ai_audiobook_studio - INFO -    Text: The fire began to burn low, and the chilly air of ...
+2025-12-18 14:33:28,115 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 22.9s (was 23.3s) | Size: 1,098,280 bytes | RMS: -16.6dB | Text length: 352 chars
+2025-12-18 14:33:28,115 - ai_audiobook_studio - INFO - ✅ Chunk 73 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:33:28,131 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:33:28,131 - ai_audiobook_studio - INFO -    Text: Villiers, still full of his encounter in Soho and ...
+2025-12-18 14:33:41,764 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 32.7s (was 33.1s) | Size: 1,567,864 bytes | RMS: -16.3dB | Text length: 514 chars
+2025-12-18 14:33:41,764 - ai_audiobook_studio - INFO - ✅ Chunk 74 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:33:41,782 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:33:41,782 - ai_audiobook_studio - INFO -    Text: “What was the case?”
+
+“Well, a gentleman, a man of...
+2025-12-18 14:33:53,589 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 28.0s (was 28.5s) | Size: 1,343,704 bytes | RMS: -16.5dB | Text length: 407 chars
+2025-12-18 14:33:53,589 - ai_audiobook_studio - INFO - ✅ Chunk 75 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:33:53,606 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:33:53,607 - ai_audiobook_studio - INFO -    Text: In this instance as in many others the alarm was r...
+2025-12-18 14:34:06,051 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 29.4s (was 29.9s) | Size: 1,412,152 bytes | RMS: -16.4dB | Text length: 421 chars
+2025-12-18 14:34:06,052 - ai_audiobook_studio - INFO - ✅ Chunk 76 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:34:06,064 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:34:06,064 - ai_audiobook_studio - INFO -    Text: Something or other caught his eye at Number twenty...
+2025-12-18 14:34:22,519 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 39.4s (was 39.9s) | Size: 1,890,952 bytes | RMS: -16.7dB | Text length: 618 chars
+2025-12-18 14:34:22,520 - ai_audiobook_studio - INFO - ✅ Chunk 77 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:34:22,536 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:34:22,536 - ai_audiobook_studio - INFO -    Text: The early bird, who had picked up this fine worm, ...
+2025-12-18 14:34:36,710 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 33.5s (was 34.0s) | Size: 1,606,504 bytes | RMS: -16.0dB | Text length: 566 chars
+2025-12-18 14:34:36,711 - ai_audiobook_studio - INFO - ✅ Chunk 78 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:34:36,727 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:34:36,728 - ai_audiobook_studio - INFO -    Text: The doctor hardly needed a moment’s examination; h...
+2025-12-18 14:34:53,047 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 38.8s (was 39.3s) | Size: 1,860,808 bytes | RMS: -15.7dB | Text length: 628 chars
+2025-12-18 14:34:53,048 - ai_audiobook_studio - INFO - ✅ Chunk 79 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:34:53,062 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:34:53,062 - ai_audiobook_studio - INFO -    Text: There were some slight bruises on his shoulders, b...
+2025-12-18 14:35:08,312 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 36.0s (was 36.5s) | Size: 1,725,784 bytes | RMS: -16.1dB | Text length: 593 chars
+2025-12-18 14:35:08,313 - ai_audiobook_studio - INFO - ✅ Chunk 80 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:35:08,330 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:35:08,331 - ai_audiobook_studio - INFO -    Text: It appears that the occupants of the house were a ...
+2025-12-18 14:35:23,195 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 35.2s (was 35.7s) | Size: 1,689,400 bytes | RMS: -16.4dB | Text length: 568 chars
+2025-12-18 14:35:23,196 - ai_audiobook_studio - INFO - ✅ Chunk 81 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:35:23,217 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:35:23,217 - ai_audiobook_studio - INFO -    Text: Though it was between five and six in the morning ...
+2025-12-18 14:35:38,535 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 35.8s (was 36.3s) | Size: 1,719,544 bytes | RMS: -15.9dB | Text length: 618 chars
+2025-12-18 14:35:38,535 - ai_audiobook_studio - INFO - ✅ Chunk 82 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:35:38,553 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:35:38,553 - ai_audiobook_studio - INFO -    Text: The authorities were morally certain that the man ...
+2025-12-18 14:35:54,406 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 37.6s (was 38.1s) | Size: 1,804,696 bytes | RMS: -16.8dB | Text length: 619 chars
+2025-12-18 14:35:54,407 - ai_audiobook_studio - INFO - ✅ Chunk 83 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:35:54,422 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:35:54,422 - ai_audiobook_studio - INFO -    Text: ‘Pardon me,’ he replied, ‘I know perfectly well wh...
+2025-12-18 14:36:10,970 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 13.8s-28.4s (14.6s)
+2025-12-18 14:36:10,972 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 84 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:36:10,972 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 84
+2025-12-18 14:36:11,255 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=84 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:36:11,255 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:36:11,255 - ai_audiobook_studio - INFO -    Text: ‘Pardon me,’ he replied, ‘I know perfectly well wh...
+2025-12-18 14:36:26,673 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 43.0s (was 43.6s) | Size: 2,065,624 bytes | RMS: -17.4dB | Text length: 562 chars
+2025-12-18 14:36:26,673 - ai_audiobook_studio - INFO - ✅ Chunk 84 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:36:26,687 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:36:26,687 - ai_audiobook_studio - INFO -    Text: Do you happen to know anything of Herbert?”
+
+“Well...
+2025-12-18 14:36:46,091 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 31.4s-42.0s (10.6s)
+2025-12-18 14:36:46,092 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 85 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:36:46,092 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 85
+2025-12-18 14:36:46,396 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=85 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:36:46,396 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:36:46,396 - ai_audiobook_studio - INFO -    Text: Do you happen to know anything of Herbert?”
+
+“Well...
+2025-12-18 14:37:02,686 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 44.4s (was 45.0s) | Size: 2,131,432 bytes | RMS: -17.7dB | Text length: 549 chars
+2025-12-18 14:37:02,687 - ai_audiobook_studio - INFO - ✅ Chunk 85 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:37:02,705 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:37:02,705 - ai_audiobook_studio - INFO -    Text: Everyone who saw her at the police court said she ...
+2025-12-18 14:37:19,169 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 38.0s (was 38.6s) | Size: 1,825,144 bytes | RMS: -16.1dB | Text length: 613 chars
+2025-12-18 14:37:19,171 - ai_audiobook_studio - INFO - ✅ Chunk 86 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:37:19,185 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:37:19,185 - ai_audiobook_studio - INFO -    Text: It’s altogether a very odd case, isn’t it?”
+
+“It i...
+2025-12-18 14:37:36,047 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 39.7s (was 40.2s) | Size: 1,903,480 bytes | RMS: -17.6dB | Text length: 561 chars
+2025-12-18 14:37:36,048 - ai_audiobook_studio - INFO - ✅ Chunk 87 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:37:36,065 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:37:36,065 - ai_audiobook_studio - INFO -    Text: For more than a week he had succeeded in keeping a...
+2025-12-18 14:37:51,976 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 37.7s (was 38.2s) | Size: 1,810,120 bytes | RMS: -16.3dB | Text length: 605 chars
+2025-12-18 14:37:51,977 - ai_audiobook_studio - INFO - ✅ Chunk 88 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:37:51,990 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:37:51,990 - ai_audiobook_studio - INFO -    Text: “Dear me, Villiers, it is very kind of you to look...
+2025-12-18 14:38:10,527 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 43.4s (was 43.9s) | Size: 2,081,464 bytes | RMS: -17.4dB | Text length: 583 chars
+2025-12-18 14:38:10,528 - ai_audiobook_studio - INFO - ✅ Chunk 89 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:38:10,543 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:38:10,543 - ai_audiobook_studio - INFO -    Text: Mister Villiers was ignorant of the Memoirs to Pro...
+2025-12-18 14:38:23,853 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 31.3s (was 31.8s) | Size: 1,503,496 bytes | RMS: -16.6dB | Text length: 408 chars
+2025-12-18 14:38:23,854 - ai_audiobook_studio - INFO - ✅ Chunk 90 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:38:24,154 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:38:24,155 - ai_audiobook_studio - INFO -    Text: I was coming out of a restaurant one nasty winter ...
+2025-12-18 14:38:39,464 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 35.9s (was 36.5s) | Size: 1,724,728 bytes | RMS: -16.3dB | Text length: 596 chars
+2025-12-18 14:38:39,464 - ai_audiobook_studio - INFO - ✅ Chunk 91 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:38:39,478 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:38:39,478 - ai_audiobook_studio - INFO -    Text: I asked him how he had come to such a wretched pas...
+2025-12-18 14:38:54,289 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 35.5s (was 36.1s) | Size: 1,706,296 bytes | RMS: -16.2dB | Text length: 559 chars
+2025-12-18 14:38:54,289 - ai_audiobook_studio - INFO - ✅ Chunk 92 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:38:54,303 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:38:54,303 - ai_audiobook_studio - INFO -    Text: I gave him a little money and sent him away, and I...
+2025-12-18 14:39:13,469 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 46.5s (was 47.0s) | Size: 2,230,120 bytes | RMS: -17.2dB | Text length: 565 chars
+2025-12-18 14:39:13,469 - ai_audiobook_studio - INFO - ✅ Chunk 93 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:39:13,487 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:39:13,487 - ai_audiobook_studio - INFO -    Text: And what he saw, he most certainly saw in that hou...
+2025-12-18 14:39:29,846 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 39.4s (was 39.9s) | Size: 1,889,656 bytes | RMS: -16.1dB | Text length: 616 chars
+2025-12-18 14:39:29,847 - ai_audiobook_studio - INFO - ✅ Chunk 94 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:39:29,866 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:39:29,866 - ai_audiobook_studio - INFO -    Text: Of course I should have heard nothing of the Herbe...
+2025-12-18 14:39:44,964 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 36.0s (was 36.5s) | Size: 1,728,136 bytes | RMS: -16.1dB | Text length: 608 chars
+2025-12-18 14:39:44,965 - ai_audiobook_studio - INFO - ✅ Chunk 95 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:39:44,982 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:39:44,982 - ai_audiobook_studio - INFO -    Text: But I didn’t enjoy going over Number twenty, Paul ...
+2025-12-18 14:40:00,756 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 38.2s (was 38.8s) | Size: 1,835,944 bytes | RMS: -16.6dB | Text length: 633 chars
+2025-12-18 14:40:00,757 - ai_audiobook_studio - INFO - ✅ Chunk 96 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:40:00,775 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:40:00,776 - ai_audiobook_studio - INFO -    Text: It was a largish room, and once on a time the pape...
+2025-12-18 14:40:14,299 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 32.1s (was 32.6s) | Size: 1,539,352 bytes | RMS: -16.0dB | Text length: 512 chars
+2025-12-18 14:40:14,300 - ai_audiobook_studio - INFO - ✅ Chunk 97 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:40:14,315 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:40:14,315 - ai_audiobook_studio - INFO -    Text: In one corner there was a pile of newspapers litte...
+2025-12-18 14:40:29,304 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 35.7s (was 36.2s) | Size: 1,712,776 bytes | RMS: -17.1dB | Text length: 538 chars
+2025-12-18 14:40:29,304 - ai_audiobook_studio - INFO - ✅ Chunk 98 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:40:29,317 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:40:29,318 - ai_audiobook_studio - INFO -    Text: I was staggering about from one side of the paveme...
+2025-12-18 14:40:46,285 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 40.4s (was 40.9s) | Size: 1,937,176 bytes | RMS: -16.4dB | Text length: 636 chars
+2025-12-18 14:40:46,285 - ai_audiobook_studio - INFO - ✅ Chunk 99 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:40:46,302 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:40:46,302 - ai_audiobook_studio - INFO -    Text: His name was familiar to the public three years ag...
+2025-12-18 14:41:06,169 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 47.9s (was 48.4s) | Size: 2,298,712 bytes | RMS: -17.2dB | Text length: 636 chars
+2025-12-18 14:41:06,169 - ai_audiobook_studio - INFO - ✅ Chunk 100 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:41:06,187 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:41:06,187 - ai_audiobook_studio - INFO -    Text: There are, no doubt, circumstances in the case whi...
+2025-12-18 14:41:19,276 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 30.8s (was 31.3s) | Size: 1,478,392 bytes | RMS: -15.9dB | Text length: 505 chars
+2025-12-18 14:41:19,277 - ai_audiobook_studio - INFO - ✅ Chunk 101 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:41:19,297 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:41:19,297 - ai_audiobook_studio - INFO -    Text: I don’t exactly see what more can be said or done ...
+2025-12-18 14:41:40,251 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 50.7s (was 51.2s) | Size: 2,433,880 bytes | RMS: -17.9dB | Text length: 643 chars
+2025-12-18 14:41:40,251 - ai_audiobook_studio - INFO - ✅ Chunk 102 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:41:40,266 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:41:40,266 - ai_audiobook_studio - INFO -    Text: You remember my saying that I had found a rather c...
+2025-12-18 14:41:54,595 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 34.4s (was 34.9s) | Size: 1,650,952 bytes | RMS: -15.8dB | Text length: 559 chars
+2025-12-18 14:41:54,596 - ai_audiobook_studio - INFO - ✅ Chunk 103 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:41:54,610 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:41:54,611 - ai_audiobook_studio - INFO -    Text: There was dead silence in the room for five minute...
+2025-12-18 14:42:07,223 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 29.6s (was 30.1s) | Size: 1,421,512 bytes | RMS: -15.7dB | Text length: 503 chars
+2025-12-18 14:42:07,224 - ai_audiobook_studio - INFO - ✅ Chunk 104 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:42:07,243 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:42:07,244 - ai_audiobook_studio - INFO -    Text: Clarke gazed still at the face; it brought to his ...
+2025-12-18 14:42:25,761 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 44.3s (was 44.8s) | Size: 2,125,528 bytes | RMS: -16.7dB | Text length: 645 chars
+2025-12-18 14:42:25,761 - ai_audiobook_studio - INFO - ✅ Chunk 105 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:42:25,780 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:42:25,780 - ai_audiobook_studio - INFO -    Text: “Who is this woman?” he said at last. His voice wa...
+2025-12-18 14:42:37,542 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 28.0s (was 28.5s) | Size: 1,345,768 bytes | RMS: -16.5dB | Text length: 413 chars
+2025-12-18 14:42:37,543 - ai_audiobook_studio - INFO - ✅ Chunk 106 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:42:37,558 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:42:37,558 - ai_audiobook_studio - INFO -    Text: Whatever it was, the glance that came from those e...
+2025-12-18 14:42:59,143 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 12.0s-28.4s (16.4s)
+2025-12-18 14:42:59,144 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 107 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:42:59,144 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 107
+2025-12-18 14:42:59,425 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=107 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:42:59,426 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:42:59,426 - ai_audiobook_studio - INFO -    Text: Whatever it was, the glance that came from those e...
+2025-12-18 14:43:17,125 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 50.4s (was 50.9s) | Size: 2,419,960 bytes | RMS: -16.9dB | Text length: 602 chars
+2025-12-18 14:43:17,126 - ai_audiobook_studio - INFO - ✅ Chunk 107 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:43:17,144 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:43:17,144 - ai_audiobook_studio - INFO -    Text: Pour me out a little wine; thanks, that will do. I...
+2025-12-18 14:43:35,334 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 44.2s (was 44.6s) | Size: 2,119,480 bytes | RMS: -17.1dB | Text length: 606 chars
+2025-12-18 14:43:35,334 - ai_audiobook_studio - INFO - ✅ Chunk 108 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:43:35,351 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:43:35,351 - ai_audiobook_studio - INFO -    Text: “Now, don’t you agree with me,” said Villiers, “th...
+2025-12-18 14:43:53,947 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 30.2s-40.8s (10.6s)
+2025-12-18 14:43:53,948 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 109 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:43:53,948 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 109
+2025-12-18 14:43:54,231 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=109 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:43:54,232 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:43:54,232 - ai_audiobook_studio - INFO -    Text: “Now, don’t you agree with me,” said Villiers, “th...
+2025-12-18 14:44:08,217 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 39.3s (was 39.9s) | Size: 1,888,552 bytes | RMS: -16.1dB | Text length: 478 chars
+2025-12-18 14:44:08,217 - ai_audiobook_studio - INFO - ✅ Chunk 109 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:44:08,232 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:44:08,232 - ai_audiobook_studio - INFO -    Text: “Do you know, Austin,” said Villiers, as the two f...
+2025-12-18 14:44:26,610 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 16.0s-28.8s (12.8s)
+2025-12-18 14:44:26,610 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 110 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:44:26,611 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 110
+2025-12-18 14:44:26,903 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=110 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:44:26,903 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:44:26,903 - ai_audiobook_studio - INFO -    Text: “Do you know, Austin,” said Villiers, as the two f...
+2025-12-18 14:44:44,476 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 49.7s (was 50.3s) | Size: 2,387,752 bytes | RMS: -17.7dB | Text length: 624 chars
+2025-12-18 14:44:44,476 - ai_audiobook_studio - INFO - ✅ Chunk 110 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:44:44,492 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:44:44,492 - ai_audiobook_studio - INFO -    Text: “In what manner?”
+
+“He would not tell me; he would...
+2025-12-18 14:45:02,186 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 42.9s (was 43.5s) | Size: 2,060,728 bytes | RMS: -17.1dB | Text length: 613 chars
+2025-12-18 14:45:02,187 - ai_audiobook_studio - INFO - ✅ Chunk 111 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:45:02,205 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:45:02,205 - ai_audiobook_studio - INFO -    Text: A few days later I received this extraordinary let...
+2025-12-18 14:45:20,818 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 44.9s (was 45.4s) | Size: 2,155,720 bytes | RMS: -17.0dB | Text length: 630 chars
+2025-12-18 14:45:20,819 - ai_audiobook_studio - INFO - ✅ Chunk 112 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:45:20,836 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:45:20,836 - ai_audiobook_studio - INFO -    Text: What I know is strange enough and horrible enough,...
+2025-12-18 14:45:37,100 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 39.2s (was 39.7s) | Size: 1,882,984 bytes | RMS: -16.1dB | Text length: 593 chars
+2025-12-18 14:45:37,100 - ai_audiobook_studio - INFO - ✅ Chunk 113 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:45:37,115 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:45:37,115 - ai_audiobook_studio - INFO -    Text: I forgot to tell you I have been to Paul Street an...
+2025-12-18 14:45:52,926 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 38.1s (was 38.6s) | Size: 1,826,728 bytes | RMS: -15.6dB | Text length: 559 chars
+2025-12-18 14:45:52,926 - ai_audiobook_studio - INFO - ✅ Chunk 114 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:45:52,943 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:45:52,944 - ai_audiobook_studio - INFO -    Text: I felt racked from head to foot, my eyes began to ...
+2025-12-18 14:46:16,366 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 12.4s-34.8s (22.4s)
+2025-12-18 14:46:16,367 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 115 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:46:16,367 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 115
+2025-12-18 14:46:16,674 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=115 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:46:16,674 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:46:16,674 - ai_audiobook_studio - INFO -    Text: I felt racked from head to foot, my eyes began to ...
+2025-12-18 14:46:33,514 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 48.4s (was 48.9s) | Size: 2,321,224 bytes | RMS: -17.4dB | Text length: 632 chars
+2025-12-18 14:46:33,514 - ai_audiobook_studio - INFO - ✅ Chunk 115 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:46:33,526 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:46:33,526 - ai_audiobook_studio - INFO -    Text: He looked ghastly, I assure you.” “Then he must ha...
+2025-12-18 14:46:47,089 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 32.4s (was 33.0s) | Size: 1,557,400 bytes | RMS: -18.2dB | Text length: 471 chars
+2025-12-18 14:46:47,089 - ai_audiobook_studio - INFO - ✅ Chunk 116 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:46:47,104 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:46:47,104 - ai_audiobook_studio - INFO -    Text: I hate melodrama, and nothing strikes me as more c...
+2025-12-18 14:47:00,395 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 31.5s (was 32.0s) | Size: 1,512,088 bytes | RMS: -16.0dB | Text length: 492 chars
+2025-12-18 14:47:00,395 - ai_audiobook_studio - INFO - ✅ Chunk 117 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:47:00,410 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:47:00,411 - ai_audiobook_studio - INFO -    Text: Villiers glanced up as Austin stopped speaking, an...
+2025-12-18 14:47:24,186 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 28.2s-43.6s (15.4s)
+2025-12-18 14:47:24,187 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 118 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:47:24,187 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 118
+2025-12-18 14:47:24,466 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=118 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:47:24,467 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:47:24,467 - ai_audiobook_studio - INFO -    Text: Villiers glanced up as Austin stopped speaking, an...
+2025-12-18 14:47:41,807 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 49.1s (was 49.6s) | Size: 2,359,096 bytes | RMS: -16.9dB | Text length: 635 chars
+2025-12-18 14:47:41,808 - ai_audiobook_studio - INFO - ✅ Chunk 118 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:47:41,826 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:47:41,827 - ai_audiobook_studio - INFO -    Text: She is a very wealthy woman, there’s no doubt of t...
+2025-12-18 14:47:58,808 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 41.0s (was 41.6s) | Size: 1,970,008 bytes | RMS: -17.4dB | Text length: 562 chars
+2025-12-18 14:47:58,809 - ai_audiobook_studio - INFO - ✅ Chunk 119 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:47:58,823 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:47:58,823 - ai_audiobook_studio - INFO -    Text: Lord Argentine thought she was chaffing him, you k...
+2025-12-18 14:48:17,298 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 44.5s (was 45.0s) | Size: 2,135,896 bytes | RMS: -17.7dB | Text length: 630 chars
+2025-12-18 14:48:17,298 - ai_audiobook_studio - INFO - ✅ Chunk 120 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:48:17,604 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:48:17,604 - ai_audiobook_studio - INFO -    Text: “No; I think not; you saw those queer jugs, didn’t...
+2025-12-18 14:48:33,885 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 38.8s (was 39.3s) | Size: 1,862,296 bytes | RMS: -17.3dB | Text length: 546 chars
+2025-12-18 14:48:33,886 - ai_audiobook_studio - INFO - ✅ Chunk 121 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:48:33,901 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:48:33,902 - ai_audiobook_studio - INFO -    Text: “Did you know Arthur Meyrick the painter, Villiers...
+2025-12-18 14:48:57,930 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 11.4s-31.6s (20.2s)
+2025-12-18 14:48:57,931 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 122 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:48:57,931 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 122
+2025-12-18 14:48:58,209 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=122 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:48:58,210 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:48:58,211 - ai_audiobook_studio - INFO -    Text: “Did you know Arthur Meyrick the painter, Villiers...
+2025-12-18 14:49:14,813 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 47.3s (was 47.9s) | Size: 2,271,304 bytes | RMS: -17.0dB | Text length: 577 chars
+2025-12-18 14:49:14,813 - ai_audiobook_studio - INFO - ✅ Chunk 122 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:49:14,832 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:49:14,832 - ai_audiobook_studio - INFO -    Text: About eighteen months ago he was feeling rather ov...
+2025-12-18 14:49:31,319 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 39.8s (was 40.4s) | Size: 1,912,696 bytes | RMS: -16.7dB | Text length: 647 chars
+2025-12-18 14:49:31,319 - ai_audiobook_studio - INFO - ✅ Chunk 123 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:49:31,337 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:49:31,337 - ai_audiobook_studio - INFO -    Text: You would advise me to write to the doctor?”
+
+“Cer...
+2025-12-18 14:49:49,821 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 45.3s (was 45.7s) | Size: 2,172,184 bytes | RMS: -17.4dB | Text length: 619 chars
+2025-12-18 14:49:49,821 - ai_audiobook_studio - INFO - ✅ Chunk 124 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:49:49,836 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:49:49,837 - ai_audiobook_studio - INFO -    Text: “It isn’t a printed volume then?” he said. “Number...
+2025-12-18 14:50:11,371 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 2 silence(s) ≥3s: 21.0s-24.8s (3.8s), 33.4s-44.6s (11.2s)
+2025-12-18 14:50:11,372 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 125 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:50:11,373 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 125
+2025-12-18 14:50:11,654 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=125 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:50:11,654 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:50:11,654 - ai_audiobook_studio - INFO -    Text: “It isn’t a printed volume then?” he said. “Number...
+2025-12-18 14:50:32,665 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 41.2s-51.8s (10.6s)
+2025-12-18 14:50:32,667 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 125 | temp=0.35 speed=0.81 | Audio discarded by engine
+2025-12-18 14:50:32,667 - ai_audiobook_studio - WARNING - Retry 2/5 for chunk 125
+2025-12-18 14:50:32,959 - ai_audiobook_studio - INFO - Retry 2/5 with conservative params | chunk=125 temp=0.35 speed=0.80 rep=2.80
+2025-12-18 14:50:32,959 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:50:32,960 - ai_audiobook_studio - INFO -    Text: “It isn’t a printed volume then?” he said. “Number...
+2025-12-18 14:50:52,743 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 56.5s (was 57.0s) | Size: 2,709,880 bytes | RMS: -16.7dB | Text length: 549 chars
+2025-12-18 14:50:52,743 - ai_audiobook_studio - INFO - ✅ Chunk 125 quality OK | temp=0.35 speed=0.80
+2025-12-18 14:50:52,759 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:50:52,759 - ai_audiobook_studio - INFO -    Text: Villiers turned page after page, absorbed, in spit...
+2025-12-18 14:51:14,709 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 37.8s-41.4s (3.6s)
+2025-12-18 14:51:14,710 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 126 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:51:14,710 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 126
+2025-12-18 14:51:14,992 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=126 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:51:14,993 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:51:14,993 - ai_audiobook_studio - INFO -    Text: Villiers turned page after page, absorbed, in spit...
+2025-12-18 14:51:32,097 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 48.2s (was 48.7s) | Size: 2,315,464 bytes | RMS: -16.4dB | Text length: 625 chars
+2025-12-18 14:51:32,097 - ai_audiobook_studio - INFO - ✅ Chunk 126 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:51:32,112 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:51:32,113 - ai_audiobook_studio - INFO -    Text: “Austin!”
+
+“Well, what is it?”
+
+“Do you know who t...
+2025-12-18 14:51:47,860 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 38.4s (was 38.9s) | Size: 1,841,080 bytes | RMS: -16.7dB | Text length: 515 chars
+2025-12-18 14:51:47,861 - ai_audiobook_studio - INFO - ✅ Chunk 127 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:51:47,876 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:51:47,877 - ai_audiobook_studio - INFO -    Text: But I wonder what connection there could be betwee...
+2025-12-18 14:52:08,260 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 27.6s-40.6s (13.0s)
+2025-12-18 14:52:08,261 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 128 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:52:08,261 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 128
+2025-12-18 14:52:08,544 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=128 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:52:08,545 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:52:08,545 - ai_audiobook_studio - INFO -    Text: But I wonder what connection there could be betwee...
+2025-12-18 14:52:24,746 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 45.9s (was 46.4s) | Size: 2,203,912 bytes | RMS: -17.5dB | Text length: 539 chars
+2025-12-18 14:52:24,747 - ai_audiobook_studio - INFO - ✅ Chunk 128 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:52:24,761 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:52:24,761 - ai_audiobook_studio - INFO -    Text: At twenty he had been a poor man, decked with the ...
+2025-12-18 14:52:40,175 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 36.4s (was 37.0s) | Size: 1,748,248 bytes | RMS: -16.3dB | Text length: 564 chars
+2025-12-18 14:52:40,176 - ai_audiobook_studio - INFO - ✅ Chunk 129 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:52:40,193 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:52:40,193 - ai_audiobook_studio - INFO -    Text: Thus he fronted the world with no better armour th...
+2025-12-18 14:52:51,509 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 26.6s (was 27.1s) | Size: 1,274,728 bytes | RMS: -15.9dB | Text length: 404 chars
+2025-12-18 14:52:51,510 - ai_audiobook_studio - INFO - ✅ Chunk 130 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:52:51,525 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:52:51,525 - ai_audiobook_studio - INFO -    Text: These three, however, were “good lives,” but yet n...
+2025-12-18 14:53:09,398 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 42.8s (was 43.3s) | Size: 2,054,728 bytes | RMS: -16.0dB | Text length: 646 chars
+2025-12-18 14:53:09,399 - ai_audiobook_studio - INFO - ✅ Chunk 131 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:53:09,417 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:53:09,418 - ai_audiobook_studio - INFO -    Text: After ten years of lordship and dinners Argentine ...
+2025-12-18 14:53:25,230 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 37.9s (was 38.4s) | Size: 1,820,392 bytes | RMS: -16.0dB | Text length: 588 chars
+2025-12-18 14:53:25,230 - ai_audiobook_studio - INFO - ✅ Chunk 132 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:53:25,248 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:53:25,248 - ai_audiobook_studio - INFO -    Text: It is stated that there can be no doubt that his l...
+2025-12-18 14:53:40,458 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 36.3s (was 36.8s) | Size: 1,743,544 bytes | RMS: -16.1dB | Text length: 563 chars
+2025-12-18 14:53:40,459 - ai_audiobook_studio - INFO - ✅ Chunk 133 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:53:40,476 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:53:40,477 - ai_audiobook_studio - INFO -    Text: At about eleven o’clock Lord Argentine had returne...
+2025-12-18 14:53:56,779 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 39.1s (was 39.6s) | Size: 1,878,616 bytes | RMS: -16.1dB | Text length: 641 chars
+2025-12-18 14:53:56,780 - ai_audiobook_studio - INFO - ✅ Chunk 134 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:53:56,801 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:53:56,801 - ai_audiobook_studio - INFO -    Text: He received no answer, and, after knocking two or ...
+2025-12-18 14:54:12,101 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 36.5s (was 37.0s) | Size: 1,752,232 bytes | RMS: -16.2dB | Text length: 568 chars
+2025-12-18 14:54:12,101 - ai_audiobook_studio - INFO - ✅ Chunk 135 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:54:12,117 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:54:12,117 - ai_audiobook_studio - INFO -    Text: All papers, letters, and so forth seemed in perfec...
+2025-12-18 14:54:28,213 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 38.4s (was 39.0s) | Size: 1,845,112 bytes | RMS: -16.5dB | Text length: 552 chars
+2025-12-18 14:54:28,214 - ai_audiobook_studio - INFO - ✅ Chunk 136 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:54:28,232 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:54:28,232 - ai_audiobook_studio - INFO -    Text: It seemed hopeless to seek for any clue, and the s...
+2025-12-18 14:54:43,021 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 35.1s (was 35.6s) | Size: 1,682,632 bytes | RMS: -15.4dB | Text length: 546 chars
+2025-12-18 14:54:43,021 - ai_audiobook_studio - INFO - ✅ Chunk 137 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:54:43,040 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:54:43,040 - ai_audiobook_studio - INFO -    Text: There was no explanation in either case; a few bal...
+2025-12-18 14:54:55,187 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 28.8s (was 29.3s) | Size: 1,383,640 bytes | RMS: -16.1dB | Text length: 476 chars
+2025-12-18 14:54:55,187 - ai_audiobook_studio - INFO - ✅ Chunk 138 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:54:55,207 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:54:55,207 - ai_audiobook_studio - INFO -    Text: Each of these men who had resolved to die a tortur...
+2025-12-18 14:55:11,968 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 40.2s (was 40.7s) | Size: 1,927,384 bytes | RMS: -16.1dB | Text length: 627 chars
+2025-12-18 14:55:11,968 - ai_audiobook_studio - INFO - ✅ Chunk 139 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:55:11,982 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:55:11,982 - ai_audiobook_studio - INFO -    Text: A short while after the last of these terrible eve...
+2025-12-18 14:55:26,147 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 34.0s (was 34.5s) | Size: 1,631,896 bytes | RMS: -16.2dB | Text length: 528 chars
+2025-12-18 14:55:26,148 - ai_audiobook_studio - INFO - ✅ Chunk 140 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:55:26,170 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:55:26,170 - ai_audiobook_studio - INFO -    Text: But to tell the truth, Austin, I haven’t paid very...
+2025-12-18 14:55:44,138 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 43.2s (was 43.7s) | Size: 2,073,880 bytes | RMS: -17.5dB | Text length: 639 chars
+2025-12-18 14:55:44,139 - ai_audiobook_studio - INFO - ✅ Chunk 141 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:55:44,155 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:55:44,155 - ai_audiobook_studio - INFO -    Text: “Oh, yes; the name was kept out of the papers to s...
+2025-12-18 14:56:00,862 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 40.8s (was 41.3s) | Size: 1,958,680 bytes | RMS: -16.4dB | Text length: 630 chars
+2025-12-18 14:56:00,862 - ai_audiobook_studio - INFO - ✅ Chunk 142 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:56:00,883 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:56:00,883 - ai_audiobook_studio - INFO -    Text: You know how men babble away each other’s characte...
+2025-12-18 14:56:17,641 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 40.6s (was 41.1s) | Size: 1,948,984 bytes | RMS: -16.2dB | Text length: 635 chars
+2025-12-18 14:56:17,642 - ai_audiobook_studio - INFO - ✅ Chunk 143 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:56:17,654 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:56:17,654 - ai_audiobook_studio - INFO -    Text: Austin tried to shake off the remembrance of trage...
+2025-12-18 14:56:41,944 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 2 silence(s) ≥3s: 19.2s-41.4s (22.2s), 43.6s-46.8s (3.2s)
+2025-12-18 14:56:41,945 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 144 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:56:41,945 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 144
+2025-12-18 14:56:42,225 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=144 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:56:42,226 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:56:42,227 - ai_audiobook_studio - INFO -    Text: Austin tried to shake off the remembrance of trage...
+2025-12-18 14:57:00,988 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 53.5s (was 54.0s) | Size: 2,567,032 bytes | RMS: -17.6dB | Text length: 645 chars
+2025-12-18 14:57:00,989 - ai_audiobook_studio - INFO - ✅ Chunk 144 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:57:01,007 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:57:01,007 - ai_audiobook_studio - INFO -    Text: And all the time I was looking at her, and afterwa...
+2025-12-18 14:57:17,699 - ai_audiobook_studio - WARNING - ⚠ END-OF-FILE SILENCE DETECTED! Last 5.0s is silent (-infdB). Model likely stopped early.
+2025-12-18 14:57:17,700 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 145 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:57:17,700 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 145
+2025-12-18 14:57:17,995 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=145 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:57:17,995 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:57:17,996 - ai_audiobook_studio - INFO -    Text: And all the time I was looking at her, and afterwa...
+2025-12-18 14:57:34,231 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 46.4s (was 46.8s) | Size: 2,225,944 bytes | RMS: -16.7dB | Text length: 615 chars
+2025-12-18 14:57:34,231 - ai_audiobook_studio - INFO - ✅ Chunk 145 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:57:34,248 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:57:34,248 - ai_audiobook_studio - INFO -    Text: Villiers nodded and glanced aimlessly round the ro...
+2025-12-18 14:57:49,483 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 36.8s (was 37.3s) | Size: 1,766,248 bytes | RMS: -16.5dB | Text length: 602 chars
+2025-12-18 14:57:49,484 - ai_audiobook_studio - INFO - ✅ Chunk 146 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:57:49,495 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:57:49,496 - ai_audiobook_studio - INFO -    Text: But it’s very possible that Meyrick fell in with h...
+2025-12-18 14:58:06,444 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 40.9s (was 41.4s) | Size: 1,964,344 bytes | RMS: -16.5dB | Text length: 594 chars
+2025-12-18 14:58:06,445 - ai_audiobook_studio - INFO - ✅ Chunk 147 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:58:06,458 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:58:06,459 - ai_audiobook_studio - INFO -    Text: The noise rose from the eastward and swelled down ...
+2025-12-18 14:58:24,465 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 43.6s (was 44.1s) | Size: 2,092,456 bytes | RMS: -16.6dB | Text length: 648 chars
+2025-12-18 14:58:24,466 - ai_audiobook_studio - INFO - ✅ Chunk 148 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:58:24,484 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:58:24,484 - ai_audiobook_studio - INFO -    Text: “Another gentleman has fallen a victim to the terr...
+2025-12-18 14:58:46,574 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 15.2s-37.0s (21.8s)
+2025-12-18 14:58:46,576 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 149 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 14:58:46,576 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 149
+2025-12-18 14:58:46,864 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=149 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 14:58:46,865 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:58:46,865 - ai_audiobook_studio - INFO -    Text: “Another gentleman has fallen a victim to the terr...
+2025-12-18 14:59:02,634 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 44.5s (was 45.0s) | Size: 2,134,936 bytes | RMS: -16.1dB | Text length: 576 chars
+2025-12-18 14:59:02,634 - ai_audiobook_studio - INFO - ✅ Chunk 149 quality OK | temp=0.35 speed=0.81
+2025-12-18 14:59:02,650 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:59:02,650 - ai_audiobook_studio - INFO -    Text: On the discovery of the body medical aid was at on...
+2025-12-18 14:59:18,687 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 38.7s (was 39.2s) | Size: 1,857,976 bytes | RMS: -16.2dB | Text length: 592 chars
+2025-12-18 14:59:18,687 - ai_audiobook_studio - INFO - ✅ Chunk 150 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:59:19,001 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:59:19,002 - ai_audiobook_studio - INFO -    Text: He had listened to the newspaper report attentivel...
+2025-12-18 14:59:38,118 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 46.1s (was 46.6s) | Size: 2,210,584 bytes | RMS: -17.0dB | Text length: 639 chars
+2025-12-18 14:59:38,119 - ai_audiobook_studio - INFO - ✅ Chunk 151 quality OK | temp=0.32 speed=0.95
+2025-12-18 14:59:38,136 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 14:59:38,136 - ai_audiobook_studio - INFO -    Text: You, Villiers?”
+
+“Yes, I saw him quite distinctly;...
+2025-12-18 15:00:00,125 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 53.8s (was 54.3s) | Size: 2,581,816 bytes | RMS: -18.4dB | Text length: 641 chars
+2025-12-18 15:00:00,125 - ai_audiobook_studio - INFO - ✅ Chunk 152 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:00:00,138 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:00:00,138 - ai_audiobook_studio - INFO -    Text: “What you saw? What did you see? Was there anythin...
+2025-12-18 15:00:22,182 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 10.0s-28.4s (18.4s)
+2025-12-18 15:00:22,184 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 153 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 15:00:22,184 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 153
+2025-12-18 15:00:22,462 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=153 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 15:00:22,462 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:00:22,463 - ai_audiobook_studio - INFO -    Text: “What you saw? What did you see? Was there anythin...
+2025-12-18 15:00:40,436 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 51.1s (was 51.6s) | Size: 2,451,688 bytes | RMS: -16.0dB | Text length: 646 chars
+2025-12-18 15:00:40,436 - ai_audiobook_studio - INFO - ✅ Chunk 153 quality OK | temp=0.35 speed=0.81
+2025-12-18 15:00:40,450 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:00:40,450 - ai_audiobook_studio - INFO -    Text: It was a clear pleasant night enough, and after a ...
+2025-12-18 15:00:55,414 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 35.9s (was 36.3s) | Size: 1,720,984 bytes | RMS: -16.6dB | Text length: 534 chars
+2025-12-18 15:00:55,415 - ai_audiobook_studio - INFO - ✅ Chunk 154 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:00:55,428 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:00:55,429 - ai_audiobook_studio - INFO -    Text: It was quieter than ever there, and the lamps were...
+2025-12-18 15:01:11,552 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 39.0s (was 39.5s) | Size: 1,872,712 bytes | RMS: -16.7dB | Text length: 592 chars
+2025-12-18 15:01:11,553 - ai_audiobook_studio - INFO - ✅ Chunk 155 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:01:11,571 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:01:11,571 - ai_audiobook_studio - INFO -    Text: I looked into his face for a moment, and then⁠ I w...
+2025-12-18 15:01:24,451 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 31.0s (was 31.5s) | Size: 1,489,096 bytes | RMS: -16.3dB | Text length: 475 chars
+2025-12-18 15:01:24,452 - ai_audiobook_studio - INFO - ✅ Chunk 156 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:01:24,469 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:01:24,469 - ai_audiobook_studio - INFO -    Text: Furious lust, and hate that was like fire, and the...
+2025-12-18 15:01:46,511 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 32.4s-50.0s (17.6s)
+2025-12-18 15:01:46,512 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 157 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 15:01:46,512 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 157
+2025-12-18 15:01:46,813 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=157 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 15:01:46,813 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:01:46,813 - ai_audiobook_studio - INFO -    Text: Furious lust, and hate that was like fire, and the...
+2025-12-18 15:02:02,879 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 45.6s (was 46.1s) | Size: 2,190,088 bytes | RMS: -16.5dB | Text length: 578 chars
+2025-12-18 15:02:02,879 - ai_audiobook_studio - INFO - ✅ Chunk 157 quality OK | temp=0.35 speed=0.81
+2025-12-18 15:02:02,895 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:02:02,895 - ai_audiobook_studio - INFO -    Text: The light was failing, and all the tumult of an ho...
+2025-12-18 15:02:20,585 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 42.9s (was 43.4s) | Size: 2,058,520 bytes | RMS: -17.4dB | Text length: 625 chars
+2025-12-18 15:02:20,585 - ai_audiobook_studio - INFO - ✅ Chunk 158 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:02:20,603 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:02:20,604 - ai_audiobook_studio - INFO -    Text: He chose the nearer date, and found Villiers sitti...
+2025-12-18 15:02:38,123 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 42.5s (was 42.9s) | Size: 2,037,880 bytes | RMS: -16.7dB | Text length: 618 chars
+2025-12-18 15:02:38,124 - ai_audiobook_studio - INFO - ✅ Chunk 159 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:02:38,139 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:02:38,140 - ai_audiobook_studio - INFO -    Text: It was really Crashaw whom you saw that night stan...
+2025-12-18 15:03:00,188 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 22.6s-35.8s (13.2s)
+2025-12-18 15:03:00,189 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 160 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 15:03:00,189 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 160
+2025-12-18 15:03:00,468 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=160 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 15:03:00,468 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:03:00,468 - ai_audiobook_studio - INFO -    Text: It was really Crashaw whom you saw that night stan...
+2025-12-18 15:03:17,847 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 50.2s (was 50.7s) | Size: 2,409,832 bytes | RMS: -17.4dB | Text length: 606 chars
+2025-12-18 15:03:17,847 - ai_audiobook_studio - INFO - ✅ Chunk 160 quality OK | temp=0.35 speed=0.81
+2025-12-18 15:03:17,862 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:03:17,862 - ai_audiobook_studio - INFO -    Text: You had reason to recognize the expression of her ...
+2025-12-18 15:03:34,970 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 41.4s (was 41.9s) | Size: 1,987,192 bytes | RMS: -17.1dB | Text length: 603 chars
+2025-12-18 15:03:34,970 - ai_audiobook_studio - INFO - ✅ Chunk 161 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:03:34,987 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:03:34,987 - ai_audiobook_studio - INFO -    Text: “All this seems very wonderful, but I cannot call ...
+2025-12-18 15:03:51,914 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 40.9s (was 41.4s) | Size: 1,963,192 bytes | RMS: -16.6dB | Text length: 620 chars
+2025-12-18 15:03:51,914 - ai_audiobook_studio - INFO - ✅ Chunk 162 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:03:51,928 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:03:51,928 - ai_audiobook_studio - INFO -    Text: It would have been useless, you know, to go to Ash...
+2025-12-18 15:04:06,730 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 35.6s (was 36.1s) | Size: 1,708,792 bytes | RMS: -16.3dB | Text length: 592 chars
+2025-12-18 15:04:06,731 - ai_audiobook_studio - INFO - ✅ Chunk 163 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:04:06,745 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:04:06,745 - ai_audiobook_studio - INFO -    Text: It is, perhaps, needless to say that my friends ha...
+2025-12-18 15:04:21,392 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 35.0s (was 35.5s) | Size: 1,680,664 bytes | RMS: -16.4dB | Text length: 569 chars
+2025-12-18 15:04:21,392 - ai_audiobook_studio - INFO - ✅ Chunk 164 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:04:21,405 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:04:21,405 - ai_audiobook_studio - INFO -    Text: But I listened to what I was told out of a constit...
+2025-12-18 15:04:34,895 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 32.4s (was 32.9s) | Size: 1,553,128 bytes | RMS: -16.8dB | Text length: 503 chars
+2025-12-18 15:04:34,896 - ai_audiobook_studio - INFO - ✅ Chunk 165 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:04:34,910 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:04:34,910 - ai_audiobook_studio - INFO -    Text: I should be wrong in saying that she found her lev...
+2025-12-18 15:04:48,647 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 33.0s (was 33.5s) | Size: 1,583,224 bytes | RMS: -15.6dB | Text length: 556 chars
+2025-12-18 15:04:48,648 - ai_audiobook_studio - INFO - ✅ Chunk 166 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:04:48,662 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:04:48,662 - ai_audiobook_studio - INFO -    Text: At first she came to her old haunts only occasiona...
+2025-12-18 15:05:03,860 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 36.6s (was 37.2s) | Size: 1,758,520 bytes | RMS: -16.1dB | Text length: 624 chars
+2025-12-18 15:05:03,861 - ai_audiobook_studio - INFO - ✅ Chunk 167 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:05:03,876 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:05:03,877 - ai_audiobook_studio - INFO -    Text: I was led to expect that one of these visits would...
+2025-12-18 15:05:21,191 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 41.7s (was 42.2s) | Size: 2,001,592 bytes | RMS: -17.0dB | Text length: 640 chars
+2025-12-18 15:05:21,191 - ai_audiobook_studio - INFO - ✅ Chunk 168 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:05:21,205 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:05:21,205 - ai_audiobook_studio - INFO -    Text: It was a long chase, and I had to be very careful ...
+2025-12-18 15:05:34,855 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 32.9s (was 33.4s) | Size: 1,580,728 bytes | RMS: -16.2dB | Text length: 530 chars
+2025-12-18 15:05:34,856 - ai_audiobook_studio - INFO - ✅ Chunk 169 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:05:34,870 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:05:34,870 - ai_audiobook_studio - INFO -    Text: It was the house with the gay curtains, the house ...
+2025-12-18 15:05:56,100 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 21.4s-36.8s (15.4s)
+2025-12-18 15:05:56,102 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 170 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 15:05:56,102 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 170
+2025-12-18 15:05:56,382 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=170 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 15:05:56,382 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:05:56,383 - ai_audiobook_studio - INFO -    Text: It was the house with the gay curtains, the house ...
+2025-12-18 15:06:10,119 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 38.8s (was 39.3s) | Size: 1,861,912 bytes | RMS: -16.6dB | Text length: 543 chars
+2025-12-18 15:06:10,120 - ai_audiobook_studio - INFO - ✅ Chunk 170 quality OK | temp=0.35 speed=0.81
+2025-12-18 15:06:10,135 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:06:10,135 - ai_audiobook_studio - INFO -    Text: We had not been there for ten minutes when my frie...
+2025-12-18 15:06:26,442 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 39.5s (was 40.0s) | Size: 1,895,224 bytes | RMS: -16.9dB | Text length: 573 chars
+2025-12-18 15:06:26,442 - ai_audiobook_studio - INFO - ✅ Chunk 171 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:06:26,459 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:06:26,459 - ai_audiobook_studio - INFO -    Text: “Well, what then?”
+
+Mister Villiers leaned back in...
+2025-12-18 15:06:43,793 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 41.7s (was 42.2s) | Size: 2,003,224 bytes | RMS: -17.1dB | Text length: 628 chars
+2025-12-18 15:06:43,794 - ai_audiobook_studio - INFO - ✅ Chunk 172 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:06:43,815 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:06:43,815 - ai_audiobook_studio - INFO -    Text: Run your eye over it, Austin. It is an account of ...
+2025-12-18 15:07:01,109 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 41.4s (was 41.9s) | Size: 1,987,960 bytes | RMS: -16.1dB | Text length: 622 chars
+2025-12-18 15:07:01,110 - ai_audiobook_studio - INFO - ✅ Chunk 173 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:07:01,126 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:07:01,127 - ai_audiobook_studio - INFO -    Text: Why, the dread and horror of death itself, the tho...
+2025-12-18 15:07:24,561 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 37.4s-56.4s (19.0s)
+2025-12-18 15:07:24,562 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 174 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 15:07:24,562 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 174
+2025-12-18 15:07:24,857 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=174 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 15:07:24,857 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:07:24,858 - ai_audiobook_studio - INFO -    Text: Why, the dread and horror of death itself, the tho...
+2025-12-18 15:07:42,313 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 49.9s (was 50.4s) | Size: 2,395,864 bytes | RMS: -16.9dB | Text length: 504 chars
+2025-12-18 15:07:42,314 - ai_audiobook_studio - INFO - ✅ Chunk 174 quality OK | temp=0.35 speed=0.81
+2025-12-18 15:07:42,327 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:07:42,327 - ai_audiobook_studio - INFO -    Text: We know what happened to those who chanced to meet...
+2025-12-18 15:08:00,004 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 42.5s (was 43.0s) | Size: 2,039,608 bytes | RMS: -16.6dB | Text length: 625 chars
+2025-12-18 15:08:00,004 - ai_audiobook_studio - INFO - ✅ Chunk 175 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:08:00,023 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:08:00,023 - ai_audiobook_studio - INFO -    Text: But you and I, at all events, have known something...
+2025-12-18 15:08:19,048 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 46.2s (was 46.7s) | Size: 2,217,736 bytes | RMS: -17.0dB | Text length: 630 chars
+2025-12-18 15:08:19,049 - ai_audiobook_studio - INFO - ✅ Chunk 176 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:08:19,068 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:08:19,068 - ai_audiobook_studio - INFO -    Text: “Yes, Austin, I shall go out alive⁠ I, and Clarke ...
+2025-12-18 15:08:35,162 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 39.0s (was 39.5s) | Size: 1,873,240 bytes | RMS: -16.6dB | Text length: 603 chars
+2025-12-18 15:08:35,163 - ai_audiobook_studio - INFO - ✅ Chunk 177 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:08:35,175 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:08:35,175 - ai_audiobook_studio - INFO -    Text: But somehow or other I got out of the bustle and t...
+2025-12-18 15:08:47,222 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 28.3s (was 28.8s) | Size: 1,359,064 bytes | RMS: -15.7dB | Text length: 466 chars
+2025-12-18 15:08:47,223 - ai_audiobook_studio - INFO - ✅ Chunk 178 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:08:47,238 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:08:47,238 - ai_audiobook_studio - INFO -    Text: Thus I forged up the street, noting the small traf...
+2025-12-18 15:09:03,427 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 39.0s (was 39.5s) | Size: 1,873,048 bytes | RMS: -16.8dB | Text length: 630 chars
+2025-12-18 15:09:03,427 - ai_audiobook_studio - INFO - ✅ Chunk 179 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:09:03,443 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:09:03,443 - ai_audiobook_studio - INFO -    Text: I saw what I required; but I think it was five min...
+2025-12-18 15:09:16,582 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 31.4s (was 31.9s) | Size: 1,505,080 bytes | RMS: -16.9dB | Text length: 457 chars
+2025-12-18 15:09:16,583 - ai_audiobook_studio - INFO - ✅ Chunk 180 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:09:16,894 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:09:16,894 - ai_audiobook_studio - INFO -    Text: I asked about the business, and learnt that trade ...
+2025-12-18 15:09:34,373 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 42.4s (was 42.9s) | Size: 2,034,904 bytes | RMS: -16.6dB | Text length: 627 chars
+2025-12-18 15:09:34,374 - ai_audiobook_studio - INFO - ✅ Chunk 181 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:09:34,393 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:09:34,393 - ai_audiobook_studio - INFO -    Text: “It is the best hempen cord,” said Villiers, “just...
+2025-12-18 15:09:54,732 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 49.4s (was 49.9s) | Size: 2,369,848 bytes | RMS: -17.4dB | Text length: 645 chars
+2025-12-18 15:09:54,733 - ai_audiobook_studio - INFO - ✅ Chunk 182 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:09:54,754 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:09:54,754 - ai_audiobook_studio - INFO -    Text: I cannot stay here any longer; I cannot bear this....
+2025-12-18 15:10:12,943 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 44.0s (was 44.5s) | Size: 2,112,280 bytes | RMS: -17.4dB | Text length: 598 chars
+2025-12-18 15:10:12,944 - ai_audiobook_studio - INFO - ✅ Chunk 183 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:10:12,962 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:10:12,962 - ai_audiobook_studio - INFO -    Text: But he states that the patient would tell him noth...
+2025-12-18 15:10:27,115 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 34.3s (was 34.8s) | Size: 1,644,904 bytes | RMS: -16.5dB | Text length: 487 chars
+2025-12-18 15:10:27,116 - ai_audiobook_studio - INFO - ✅ Chunk 184 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:10:27,136 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:10:27,136 - ai_audiobook_studio - INFO -    Text: Amongst the papers of the well-known physician, Do...
+2025-12-18 15:10:43,156 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 38.5s (was 38.9s) | Size: 1,845,976 bytes | RMS: -16.4dB | Text length: 619 chars
+2025-12-18 15:10:43,157 - ai_audiobook_studio - INFO - ✅ Chunk 185 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:10:43,170 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:10:43,170 - ai_audiobook_studio - INFO -    Text: The following is a translation of Doctor Matheson’...
+2025-12-18 15:10:53,912 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 25.2s (was 25.7s) | Size: 1,207,480 bytes | RMS: -16.2dB | Text length: 421 chars
+2025-12-18 15:10:53,912 - ai_audiobook_studio - INFO - ✅ Chunk 186 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:10:53,927 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:10:53,927 - ai_audiobook_studio - INFO -    Text: It is probably that, upon mature consideration, an...
+2025-12-18 15:11:09,706 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 37.9s (was 38.4s) | Size: 1,818,952 bytes | RMS: -16.4dB | Text length: 563 chars
+2025-12-18 15:11:09,707 - ai_audiobook_studio - INFO - ✅ Chunk 187 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:11:09,726 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:11:09,726 - ai_audiobook_studio - INFO -    Text: “Though horror and revolting nausea rose up within...
+2025-12-18 15:11:32,284 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 29.0s-46.6s (17.6s)
+2025-12-18 15:11:32,286 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 188 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 15:11:32,286 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 188
+2025-12-18 15:11:32,565 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=188 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 15:11:32,565 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:11:32,565 - ai_audiobook_studio - INFO -    Text: “Though horror and revolting nausea rose up within...
+2025-12-18 15:11:49,579 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 48.6s (was 49.1s) | Size: 2,331,976 bytes | RMS: -16.5dB | Text length: 582 chars
+2025-12-18 15:11:49,579 - ai_audiobook_studio - INFO - ✅ Chunk 188 quality OK | temp=0.35 speed=0.81
+2025-12-18 15:11:49,596 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:11:49,596 - ai_audiobook_studio - INFO -    Text: For here there was some internal force, of which I...
+2025-12-18 15:12:04,529 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 36.1s (was 36.6s) | Size: 1,732,792 bytes | RMS: -16.3dB | Text length: 516 chars
+2025-12-18 15:12:04,529 - ai_audiobook_studio - INFO - ✅ Chunk 189 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:12:04,547 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:12:04,548 - ai_audiobook_studio - INFO -    Text: “The light within the room had turned to blackness...
+2025-12-18 15:12:20,374 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 38.0s (was 38.5s) | Size: 1,823,896 bytes | RMS: -16.6dB | Text length: 580 chars
+2025-12-18 15:12:20,375 - ai_audiobook_studio - INFO - ✅ Chunk 190 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:12:20,389 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:12:20,389 - ai_audiobook_studio - INFO -    Text: But the symbol of this form may be seen in ancient...
+2025-12-18 15:12:56,481 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 2 silence(s) ≥3s: 21.4s-28.8s (7.4s), 40.2s-57.6s (17.4s)
+2025-12-18 15:12:56,483 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 191 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 15:12:56,483 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 191
+2025-12-18 15:12:56,762 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=191 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 15:12:56,763 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:12:56,763 - ai_audiobook_studio - INFO -    Text: But the symbol of this form may be seen in ancient...
+2025-12-18 15:13:17,251 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 58.6s (was 59.1s) | Size: 2,813,752 bytes | RMS: -16.7dB | Text length: 597 chars
+2025-12-18 15:13:17,251 - ai_audiobook_studio - INFO - ✅ Chunk 191 quality OK | temp=0.35 speed=0.81
+2025-12-18 15:13:17,270 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:13:17,270 - ai_audiobook_studio - INFO -    Text: Villiers, who was with me at the last, knows nothi...
+2025-12-18 15:13:34,972 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 42.6s (was 43.1s) | Size: 2,044,696 bytes | RMS: -17.4dB | Text length: 621 chars
+2025-12-18 15:13:34,972 - ai_audiobook_studio - INFO - ✅ Chunk 192 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:13:34,987 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:13:34,988 - ai_audiobook_studio - INFO -    Text: I know that what I saw perish was not Mary, and ye...
+2025-12-18 15:13:49,069 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 33.6s (was 34.1s) | Size: 1,611,544 bytes | RMS: -16.1dB | Text length: 513 chars
+2025-12-18 15:13:49,070 - ai_audiobook_studio - INFO - ✅ Chunk 193 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:13:49,084 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:13:49,084 - ai_audiobook_studio - INFO -    Text: While the horror and wonder of London was at its h...
+2025-12-18 15:14:06,785 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 8.8s-28.6s (19.8s)
+2025-12-18 15:14:06,787 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 194 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 15:14:06,787 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 194
+2025-12-18 15:14:07,086 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=194 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 15:14:07,086 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:14:07,086 - ai_audiobook_studio - INFO -    Text: While the horror and wonder of London was at its h...
+2025-12-18 15:14:20,524 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 37.9s (was 38.4s) | Size: 1,820,824 bytes | RMS: -16.9dB | Text length: 527 chars
+2025-12-18 15:14:20,525 - ai_audiobook_studio - INFO - ✅ Chunk 194 quality OK | temp=0.35 speed=0.81
+2025-12-18 15:14:20,543 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:14:20,543 - ai_audiobook_studio - INFO -    Text: The parents, he said, had undoubtedly died of grie...
+2025-12-18 15:14:36,159 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 37.9s (was 38.3s) | Size: 1,818,712 bytes | RMS: -16.4dB | Text length: 612 chars
+2025-12-18 15:14:36,160 - ai_audiobook_studio - INFO - ✅ Chunk 195 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:14:36,177 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:14:36,177 - ai_audiobook_studio - INFO -    Text: Those whom I spoke to on the matter seemed surpris...
+2025-12-18 15:14:49,901 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 32.5s (was 33.0s) | Size: 1,560,712 bytes | RMS: -16.4dB | Text length: 515 chars
+2025-12-18 15:14:49,902 - ai_audiobook_studio - INFO - ✅ Chunk 196 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:14:49,921 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:14:49,921 - ai_audiobook_studio - INFO -    Text: For many an hour I strayed through the maze of the...
+2025-12-18 15:15:02,437 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 14.2s-28.0s (13.8s)
+2025-12-18 15:15:02,439 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 197 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 15:15:02,439 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 197
+2025-12-18 15:15:02,753 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=197 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 15:15:02,753 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:15:02,754 - ai_audiobook_studio - INFO -    Text: For many an hour I strayed through the maze of the...
+2025-12-18 15:15:14,901 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 33.4s (was 33.9s) | Size: 1,602,712 bytes | RMS: -17.2dB | Text length: 470 chars
+2025-12-18 15:15:14,901 - ai_audiobook_studio - INFO - ✅ Chunk 197 quality OK | temp=0.35 speed=0.81
+2025-12-18 15:15:14,920 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:15:14,921 - ai_audiobook_studio - INFO -    Text: I stood at the edges of the wood, gazing at all th...
+2025-12-18 15:15:28,545 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 32.0s (was 32.5s) | Size: 1,536,280 bytes | RMS: -16.6dB | Text length: 498 chars
+2025-12-18 15:15:28,546 - ai_audiobook_studio - INFO - ✅ Chunk 198 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:15:28,562 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:15:28,562 - ai_audiobook_studio - INFO -    Text: Here they had walked, Helen and Rachel, along this...
+2025-12-18 15:15:40,565 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 28.5s (was 28.9s) | Size: 1,367,320 bytes | RMS: -18.7dB | Text length: 448 chars
+2025-12-18 15:15:40,566 - ai_audiobook_studio - INFO - ✅ Chunk 199 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:15:40,585 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:15:40,585 - ai_audiobook_studio - INFO -    Text: On the other side was the valley and the river and...
+2025-12-18 15:16:03,693 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 9.6s-28.6s (19.0s)
+2025-12-18 15:16:03,694 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 200 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 15:16:03,694 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 200
+2025-12-18 15:16:04,008 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=200 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 15:16:04,009 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:16:04,009 - ai_audiobook_studio - INFO -    Text: On the other side was the valley and the river and...
+2025-12-18 15:16:19,306 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 43.8s (was 44.3s) | Size: 2,100,184 bytes | RMS: -16.1dB | Text length: 575 chars
+2025-12-18 15:16:19,306 - ai_audiobook_studio - INFO - ✅ Chunk 200 quality OK | temp=0.35 speed=0.81
+2025-12-18 15:16:19,323 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:16:19,323 - ai_audiobook_studio - INFO -    Text: In a small town near Caermaen there is a museum, c...
+2025-12-18 15:16:36,010 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 40.2s (was 40.8s) | Size: 1,931,992 bytes | RMS: -16.5dB | Text length: 632 chars
+2025-12-18 15:16:36,011 - ai_audiobook_studio - INFO - ✅ Chunk 201 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:16:36,031 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:16:36,031 - ai_audiobook_studio - INFO -    Text: On one side of the pillar was an inscription, of w...
+2025-12-18 15:16:50,830 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 35.8s (was 36.4s) | Size: 1,720,696 bytes | RMS: -16.2dB | Text length: 553 chars
+2025-12-18 15:16:50,831 - ai_audiobook_studio - INFO - ✅ Chunk 202 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:16:50,848 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:16:50,848 - ai_audiobook_studio - INFO -    Text: And now, my dear Clarke, as to what you tell me ab...
+2025-12-18 15:17:08,621 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 43.3s (was 43.9s) | Size: 2,079,688 bytes | RMS: -16.4dB | Text length: 641 chars
+2025-12-18 15:17:08,622 - ai_audiobook_studio - INFO - ✅ Chunk 203 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:17:08,639 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:17:08,639 - ai_audiobook_studio - INFO -    Text: She lay, as you saw her, all the while upon her be...
+2025-12-18 15:17:26,083 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 42.4s (was 42.8s) | Size: 2,032,840 bytes | RMS: -16.2dB | Text length: 624 chars
+2025-12-18 15:17:26,084 - ai_audiobook_studio - INFO - ✅ Chunk 204 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:17:26,097 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:17:26,097 - ai_audiobook_studio - INFO -    Text: You did well to blame me, but my theory was not al...
+2025-12-18 15:17:47,514 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 2 silence(s) ≥3s: 19.4s-22.8s (3.4s), 25.6s-34.8s (9.2s)
+2025-12-18 15:17:47,515 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 205 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 15:17:47,515 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 205
+2025-12-18 15:17:47,808 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=205 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 15:17:47,808 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:17:47,809 - ai_audiobook_studio - INFO -    Text: You did well to blame me, but my theory was not al...
+2025-12-18 15:18:02,970 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 43.0s (was 43.5s) | Size: 2,061,688 bytes | RMS: -16.3dB | Text length: 561 chars
+2025-12-18 15:18:02,971 - ai_audiobook_studio - INFO - ✅ Chunk 205 quality OK | temp=0.35 speed=0.81
+2025-12-18 15:18:02,986 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:18:02,986 - ai_audiobook_studio - INFO -    Text: The blackened face, the hideous form upon the bed,...
+2025-12-18 15:18:22,578 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 47.0s (was 47.5s) | Size: 2,255,704 bytes | RMS: -17.2dB | Text length: 638 chars
+2025-12-18 15:18:22,578 - ai_audiobook_studio - INFO - ✅ Chunk 206 quality OK | temp=0.32 speed=0.95
+2025-12-18 15:18:22,594 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:18:22,594 - ai_audiobook_studio - INFO -    Text: You know now what frightened the boy in the wood. ...
+2025-12-18 15:18:38,252 - ai_audiobook_studio - WARNING - ⚠️ LONG SILENCE IN CHUNK DETECTED! Found 1 silence(s) ≥3s: 12.2s-31.4s (19.2s)
+2025-12-18 15:18:38,253 - ai_audiobook_studio - WARNING - ⚠️ Quality control failed for chunk 207 | temp=0.32 speed=0.95 | Audio discarded by engine
+2025-12-18 15:18:38,253 - ai_audiobook_studio - WARNING - Retry 1/5 for chunk 207
+2025-12-18 15:18:38,517 - ai_audiobook_studio - INFO - Retry 1/5 with adjusted params | chunk=207 temp=0.35 speed=0.81 rep=3.00
+2025-12-18 15:18:38,517 - ai_audiobook_studio - INFO - 🎵 Generating audio (Device: CUDA)
+2025-12-18 15:18:38,517 - ai_audiobook_studio - INFO -    Text: You know now what frightened the boy in the wood. ...
+2025-12-18 15:18:45,835 - ai_audiobook_studio - INFO - ✅ Audio generated & trimmed | Duration: 20.9s (was 21.4s) | Size: 1,001,272 bytes | RMS: -16.5dB | Text length: 253 chars
+2025-12-18 15:18:45,836 - ai_audiobook_studio - INFO - ✅ Chunk 207 quality OK | temp=0.35 speed=0.81
+2025-12-18 15:18:45,853 - ai_audiobook_studio - INFO - 🔍 DEBUG MODE: Processing completed | Processed: 208 | Failed: 0 | Total: 208
+2025-12-18 15:18:56,032 - ai_audiobook_studio - INFO - Merged audio saved: /teamspace/studios/this_studio/txt2audio/backend/storage/outputs/5/greatgod-pan_final.wav
+2025-12-18 15:19:33,237 - ai_audiobook_studio - INFO - Background music mixed | file=Drifting at 432 Hz - Unicorn Heads.mp3 volume=0.10
+2025-12-18 15:19:33,238 - ai_audiobook_studio - INFO - 🔍 Pre-mastering ACX analysis for project 5
+2025-12-18 15:20:25,265 - ai_audiobook_studio - INFO - 📊 Pre-mastering ACX results | RMS: -22.59 dB | Peak: -5.64 dB | ACX Compliant: True
+2025-12-18 15:20:25,265 - ai_audiobook_studio - INFO - ✅ Pre-mastering: Audio already ACX compliant
+2025-12-18 15:20:25,265 - ai_audiobook_studio - INFO - 🎛️ Applying ACX audio mastering for project 5
+2025-12-18 15:20:25,434 - ai_audiobook_studio - INFO - 🎚️ Normalizing with ffmpeg-normalize...
+2025-12-18 15:23:45,678 - ai_audiobook_studio - INFO - ✓ Normalization complete: /teamspace/studios/this_studio/txt2audio/backend/storage/outputs/5/greatgod-pan_final_mastered.wav
+2025-12-18 15:23:45,679 - ai_audiobook_studio - INFO - ✅ Audio mastering completed, analyzing results...
+2025-12-18 15:24:34,535 - ai_audiobook_studio - INFO - 📊 Post-mastering ACX results | RMS: -20.88 dB | Peak: -3.93 dB | ACX Compliant: True
+2025-12-18 15:24:34,536 - ai_audiobook_studio - INFO - 🎉 SUCCESS: Audio now ACX compliant after mastering!
+2025-12-18 15:24:34,536 - ai_audiobook_studio - INFO - 📈 Mastering improvements | RMS change: 1.71 dB | Peak change: 1.71 dB
+2025-12-18 15:24:34,591 - ai_audiobook_studio - INFO - ✅ Final: Audio mastering workflow completed for project 5
