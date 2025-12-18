@@ -23,11 +23,13 @@ export const useWebSocket = () => {
     if (hostname.includes('cloudspaces.litng.ai') || hostname.includes('litng.ai')) {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       
-      // CloudSpaces'te Vite proxy kullanıyorsak, WebSocket de aynı origin üzerinden çalışır
+      // CloudSpaces'te her portun kendi subdomain'i var.
+      // 5173 (frontend) üzerinden geliyorsak, 8000 (backend) subdomain'ine gitmeliyiz.
       if (hostname.startsWith('5173-') || hostname.startsWith('4173-')) {
-        // Vite proxy WebSocket desteği: Aynı origin, /api/ws path'i
-        // Vite proxy ws: true ayarı ile WebSocket'i de yönlendirir
-        return `${protocol}//${hostname}/api/ws`;
+        const backendHostname = hostname.replace(/^(5173|4173)-/, '8000-');
+        const wsUrl = `${protocol}//${backendHostname}/api/ws`;
+        console.log('Lightning AI Direct WS URL:', wsUrl);
+        return wsUrl;
       }
       
       // Eğer zaten 8000- ile başlıyorsa (backend subdomain)

@@ -5,7 +5,6 @@ import axios from "axios";
 export const getApiBase = () => {
   const envUrl = import.meta.env.VITE_API_URL;
   if (envUrl) {
-    console.log('Using API_BASE from env:', envUrl);
     return envUrl.replace(/\/$/, '');
   }
 
@@ -14,9 +13,7 @@ export const getApiBase = () => {
   const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0';
   
   if (isLocal) {
-    const defaultUrl = 'http://localhost:8000/api';
-    console.log('Using localhost API_BASE:', defaultUrl);
-    return defaultUrl;
+    return 'http://localhost:8000/api';
   }
 
   // CloudSpaces/Lightning AI'da çalışıyorsak
@@ -30,24 +27,16 @@ export const getApiBase = () => {
       
       // Önce Vite proxy'yi dene (CloudSpaces'te aynı container içinde çalışıyorsa)
       const proxyUrl = `${protocol}//${hostname}/api`;
-      console.log('Using CloudSpaces API_BASE (Vite proxy - same origin):', proxyUrl);
-      
-      // Eğer proxy çalışmazsa, backend subdomain'i de deneyebiliriz
-      // Ama şimdilik proxy'yi önceliklendiriyoruz
       return proxyUrl;
     }
     
     // Eğer zaten 8000- ile başlıyorsa (backend subdomain)
     if (hostname.startsWith('8000-')) {
-      const backendUrl = `${protocol}//${hostname}/api`;
-      console.log('Using CloudSpaces API_BASE (backend subdomain):', backendUrl);
-      return backendUrl;
+      return `${protocol}//${hostname}/api`;
     }
     
     // Fallback: Aynı hostname, port 8000 ekle
-    const backendUrl = `${protocol}//${hostname}:8000/api`;
-    console.log('Using CloudSpaces API_BASE (port suffix fallback):', backendUrl);
-    return backendUrl;
+    return `${protocol}//${hostname}:8000/api`;
   }
 
   // Fallback: Local development
@@ -136,10 +125,10 @@ export async function checkBackendHealth(): Promise<boolean> {
     // Değilse /health kullan (backend'in root endpoint'i)
     const isProxy = currentApiBase.includes('/api') && !currentApiBase.includes(':8000');
     const healthUrl = isProxy 
-      ? `${currentApiBase}/health`  // Vite proxy: /api/health
-      : currentApiBase.replace(/\/api$/, '') + '/health';  // Direct: /health
-    console.log('Checking backend health at:', healthUrl);
+      ? `${currentApiBase}/health`
+      : currentApiBase.replace(/\/api$/, '') + '/health';
     
+    // Sadece error durumunda log basalım
     const response = await axios.get(healthUrl, {
       timeout: 10000, // CloudSpaces'te ağ gecikmesi olabilir, timeout'u artırdık
       validateStatus: (status) => status < 500, // 4xx hataları da başarılı sayılabilir

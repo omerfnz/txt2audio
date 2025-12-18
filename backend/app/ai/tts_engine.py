@@ -580,40 +580,56 @@ class TTSEngine:
                 except Exception as zcr_error:
                     logger.warning(f"⚠ ZCR check failed (non-critical): {zcr_error}")
 
-                # Stuttering / Mechanical Sound Check (Autocorrelation & Spectral Flatness)
+                # Stuttering / Mechanical Sound Check (Daha Az Hassas ve Dinamik)
                 try:
                     import librosa
                     import numpy as np
 
+                    # 1. Normalizasyon ve Hazırlık
                     samples = np.array(audio.get_array_of_samples(), dtype=np.float32)
+                    # pydub audio genelde int16 gelir, float32 [-1, 1] arasına çekelim
+                    if audio.sample_width == 2:
+                        samples = samples / 32768.0
+                    elif audio.sample_width == 4:
+                        samples = samples / 2147483648.0
+                        
                     if audio.channels == 2:
                         samples = samples.reshape(-1, 2).mean(axis=1)
 
-                    # 1. Spectral Flatness (Gürültü ve metalik ses tespiti)
+                    duration_sec = len(audio) / 1000.0
+                    sr = audio.frame_rate
+
+                    # 2. Spectral Flatness (Sadece çok yüksek gürültüyü yakala)
                     flatness = librosa.feature.spectral_flatness(y=samples)
                     avg_flatness = np.mean(flatness)
                     
-                    # 2. Autocorrelation (Mekanik takılma / loop tespiti)
-                    # Sesin belli bir periyotta takılıp takılmadığını kontrol eder
-                    sr = audio.frame_rate
+                    # 3. Autocorrelation (Mekanik takılma / loop tespiti)
                     # 0.5 saniyeye kadar olan tekrarları ara
                     r = librosa.autocorrelate(samples, max_size=int(sr/2))
                     # Zirveleri bul
                     peaks = librosa.util.peak_pick(
                         r, pre_max=20, post_max=20, pre_avg=100, post_avg=100, delta=0.5, wait=100
                     )
+                    
+                    # Saniye başına zirve sayısı (Density)
+                    peaks_per_sec = len(peaks) / duration_sec if duration_sec > 0 else 0
 
-                    if len(peaks) > 100 or avg_flatness > 0.05:
+                    # EŞİKLER GEVŞETİLDİ:
+                    # avg_flatness: 0.05 -> 0.45 (Konuşma seslerine tolerans)
+                    # peaks_per_sec: Sabit 100 yerine saniye başına 15 zirve
+                    if peaks_per_sec > 15.0 or avg_flatness > 0.45:
                         logger.warning(
                             f"⚠️ MECHANICAL STUTTERING DETECTED! | "
-                            f"Peaks: {len(peaks)} Flatness: {avg_flatness:.6f} | "
-                            f"Text: '{text[:80]}...'"
+                            f"Duration: {duration_sec:.1f}s Peaks/sec: {peaks_per_sec:.2f} Flatness: {avg_flatness:.6f} | "
+                            f"Total Peaks: {len(peaks)} | Text: '{text[:80]}...'"
                         )
                         try:
                             os.remove(output_path)
                         except OSError:
                             pass
                         return False # Retry tetikler
+                    else:
+                        logger.debug(f"✓ Quality Metrics: Peaks/sec={peaks_per_sec:.2f}, Flatness={avg_flatness:.6f}")
                 except Exception as quality_error:
                     logger.warning(f"⚠ Advanced quality check failed: {quality_error}")
 
