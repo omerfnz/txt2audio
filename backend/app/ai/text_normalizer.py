@@ -134,7 +134,7 @@ class AdvancedTextNormalizer:
         text = self.clean_footnotes(text)
         
         # 2. Roma rakamlarını ve bölümleri işle
-        text = self.normalize_roman_chapters(text, lang)
+        text = self.normalize_roman_chapters(text)
 
         # 3. Genel format düzeltmesi yap (Satır sonları vb.)
         text = self.clean_text_formatting(text)
