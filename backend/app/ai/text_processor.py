@@ -160,7 +160,7 @@ class TextProcessor:
             
         return chunks
 
-    def split_into_chunks(self, text: str, max_chars: int = 650, min_chars: int = 80, normalize: bool = True) -> List[str]:
+    def split_into_chunks(self, text: str, max_chars: int = 650, min_chars: int = 80, language: str = "en", normalize: bool = True) -> List[str]:
         """
         Metni mantıklı chunk'lara böler, birden fazla cümleyi birleştirir.
         

@@ -283,7 +283,7 @@ async def create_project(
             full_text = f.read()
 
         # Chunk text (Gutenberg cleaner artık gerekli değil - temiz txt dosyası kullanılıyor)
-        chunks = text_processor.split_into_chunks(full_text, language=final_language)
+        chunks = text_processor.split_into_chunks(full_text)
 
         # 9. Log chunk statistics for analysis
         if chunks:

@@ -51,9 +51,9 @@ PRESETS: Dict[str, TTSPreset] = {
         ),
         language="en",
         content_type="fiction",
-        temperature=0.75,  # Reduced from 0.80 for better stability
+        temperature=0.75,
         top_p=0.85,
-        repetition_penalty=2.3,  # Increased from 2.0 for stability
+        repetition_penalty=2.3,
         speed=0.95,
         enable_text_splitting=True
     ),
@@ -63,47 +63,14 @@ PRESETS: Dict[str, TTSPreset] = {
         description=(
             "Optimized for English educational and informational content. "
             "Lower temperature for clear, consistent articulation "
-            "and professional tone. Enhanced stability with higher repetition "
-            "penalty to prevent truncation issues."
+            "and professional tone."
         ),
         language="en",
         content_type="nonfiction",
-        temperature=0.32,  # Slightly lower for maximum stability
-        top_p=0.88,  # Reduced for more consistent output
-        repetition_penalty=2.5,  # Increased from 2.0 to prevent loops/truncation
-        speed=0.95,
-        enable_text_splitting=True
-    ),
-    
-    "tr_fiction": TTSPreset(
-        name="Turkish Fiction",
-        description=(
-            "Optimized for Turkish novels and story narration. "
-            "Balanced temperature for natural Turkish prosody "
-            "while maintaining emotional depth."
-        ),
-        language="tr",
-        content_type="fiction",
-        temperature=0.85,
-        top_p=0.80,
-        repetition_penalty=1.8,
-        speed=0.9,
-        enable_text_splitting=True
-    ),
-    
-    "tr_nonfiction": TTSPreset(
-        name="Turkish Non-Fiction",
-        description=(
-            "Optimized for Turkish educational and informational content. "
-            "Moderate temperature for clear pronunciation "
-            "of technical terms and proper nouns."
-        ),
-        language="tr",
-        content_type="nonfiction",
-        temperature=0.40,
+        temperature=0.35,  
         top_p=0.88,
-        repetition_penalty=1.8,
-        speed=0.9,
+        repetition_penalty=2.5,
+        speed=0.95,
         enable_text_splitting=True
     ),
     
@@ -125,43 +92,13 @@ PRESETS: Dict[str, TTSPreset] = {
 
 
 def get_preset(preset_id: str) -> Optional[TTSPreset]:
-    """
-    Retrieve a preset by its identifier.
-    
-    Args:
-        preset_id: Preset identifier key
-        
-    Returns:
-        TTSPreset object if found, None otherwise
-    """
+    """Retrieve a preset by its identifier."""
     return PRESETS.get(preset_id)
 
 
 def get_all_presets() -> Dict[str, TTSPreset]:
-    """
-    Get all available presets.
-    
-    Returns:
-        Dictionary of all preset configurations
-    """
+    """Get all available presets."""
     return PRESETS.copy()
-
-
-def get_presets_by_language(language: str) -> Dict[str, TTSPreset]:
-    """
-    Filter presets by language.
-    
-    Args:
-        language: Language code (e.g., 'en', 'tr')
-        
-    Returns:
-        Dictionary of presets matching the language
-    """
-    return {
-        key: preset
-        for key, preset in PRESETS.items()
-        if preset.language == language
-    }
 
 
 def validate_preset_params(
