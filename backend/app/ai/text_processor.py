@@ -132,7 +132,8 @@ class TextProcessor:
                     # 3. Bağlaç dene (En azından cümlenin ortasında rastgele kesmeyelim)
                     # search_area üzerinde normal arama yapıp en sonuncuyu bulalım (reverse regex zor olabilir)
                     # Son 100 karakter içinde arayalım ki çok geriye gitmeyelim
-                    search_window = search_area[-min(len(search_area), 150):]
+                    window_offset = len(search_area) - min(len(search_area), 150)
+                    search_window = search_area[window_offset:]
                     conj_matches = list(re.finditer(conjunctions, search_window))
                     
                     if conj_matches:
