@@ -43,7 +43,15 @@ class AdvancedTextNormalizer:
             "Gen.": "General",
             "Col.": "Colonel",
             "Maj.": "Major",
-            "Sgt.": "Sergeant"
+            "Sgt.": "Sergeant",
+            "St": "Saint",
+            "Mt.": "Mount",
+            "Rd.": "Road",
+            "Ave.": "Avenue",
+            "Blvd.": "Boulevard",
+            "Messrs.": "Messieurs",
+            "Mlle.": "Mademoiselle",
+            "Mme.": "Madame"
         }
 
         # Grekçe karakter eşleme
@@ -126,16 +134,13 @@ class AdvancedTextNormalizer:
         text = self.clean_footnotes(text)
         
         # 2. Roma rakamlarını ve bölümleri işle
-        text = self.normalize_roman_chapters(text)
+        text = self.normalize_roman_chapters(text, lang)
 
         # 3. Genel format düzeltmesi yap (Satır sonları vb.)
         text = self.clean_text_formatting(text)
         
-        # 4. Dile özel normalizasyon (Sayılar, kısaltmalar)
-        if lang == "tr":
-            text = self.normalize_turkish(text)
-        else:
-            text = self.normalize_english(text)
+        # 4. İngilizce normalizasyonu (Sayılar, kısaltmalar)
+        text = self.normalize_english(text)
 
         # 5. Fazla boşlukları son kez temizle
         text = re.sub(r'\s+', ' ', text).strip()
@@ -285,6 +290,9 @@ class AdvancedTextNormalizer:
             '᐀',  # Canadian syllabics hyphen (U+1400)
             '′',  # Prime symbol (Flatland'de var)
             '″',  # Double prime
+            '--', # Alternatif ikili tire
+            '---', # Alternatif üçlü tire
+            '⁠—', # Zero Width Joiner + Em Dash (Ethan Frome'daki yapı)
         ]
 
 
@@ -294,11 +302,11 @@ class AdvancedTextNormalizer:
 
         # Diğer özel Unicode karakterleri de temizle/güncelle
         # Yıldızlar ve süslemeler
-        text = re.sub(r'[☆★✩✪✫✬✭✮✯✰✱✲✳✴✵✶✷✸✹✺✻✼✽✾✿❀❁❂❃❄❅❆❇❈❉❊❋]', '', text)
+        text = re.sub(r'[☆★✩✪✫✬✭✮✯✰✱✲✳✴✵✶✷✸✹✺✻✼✽✾✿❀❁❂❃❄❅❆❇❈❉❊❋*]', '', text)
 
         # Özel tırnak işaretleri - normal tırnaklara dönüştür
-        text = text.replace('"', '"').replace('"', '"')
-        text = text.replace(''', "'").replace(''', "'")
+        text = text.replace('"', '"').replace('"', '"').replace('“', '"').replace('”', '"')
+        text = text.replace(''', "'").replace(''', "'").replace('‘', "'").replace('’', "'")
 
         # Elips (...) - üç nokta olarak bırak ama fazla noktaları temizle
         text = re.sub(r'\.{4,}', '...', text)  # 4+ nokta → ...
@@ -327,8 +335,6 @@ class AdvancedTextNormalizer:
     def normalize_roman_chapters(self, text: str) -> str:
         """
         Roman bölümlerini (Roma rakamları) ve chapter başlıklarını normalize eder.
-        Örn: "I" -> "Chapter One"
-             "Chapter 1" -> "Chapter One"
         """
         if not text:
             return ""
@@ -336,43 +342,38 @@ class AdvancedTextNormalizer:
         # 1. Tek başına Roma rakamı bölümler (örn: ^I$ veya I\n)
         def standalone_roman_replacer(match):
             roman = match.group(1).strip()
-            # 1-3999 arası geçerli bir Roma rakamı mı kontrol et (basit regex)
             if re.match(r'^M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$', roman):
                 try:
                     num = self.roman_to_int(roman)
                     if num > 0:
-                        return f"\n\nChapter {num2words(num, lang='en', to='ordinal').title()}\n\n"
+                        word = num2words(num, lang='en').title()
+                        return f"\n\nChapter {word}\n\n"
                 except:
                     pass
             return match.group(0)
 
-        # Satır başındaki veya paragraf başındaki yalnız Roma rakamları
         text = re.sub(r'(?:^|\n\n)\s*([IVXLCDM]{1,10})\s*(?:\n|$)', standalone_roman_replacer, text, flags=re.MULTILINE)
 
-
-        # 2. "Chapter X" formatını normalize et
-        def chapter_replacer(match):
-            num_str = match.group(1)
+        # 2. "Chapter X", "Part X", "Section X", "Book X" formatını normalize et (Roma rakamı veya sayı)
+        def section_replacer(match):
+            prefix = match.group(1).title()
+            num_str = match.group(2)
             try:
-                num = int(num_str)
-                return f"Chapter {num2words(num, lang='en', to='ordinal').title()}"
+                if num_str.isdigit():
+                    num = int(num_str)
+                else:
+                    num = self.roman_to_int(num_str)
+                
+                if num > 0:
+                    return f"{prefix} {num2words(num, lang='en').title()}"
             except:
-                return match.group(0)
+                pass
+            return match.group(0)
 
-        text = re.sub(r'\bChapter\s+(\d+)\b', chapter_replacer, text, flags=re.IGNORECASE)
+        pattern = r'\b(Chapter|Part|Section|Book)\s+([IVXLCDM]+|\d+)\b'
+        text = re.sub(pattern, section_replacer, text, flags=re.IGNORECASE)
 
-        # 3. "Part X" formatını normalize et
-        def part_replacer(match):
-            num_str = match.group(1)
-            try:
-                num = int(num_str)
-                return f"Part {num2words(num, lang='en', to='ordinal').title()}"
-            except:
-                return match.group(0)
-
-        text = re.sub(r'\bPart\s+(\d+)\b', part_replacer, text, flags=re.IGNORECASE)
-
-        # 4. Tek başına "X." formatını da yakala (örn: "1." -> "First")
+        # 3. Tek başına "X." formatını da yakala (örn: "1." -> "First")
         def numbered_section_replacer(match):
             num_str = match.group(1)
             try:
@@ -385,100 +386,4 @@ class AdvancedTextNormalizer:
 
         return text
 
-    def normalize_turkish(self, text: str) -> str:
-        """Türkçe metin normalizasyonu - XTTS için optimize edilmiş."""
-        if not text:
-            return ""
-        
-        # 1. Para birimleri - noktalı büyük sayıları destekler
-        # 1.234 TL veya 140.000 TL -> Türkçe okunuşa çevir
-        def tr_currency_replacer(match):
-            try:
-                # Türkçe'de binlik ayracı nokta
-                val = int(match.group(1).replace('.', ''))
-                return num2words(val, lang='tr', to='currency', currency='TRY')
-            except:
-                return match.group(0)
-                
-        text = re.sub(r'(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?)\s*(?:TL|tl|TRY)', tr_currency_replacer, text)
-        
-        # 3. Sıra sayıları - Türkçe
-        # 1. -> "birinci", 21. -> "yirmi birinci"
-        # Noktalı büyük sayıları da destekler: 1.234. -> "bin iki yüz otuz dördüncü"
-        def tr_ordinal_replacer(match):
-            try:
-                val = int(match.group(1).replace('.', ''))
-                return num2words(val, lang='tr', to='ordinal')
-            except:
-                return match.group(0)
-        
-        text = re.sub(r'\b(\d{1,3}(?:\.\d{3})*)\.(?=\s|$)', tr_ordinal_replacer, text)
-        
-        # 4. Ondalıklı sayılar - Türkçe'de virgül kullanılır
-        # 3,14 -> "üç virgül on dört"
-        def tr_decimal_replacer(match):
-            try:
-                # Binlik ayracı noktaları temizle
-                num_str = match.group(0).replace('.', '')
-                
-                # Ondalık ayracı virgülü ayır
-                parts = num_str.split(',')
-                integer_part = int(parts[0])
-                decimal_part = parts[1]
-                
-                # Tam sayı kısmını çevir
-                result = num2words(integer_part, lang='tr')
-                result += " virgül"
-                
-                # Ondalık kısmını basamak basamak oku
-                for digit in decimal_part:
-                    result += " " + num2words(int(digit), lang='tr')
-                
-                return result
-            except:
-                return match.group(0)
-        
-        # Türkçe'de ondalık ayracı virgül, binlik ayracı nokta
-        # Örn: 1.234,56
-        text = re.sub(r'\b\d{1,3}(?:\.\d{3})*,\d+\b', tr_decimal_replacer, text)
-        
-        # 5. Noktalı büyük tam sayılar - EN ÖNEMLİ FİX!
-        # Türkçe'de binlik ayıracı nokta: 140.000, 1.234.567
-        # Bu, XTTS'nin sayıları yanlış okumasını önler
-        def tr_large_number_replacer(match):
-            try:
-                # Noktaları temizle ve sayıya çevir
-                num_str = match.group(0).replace('.', '')
-                val = int(num_str)
-                
-                # XTTS için Türkçe kelimeye çevir
-                return num2words(val, lang='tr')
-            except:
-                return match.group(0)
-        
-        # Noktalı sayıları yakala (örn: 1.234 veya 140.000)
-        # En az bir nokta içeren, doğru formatta yazılmış sayılar
-        # Ancak cümle sonu noktalarıyla karıştırma!
-        text = re.sub(r'\b\d{1,3}(?:\.\d{3})+\b(?!\.)', tr_large_number_replacer, text)
-        
-        # 6. Standart tam sayılar (noktasız, küçük sayılar)
-        # Telefon numaraları ve çok uzun sayı dizilerini atla
-        def tr_number_replacer(match):
-            try:
-                num_str = match.group(0)
-                
-                # Çok uzun sayı dizilerini atla (telefon, ID vb. olabilir)
-                if len(num_str) > 10:
-                    return match.group(0)
-                
-                val = int(num_str)
-                
-                # Sayıyı Türkçe kelimeye çevir
-                return num2words(val, lang='tr')
-            except:
-                return match.group(0)
-        
-        # Nokta içermeyen, henüz işlenmemiş standart sayılar
-        text = re.sub(r'\b\d+\b', tr_number_replacer, text)
-        
-        return text
+

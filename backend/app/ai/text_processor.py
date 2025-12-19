@@ -11,9 +11,9 @@ class TextProcessor:
         self.models = {}  # { 'en': nlp_model, 'tr': nlp_model }
 
 
-    def _get_model(self, lang: str):
-        """Dile göre Spacy modelini getir, yüklü değilse yükle."""
-        model_name = "en_core_web_sm" if lang != "tr" else "tr_core_news_sm"
+    def _get_model(self):
+        """Spacy İngilizce modelini getir, yüklü değilse yükle."""
+        model_name = "en_core_web_sm"
         
         if model_name in self.models:
             return self.models[model_name]
@@ -100,9 +100,10 @@ class TextProcessor:
         chunks = []
         current_text = text
         
-        # Bağlaç regex'i (öncesinde virgül olmayabilir)
+        # Bağlaç regex'i (Anlamlı bölme noktaları için)
         # and, but, or, nor, for, yet, so, because, which, that, who, when, where
-        conjunctions = r'\s+(and|but|or|nor|for|yet|so|because|which|that|who|when|where)\s'
+        # although, though, while, unless, since, if (Edebi metinler için eklendi)
+        conjunctions = r'\s+(and|but|or|nor|for|yet|so|because|which|that|who|when|where|although|though|while|unless|since|if)\s'
         
         while len(current_text) > max_chars:
             # Kesme noktası bul
@@ -138,11 +139,8 @@ class TextProcessor:
                         # En son eşleşmeyi al
                         last_match = conj_matches[-1]
                         # search_window içindeki pozisyonunu search_area'ya uyarla
-                        window_offset = len(search_area) - len(search_window)
-                        # Bağlacın BITTIĞI yerden böl (bağlaç mevcut chunk'ta kalsın)
-                        # last_match.end() bağlaçtan sonraki boşluğu da içeriyor (\s... ile başlıyor ama \s ile bitmiyor regex)
-                        # Regex: \s+(and|...)\s
-                        split_index = window_offset + last_match.end()
+                        # Bağlacın BAŞLADIĞI yerden böl (bağlaç yeni chunk'ta kalsın, daha doğal bir akış sağlar)
+                        split_index = window_offset + last_match.start()
                     else:
                         # 4. Boşluk dene (mecburiyet)
                         space_match = re.search(r'\s', search_area[::-1])
@@ -162,19 +160,19 @@ class TextProcessor:
             
         return chunks
 
-    def split_into_chunks(self, text: str, max_chars: int = 650, min_chars: int = 80, language: str = "en", normalize: bool = True) -> List[str]:
+    def split_into_chunks(self, text: str, max_chars: int = 650, min_chars: int = 80, normalize: bool = True) -> List[str]:
         """
         Metni mantıklı chunk'lara böler, birden fazla cümleyi birleştirir.
         
-        Optimized for XTTS v2 and multi-language:
-        - Dinamik Spacy model yükleme
+        Optimized for XTTS v2:
+        - İngilizce NLP model kullanımı
         - Geliştirilmiş normalizasyon
         """
-        nlp = self._get_model(language)
+        nlp = self._get_model()
             
         # Normalizasyon
         if normalize:
-            text = self.normalizer.normalize(text, language)
+            text = self.normalizer.normalize(text, lang="en")
             
         doc = nlp(text)
         sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
