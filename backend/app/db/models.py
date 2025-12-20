@@ -83,6 +83,16 @@ class Project(Base):
         default=0,
         comment="Number of times the project has been resumed"
     )
+    started_at = Column(
+        DateTime,
+        nullable=True,
+        comment="When the processing actually started"
+    )
+    completed_at = Column(
+        DateTime,
+        nullable=True,
+        comment="When the processing finished (success or fail)"
+    )
     last_error = Column(
         String,
         nullable=True,

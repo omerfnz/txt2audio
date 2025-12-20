@@ -11,8 +11,10 @@ export const useProjectStatus = (projectId: number | null) => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [processingStartTime, setProcessingStartTime] = useState<Date | null>(null);
   const [estimatedEndTime, setEstimatedEndTime] = useState<Date | null>(null);
-
+  const [speed, setSpeed] = useState<number | null>(null); // chunks per minute
+  
   const lastMessage = useWebSocket();
+  const prevRemainingRef = useRef<number | null>(null);
 
   const addLog = useCallback((message: string) => {
     setLogs(prev => [...prev, { message, timestamp: new Date() }]);
@@ -27,6 +29,7 @@ export const useProjectStatus = (projectId: number | null) => {
       setLogs([]);
       setProcessingStartTime(null);
       setEstimatedEndTime(null);
+      setSpeed(null);
       return;
     }
 
@@ -36,28 +39,32 @@ export const useProjectStatus = (projectId: number | null) => {
         setStatus(projectData.status);
         setProgress(projectData.progress || 0);
 
+        // Preference backend startedAt
+        if (projectData.started_at) {
+            setProcessingStartTime(new Date(projectData.started_at));
+        }
+
         // Load chunks
         const chunksResponse = await axios.get<{ chunks: Array<{ index: number; is_processed: boolean; text?: string }> }>(
           `${getApiBase()}/projects/${projectId}/chunks`
         );
         
-        setChunks(chunksResponse.data.chunks.map(c => ({
+        const loadedChunks = chunksResponse.data.chunks.map(c => ({
           index: c.index,
           isProcessed: c.is_processed,
           text: c.text,
-        })));
+        }));
+        setChunks(loadedChunks);
 
-        // Restore start time from local storage if processing
-        if (projectData.status === 'processing' || projectData.status === 'merging') {
+        // Fallback for processingStartTime if backend doesn't have it yet (legacy or new project)
+        if (!projectData.started_at && (projectData.status === 'processing' || projectData.status === 'merging')) {
           const savedTime = localStorage.getItem(`processingStartTime_${projectId}`);
           if (savedTime) {
             setProcessingStartTime(new Date(savedTime));
           } else {
-             // If no saved time but processing, set it to now (or estimate)
              const now = new Date();
              if (projectData.progress && projectData.progress > 0) {
-                 // Estimate start time based on progress
-                 const estimatedElapsed = (projectData.progress / 100) * 3600000; // Rough estimate
+                 const estimatedElapsed = (projectData.progress / 100) * 3600000;
                  const estimatedStart = new Date(now.getTime() - estimatedElapsed);
                  setProcessingStartTime(estimatedStart);
                  localStorage.setItem(`processingStartTime_${projectId}`, estimatedStart.toISOString());
@@ -79,20 +86,15 @@ export const useProjectStatus = (projectId: number | null) => {
   // Handle WebSocket messages
   useEffect(() => {
     if (!lastMessage || !projectId) return;
-
-    // Filter messages for current project if project_id is present
     if (lastMessage.project_id && lastMessage.project_id !== projectId) return;
 
-      if (lastMessage.type === 'status_update') {
+    if (lastMessage.type === 'status_update') {
       const newStatus = lastMessage.status || 'unknown';
       
-      // Special handling for chunk_skipped: don't change the overall status
       if (newStatus === 'chunk_skipped') {
-        // Just log the skipped chunk, don't change the overall status to "chunk_skipped"
         const chunkIndex = lastMessage.chunk_index;
         const message = lastMessage.message || `Chunk ${chunkIndex} skipped`;
         addLog(`⚠️ ${message}`);
-        // Don't update status or processingStartTime - keep processing
         return;
       }
       
@@ -108,7 +110,7 @@ export const useProjectStatus = (projectId: number | null) => {
       }
       
       addLog(`Status: ${newStatus} (${lastMessage.progress || 0}%)`);
-      } else if (lastMessage.type === 'progress_update') {
+    } else if (lastMessage.type === 'progress_update') {
       const newProgress = lastMessage.progress || 0;
       setProgress(newProgress);
 
@@ -138,48 +140,42 @@ export const useProjectStatus = (projectId: number | null) => {
     }
   }, [lastMessage, projectId, addLog, processingStartTime, status]);
 
-  // Calculate estimated end time
-  const prevRemainingRef = useRef<number | null>(null);
-
+  // Calculate estimated end time and speed
   useEffect(() => {
-    if ((status === 'processing' || status === 'merging') && processingStartTime && progress > 2 && progress < 100) {
+    if ((status === 'processing' || status === 'merging') && processingStartTime && progress > 1 && progress < 100) {
       const now = Date.now();
-      const elapsed = now - processingStartTime.getTime();
+      const elapsedMs = now - processingStartTime.getTime();
       
-      // Wait for at least 5 seconds of data and 2% progress
-      if (elapsed > 5000) {
-        // Raw estimate based on cumulative average speed
-        const estimatedTotalDuration = (elapsed / progress) * 100;
-        const rawRemaining = estimatedTotalDuration - elapsed;
-        
-        let finalRemaining = rawRemaining;
+      // Raw estimate based on cumulative average speed
+      const estimatedTotalDuration = (elapsedMs / progress) * 100;
+      const rawRemaining = estimatedTotalDuration - elapsedMs;
+      
+      let finalRemaining = rawRemaining;
 
-        // Apply smoothing if we have a previous estimate
-        // Weight: 70% previous estimate, 30% new calculation
-        // This prevents jitter when instantaneous speed fluctuates
-        if (prevRemainingRef.current !== null) {
-          // Adjust previous remaining time by subtracting the time passed since last update
-          // This is tricky in useEffect, so we just smooth the absolute value
-          finalRemaining = (prevRemainingRef.current * 0.7) + (rawRemaining * 0.3);
-        }
-        
-        if (finalRemaining < 0) finalRemaining = 0;
+      // Smoothing
+      if (prevRemainingRef.current !== null) {
+        finalRemaining = (prevRemainingRef.current * 0.8) + (rawRemaining * 0.2);
+      }
+      
+      if (finalRemaining < 0) finalRemaining = 0;
+      prevRemainingRef.current = finalRemaining;
+      setEstimatedEndTime(new Date(now + finalRemaining));
 
-        prevRemainingRef.current = finalRemaining;
-        setEstimatedEndTime(new Date(now + finalRemaining));
+      // Speed calculation: (processed_chunks / elapsed_minutes)
+      const processedCount = chunks.filter(c => c.isProcessed).length;
+      const elapsedMin = elapsedMs / 60000;
+      if (elapsedMin > 0.05) { // At least 3 seconds
+          setSpeed(processedCount / elapsedMin);
       }
     } else if (status === 'completed' || status === 'failed' || progress >= 100) {
       setEstimatedEndTime(null);
       prevRemainingRef.current = null;
+      setSpeed(null);
       if (projectId && (status === 'completed' || status === 'failed')) {
         localStorage.removeItem(`processingStartTime_${projectId}`);
       }
-    } else if (progress <= 2) {
-      // Not enough data for estimation
-      setEstimatedEndTime(null);
-      prevRemainingRef.current = null;
     }
-  }, [status, progress, processingStartTime, projectId]);
+  }, [status, progress, processingStartTime, projectId, chunks.length]);
 
   return {
     status,
@@ -187,6 +183,7 @@ export const useProjectStatus = (projectId: number | null) => {
     chunks,
     logs,
     processingStartTime,
-    estimatedEndTime
+    estimatedEndTime,
+    speed
   };
 };

@@ -58,6 +58,10 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
         already_processed = sum(1 for c in chunks if c.is_processed)
         initial_progress = (already_processed / total_chunks) * 100 if total_chunks > 0 else 0
 
+        from datetime import datetime
+        if project.started_at is None:
+            project.started_at = datetime.utcnow()
+            
         project.status = "processing"
         project.is_cancelled = False
         db.commit()
@@ -208,6 +212,7 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
 
         project.audio_path = str(final_path)
         project.status = "completed"
+        project.completed_at = datetime.utcnow()
         db.commit()
 
         await manager.broadcast({
@@ -224,6 +229,7 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
         if 'project' in locals() and project:
             project.status = "failed"
             project.last_error = error_msg
+            project.completed_at = datetime.utcnow()
             db.commit()
             await manager.broadcast({
                 "type": "status_update",

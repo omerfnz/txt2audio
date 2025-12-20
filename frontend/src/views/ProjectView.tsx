@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Player } from '../components/Player';
 import { useProjectStatus } from '../hooks/useProjectStatus';
-import { Terminal, CheckCircle, Circle } from 'lucide-react';
+import { Terminal, CheckCircle, Circle, Clock, Zap } from 'lucide-react';
 import { cancelProcessing, resumeProject, getApiBase } from '../api/client';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,12 +14,30 @@ interface ProjectViewProps {
     projectId: number;
 }
 
+const formatDuration = (ms: number) => {
+    if (ms < 0) ms = 0;
+    const seconds = Math.floor((ms / 1000) % 60);
+    const minutes = Math.floor((ms / (1000 * 60)) % 60);
+    const hours = Math.floor(ms / (1000 * 60 * 60));
+
+    if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+    if (minutes > 0) return `${minutes}m ${seconds}s`;
+    return `${seconds}s`;
+};
+
 export const ProjectView = ({ projectId }: ProjectViewProps) => {
-    const { status, progress, chunks, logs, processingStartTime, estimatedEndTime } = useProjectStatus(projectId);
+    const { status, progress, chunks, logs, processingStartTime, estimatedEndTime, speed } = useProjectStatus(projectId);
     const [currentAudioUrl, setCurrentAudioUrl] = useState<string | null>(null);
     const [currentChunkIndex, setCurrentChunkIndex] = useState<number | null>(null);
     const [cancelLoading, setCancelLoading] = useState(false);
     const [resumeLoading, setResumeLoading] = useState(false);
+    const [now, setNow] = useState(Date.now());
+
+    // Update 'now' every second for real-time elapsed/remaining updates
+    useEffect(() => {
+        const interval = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     // Check if project can be resumed
     const canResume = status === 'cancelled' || status === 'failed' || status === 'created';
@@ -35,19 +53,15 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
     };
 
     const handlePlayFinal = () => {
-        // Use /audio/stream/ for playback (no download prompt, optimized for streaming)
-        // /audio/download/ is for actual downloads
         const audioUrl = `${getApiBase()}/audio/stream/${projectId}`;
         setCurrentAudioUrl(audioUrl);
         setCurrentChunkIndex(null);
     };
 
-
     const handleCancel = async () => {
         try {
             setCancelLoading(true);
             await cancelProcessing(projectId);
-            // Durum, WebSocket üzerinden güncellenecek (status: 'cancelled')
         } catch (error) {
             console.error('Cancel processing failed:', error);
         } finally {
@@ -58,13 +72,10 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
     const handleResume = async () => {
         try {
             setResumeLoading(true);
-            // GPU kullanımını varsayılan olarak aktif ediyoruz (sunucu tarafında kontrol edilecek)
             const result = await resumeProject(projectId, true);
             console.log('Resume started:', result);
-            // Durum, WebSocket üzerinden güncellenecek (status: 'processing')
         } catch (error) {
             console.error('Resume processing failed:', error);
-            // Kullanıcıya hata göster
             alert(error instanceof Error ? error.message : 'Resume failed. Please try again.');
         } finally {
             setResumeLoading(false);
@@ -91,10 +102,10 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
         <div className="flex flex-col h-full overflow-hidden">
             <div className="flex-1 overflow-y-auto p-8 pb-32">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-8">
                     <div>
                         <h1 className="text-3xl font-bold text-foreground">Project View</h1>
-                        <div className="text-muted-foreground flex items-center gap-2">
+                        <div className="text-muted-foreground flex items-center gap-2 mt-1">
                             <span>ID: {projectId} • Status:</span>
                             <Badge
                                 variant={
@@ -102,72 +113,95 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
                                         status === 'failed' ? 'destructive' :
                                             status === 'processing' || status === 'merging' ? 'secondary' : 'outline'
                                 }
-                                className="uppercase"
+                                className="uppercase font-bold tracking-wider text-[10px]"
                             >
                                 {status === 'merging' ? 'Merging' : status}
                             </Badge>
                         </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                        {status === 'completed' && (
-                            <div className="flex items-center gap-3">
-                                <Button onClick={handlePlayFinal} size="sm" className="w-full sm:w-auto">
-                                    Play Final Audio (MP3)
+
+                    <div className="flex items-center gap-6">
+                        {/* Improved Timing Container */}
+                        {(status === 'processing' || status === 'merging' || status === 'mastering') && (
+                            <div className="flex items-center gap-4 bg-muted/30 p-3 rounded-lg border border-border/50">
+                                <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-[10px] uppercase font-bold">
+                                    {processingStartTime && (
+                                        <>
+                                            <div className="flex items-center gap-1 text-muted-foreground">
+                                                <Clock className="w-3 h-3" /> Elapsed:
+                                            </div>
+                                            <span className="text-foreground tabular-nums">
+                                                {formatDuration(now - processingStartTime.getTime())}
+                                            </span>
+                                        </>
+                                    )}
+                                    {estimatedEndTime && (
+                                        <>
+                                            <div className="flex items-center gap-1 text-primary/70">
+                                                <Clock className="w-3 h-3" /> Remaining:
+                                            </div>
+                                            <span className="text-primary tabular-nums">
+                                                {formatDuration(estimatedEndTime.getTime() - now)}
+                                            </span>
+                                            
+                                            <div className="flex items-center gap-1 text-primary/70">
+                                                <Zap className="w-3 h-3" /> Est. Finish:
+                                            </div>
+                                            <span className="text-primary tabular-nums">
+                                                {estimatedEndTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                            </span>
+                                        </>
+                                    )}
+                                    {speed && (
+                                         <>
+                                            <div className="flex items-center gap-1 text-muted-foreground">
+                                                <Zap className="w-3 h-3" /> Speed:
+                                            </div>
+                                            <span className="text-foreground">
+                                                {speed.toFixed(1)} <span className="text-[8px]">CH/MIN</span>
+                                            </span>
+                                         </>
+                                    )}
+                                </div>
+                                <div className="h-8 w-px bg-border/50 mx-1" />
+                                <Button
+                                    onClick={handleCancel}
+                                    disabled={cancelLoading}
+                                    variant="destructive"
+                                    size="sm"
+                                    className="h-8 px-3 text-[10px] font-bold uppercase"
+                                >
+                                    {cancelLoading ? '...' : 'Cancel'}
                                 </Button>
                             </div>
                         )}
+
+                        {status === 'completed' && (
+                            <Button onClick={handlePlayFinal} size="sm" className="bg-primary hover:bg-primary/90 font-bold uppercase tracking-wider text-[11px]">
+                                Play Final Audio (MP3)
+                            </Button>
+                        )}
+
                         {canResume && (
                             <Button
                                 onClick={handleResume}
                                 disabled={resumeLoading}
                                 variant="default"
                                 size="sm"
-                                className="bg-green-600 hover:bg-green-700"
+                                className="bg-green-600 hover:bg-green-700 font-bold uppercase tracking-wider text-[11px]"
                             >
                                 {resumeLoading ? 'Resuming…' : '▶ Resume Processing'}
                             </Button>
                         )}
-                        {(status === 'processing' || status === 'merging') && (
-                            <div className="flex items-center gap-4">
-                                <div className="text-right">
-                                    {processingStartTime ? (
-                                        <>
-                                            <p className="text-xs text-muted-foreground">
-                                                Started: {processingStartTime.toLocaleTimeString()}
-                                            </p>
-                                            {estimatedEndTime && (
-                                                <p className="text-xs text-primary">
-                                                    Est. finish: {estimatedEndTime.toLocaleTimeString()}
-                                                </p>
-                                            )}
-                                            {progress > 0 && (
-                                                <p className="text-xs text-muted-foreground mt-1">
-                                                    Elapsed: {Math.floor((Date.now() - processingStartTime.getTime()) / 1000 / 60)} min
-                                                </p>
-                                            )}
-                                        </>
-                                    ) : (
-                                        <p className="text-xs text-muted-foreground">
-                                            {status === 'merging' ? 'Merging...' : 'Processing...'}
-                                        </p>
-                                    )}
-                                </div>
-                                <Button
-                                    onClick={handleCancel}
-                                    disabled={cancelLoading}
-                                    variant="destructive"
-                                    size="sm"
-                                >
-                                    {cancelLoading ? 'Cancelling…' : 'Cancel Processing'}
-                                </Button>
-                            </div>
-                        )}
-                        <div className="text-right">
-                            <p className="text-2xl font-bold text-primary">
-                                {progress.toFixed(1)}%
-                            </p>
-                            <p className="text-xs text-muted-foreground">Completed</p>
-                            <Progress value={progress} className="w-20 mt-1" />
+
+                        <div className="flex flex-col items-end min-w-32">
+                             <div className="flex items-baseline gap-1">
+                                <span className="text-3xl font-black text-primary tabular-nums">
+                                    {progress.toFixed(1)}
+                                </span>
+                                <span className="text-xs font-bold text-primary/70">%</span>
+                             </div>
+                            <Progress value={progress} className="w-32 h-1.5 mt-1" />
                         </div>
                     </div>
                 </div>
@@ -175,38 +209,41 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
                 {/* Grid Layout */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Chunks List */}
-                    <Card className="lg:col-span-2 flex flex-col h-[500px]">
-                        <CardHeader>
-                            <CardTitle className="text-sm uppercase tracking-wider">Text Chunks</CardTitle>
+                    <Card className="lg:col-span-2 flex flex-col h-[500px] border-none bg-background/50 shadow-xl ring-1 ring-border/50">
+                        <CardHeader className="bg-muted/30 border-b border-border/50 py-3">
+                            <CardTitle className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center justify-between">
+                                <span>Text Chunks</span>
+                                <Badge variant="outline" className="text-[9px]">{chunks.length} Total</Badge>
+                            </CardTitle>
                         </CardHeader>
                         <CardContent className="flex-1 overflow-hidden p-4 pt-0">
                             <ScrollArea className="h-full">
-                                <div className="space-y-2 pr-4">
+                                <div className="space-y-2 pr-4 py-4">
                                     {chunks.map((chunk, idx) => {
                                         return (
                                             <Card
                                                 key={idx}
                                                 className={cn(
-                                                    'p-3 flex items-center justify-between transition-all duration-200',
+                                                    'p-3 flex items-center justify-between transition-all duration-250 border-none',
                                                     chunk.isProcessed
-                                                        ? 'bg-primary/5 border-primary/20 hover:bg-primary/10'
-                                                        : 'bg-muted/30',
-                                                    currentChunkIndex === idx && 'ring-2 ring-primary'
+                                                        ? 'bg-primary/5 hover:bg-primary/10 ring-1 ring-primary/20'
+                                                        : 'bg-muted/20 ring-1 ring-border/30',
+                                                    currentChunkIndex === idx && 'ring-2 ring-primary bg-primary/10'
                                                 )}
                                             >
                                                 <div className="flex flex-col gap-1 flex-1 mr-4">
                                                     <div className="flex items-center gap-3">
                                                         {chunk.isProcessed ? (
-                                                            <CheckCircle className="w-5 h-5 text-primary shrink-0" />
+                                                            <CheckCircle className="w-4 h-4 text-primary shrink-0" />
                                                         ) : (
-                                                            <Circle className="w-5 h-5 text-muted-foreground shrink-0" />
+                                                            <Circle className="w-4 h-4 text-muted-foreground/30 shrink-0" />
                                                         )}
-                                                        <span className="text-sm font-medium text-foreground whitespace-nowrap">
-                                                            Chunk #{idx + 1}
+                                                        <span className="text-[11px] font-bold text-foreground/80 uppercase tracking-wider">
+                                                            Chunk {String(idx + 1).padStart(3, '0')}
                                                         </span>
                                                     </div>
                                                     {chunk.text && (
-                                                        <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+                                                        <p className="text-[11px] text-muted-foreground leading-relaxed pl-7 line-clamp-2">
                                                             {chunk.text}
                                                         </p>
                                                     )}
@@ -216,17 +253,20 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
                                                         onClick={() => handlePlayChunk(idx)}
                                                         variant={currentChunkIndex === idx ? "default" : "outline"}
                                                         size="sm"
-                                                        className="shrink-0"
+                                                        className="h-7 px-3 text-[10px] font-bold uppercase shrink-0"
                                                     >
-                                                        {currentChunkIndex === idx ? 'Playing' : 'Play'}
+                                                        {currentChunkIndex === idx ? 'Playing' : 'Listen'}
                                                     </Button>
                                                 )}
                                             </Card>
                                         );
                                     })}
                                     {chunks.length === 0 && (
-                                        <div className="text-center text-muted-foreground py-10">
-                                            No chunks available yet.
+                                        <div className="text-center text-muted-foreground py-20 flex flex-col items-center gap-4">
+                                            <div className="w-12 h-12 rounded-full bg-muted/30 flex items-center justify-center">
+                                                <Terminal className="w-6 h-6 opacity-20" />
+                                            </div>
+                                            <span className="text-xs uppercase tracking-widest font-semibold opacity-50">No Chunks Available</span>
                                         </div>
                                     )}
                                 </div>
@@ -238,18 +278,17 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
                     <div className="flex flex-col gap-6 h-[500px]">
                         
                         {/* Audio Tools Panel */}
-                        <Card className="flex-none">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm">Audio Tools</CardTitle>
+                        <Card className="flex-none border-none bg-background/50 shadow-xl ring-1 ring-border/50">
+                            <CardHeader className="bg-muted/30 border-b border-border/50 py-3">
+                                <CardTitle className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Audio Tools</CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                {/* Auto ACX Mastering Status */}
+                            <CardContent className="p-4 space-y-4">
                                 <div className="space-y-2">
                                     <div className="flex flex-col">
-                                        <span className="text-xs font-medium">Auto ACX Mastering</span>
-                                        <span className="text-[10px] text-muted-foreground">Applied automatically during processing</span>
-                                        <div className="mt-1">
-                                            <Badge variant="default" className="h-5 text-[10px]">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider">Auto ACX Mastering</span>
+                                        <span className="text-[9px] text-muted-foreground mt-0.5">Automated normalization & quality control</span>
+                                        <div className="mt-2 text-right">
+                                            <Badge variant="default" className="h-5 text-[9px] font-black tracking-widest bg-green-600/20 text-green-500 border-none px-2 ring-1 ring-green-500/30">
                                                 ✅ ACTIVE
                                             </Badge>
                                         </div>
@@ -259,26 +298,31 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
                         </Card>
 
                         {/* Logs Panel */}
-                        <Card className="flex-1 flex flex-col min-h-0">
-                            <CardHeader className="pb-2">
-                                <div className="flex items-center gap-2">
-                                    <Terminal className="w-4 h-4 text-muted-foreground" />
-                                    <CardTitle className="text-sm">System Logs</CardTitle>
+                        <Card className="flex-1 flex flex-col min-h-0 border-none bg-background/50 shadow-xl ring-1 ring-border/50">
+                            <CardHeader className="bg-muted/30 border-b border-border/50 py-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Terminal className="w-3 h-3 text-muted-foreground" />
+                                        <CardTitle className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">System Logs</CardTitle>
+                                    </div>
+                                    <Badge variant="outline" className="text-[8px] border-border/50 font-mono">{logs.length}</Badge>
                                 </div>
                             </CardHeader>
-                            <CardContent className="flex-1 overflow-hidden p-4 pt-0">
-                                <ScrollArea className="h-full w-full pr-4">
-                                    <div className="space-y-1 text-muted-foreground font-mono text-xs">
+                            <CardContent className="flex-1 overflow-hidden p-4">
+                                <ScrollArea className="h-full w-full">
+                                    <div className="space-y-2 pr-4">
                                         {logs.map((log, i) => (
-                                            <div key={i} className="break-words">
-                                                <span className="text-muted-foreground/50 mr-2">
-                                                    [{log.timestamp.toLocaleTimeString()}]
+                                            <div key={i} className="flex gap-3 text-[10px] group">
+                                                <span className="text-muted-foreground/30 font-mono shrink-0 select-none">
+                                                    {log.timestamp.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                                                 </span>
-                                                <span className="text-foreground">{log.message}</span>
+                                                <span className="text-foreground/70 font-medium group-hover:text-foreground transition-colors leading-relaxed">
+                                                    {log.message}
+                                                </span>
                                             </div>
                                         ))}
                                         {logs.length === 0 && (
-                                            <div className="text-muted-foreground italic">Waiting for logs...</div>
+                                            <div className="text-center py-10 opacity-20 italic text-[10px] uppercase tracking-widest">Awaiting system logs...</div>
                                         )}
                                     </div>
                                 </ScrollArea>

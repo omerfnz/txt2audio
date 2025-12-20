@@ -568,7 +568,9 @@ def get_project_status(project_id: int, db: Session = Depends(get_db)) -> Dict[s
         "status": project.status,
         "total_chunks": len(chunks),
         "processed_chunks": processed_count,
-        "progress": (processed_count / len(chunks)) * 100 if chunks else 0
+        "progress": (processed_count / len(chunks)) * 100 if chunks else 0,
+        "started_at": project.started_at.isoformat() if project.started_at else None,
+        "completed_at": project.completed_at.isoformat() if project.completed_at else None
     }
 
 @router.get("/projects/{project_id}/chunks")

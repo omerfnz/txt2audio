@@ -72,6 +72,8 @@ interface ProjectStatusResponse {
   total_chunks: number;
   processed_chunks: number;
   progress: number;
+  started_at?: string | null;
+  completed_at?: string | null;
 }
 
 interface MusicListResponse {
