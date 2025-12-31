@@ -131,14 +131,8 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
             if (response.timelapse) {
                 // Copy to clipboard
                 await navigator.clipboard.writeText(response.timelapse);
-                // Show toast notification instead of alert
-                if (window.toast) {
-                    window.toast.success('YouTube Timelapse kopyalandı!', {
-                        description: 'Video açıklamasına yapıştırabilirsiniz.',
-                    });
-                } else {
-                    alert('YouTube Timelapse kopyalandı!\n\nVideo açıklamasına yapıştırabilirsiniz.\n\nFormat:\n0:00 Chapter 1\n15:32 Chapter 2\n...');
-                }
+                // Show notification
+                alert('YouTube Timelapse kopyalandı!\n\nVideo açıklamasına yapıştırabilirsiniz.\n\nFormat:\n0:00 Chapter 1\n15:32 Chapter 2\n...');
             } else {
                 alert(response.message || 'No timelapse available');
             }
