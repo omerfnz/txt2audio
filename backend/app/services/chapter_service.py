@@ -109,20 +109,19 @@ class ChapterService:
     def calculate_chapter_timestamps(
         self,
         project_id: int,
-        db: Session
+        db: Session,
+        use_saved: bool = True
     ) -> List[ChapterTimestamp]:
         """
         Calculate start timestamps for each chapter.
         
-        Reads audio durations of chunks and sums them up to find
-        where each chapter starts in the final audio.
-        
-        NOTE: Timestamps can only be calculated when chunk audio files are available.
-        After merge, chunk files are deleted and timestamps cannot be recalculated.
+        First tries to load saved timestamps from database.
+        If not available, calculates from chunk audio files (if they exist).
         
         Args:
             project_id: Project ID
             db: Database session
+            use_saved: If True, try to load saved timestamps from DB first
             
         Returns:
             List of chapters with timestamps
@@ -158,8 +157,34 @@ class ChapterService:
         # Sort by order
         chapter_chunks.sort(key=lambda x: x[2])  # Sort by chapter_order
         
+        # Try to load saved timestamps from database first
+        if use_saved:
+            saved_timestamps = []
+            for chunk_index, chapter_title, chapter_order in chapter_chunks:
+                chunk = next((c for c in chunks if c.index == chunk_index), None)
+                if chunk and chunk.chapter_timestamp_seconds is not None and chunk.chapter_timestamp_formatted:
+                    saved_timestamps.append(ChapterTimestamp(
+                        title=chapter_title,
+                        order=chapter_order,
+                        timestamp_seconds=chunk.chapter_timestamp_seconds,
+                        timestamp_formatted=chunk.chapter_timestamp_formatted,
+                        chunk_index=chunk_index
+                    ))
+            
+            if len(saved_timestamps) == len(chapter_chunks):
+                logger.info(
+                    f"Loaded {len(saved_timestamps)} saved timestamps from database "
+                    f"for project {project_id}"
+                )
+                return saved_timestamps
+            elif saved_timestamps:
+                logger.warning(
+                    f"Only {len(saved_timestamps)}/{len(chapter_chunks)} timestamps found in database "
+                    f"for project {project_id}, will recalculate"
+                )
+        
+        # If saved timestamps not available, calculate from chunk files
         # Check if chunk files exist - if not, we cannot calculate accurate timestamps
-        # Timestamps can only be calculated when chunk files are still available (during project completion)
         chunks_with_audio = sum(
             1 for c in chunks 
             if c.chunk_audio_path and os.path.exists(c.chunk_audio_path)
@@ -168,7 +193,7 @@ class ChapterService:
         if chunks_with_audio == 0:
             logger.warning(
                 f"Cannot calculate timestamps for project {project_id}: "
-                f"Chunk audio files have been deleted after merge. "
+                f"Chunk audio files have been deleted after merge and no saved timestamps found. "
                 f"Timestamps are only calculated during project completion when chunk files are available."
             )
             # Return empty list - timestamps cannot be calculated accurately after chunk files are deleted
@@ -241,6 +266,58 @@ class ChapterService:
         
         return timestamps
     
+    def save_chapter_timestamps(
+        self,
+        project_id: int,
+        timestamps: List[ChapterTimestamp],
+        db: Session
+    ) -> None:
+        """
+        Save chapter timestamps to database.
+        
+        Stores timestamp information in the Chunk model so it persists
+        even after chunk audio files are deleted.
+        
+        Args:
+            project_id: Project ID
+            timestamps: List of chapter timestamps to save
+            db: Database session
+        """
+        if not timestamps:
+            logger.debug(f"No timestamps to save for project {project_id}")
+            return
+        
+        # Get all chunks for this project
+        chunks = db.query(Chunk).filter(
+            Chunk.project_id == project_id
+        ).all()
+        
+        # Create a map of chunk_index to chunk
+        chunk_map = {chunk.index: chunk for chunk in chunks}
+        
+        # Save timestamps to corresponding chunks
+        saved_count = 0
+        for ts in timestamps:
+            chunk = chunk_map.get(ts.chunk_index)
+            if chunk:
+                chunk.chapter_timestamp_seconds = ts.timestamp_seconds
+                chunk.chapter_timestamp_formatted = ts.timestamp_formatted
+                saved_count += 1
+                logger.debug(
+                    f"Saved timestamp {ts.timestamp_formatted} for chapter '{ts.title}' "
+                    f"(chunk {ts.chunk_index})"
+                )
+            else:
+                logger.warning(
+                    f"Could not find chunk {ts.chunk_index} to save timestamp for chapter '{ts.title}'"
+                )
+        
+        db.commit()
+        logger.info(
+            f"Saved timestamps for {saved_count}/{len(timestamps)} chapters "
+            f"in project {project_id}"
+        )
+    
     def get_chapters(
         self,
         project_id: int,
@@ -262,15 +339,16 @@ class ChapterService:
             Chunk.chapter_order.isnot(None)
         ).order_by(Chunk.chapter_order, Chunk.index).all()
         
-        # Check if project is completed to calculate timestamps
+        # Get timestamps (try saved first, then calculate if needed)
         from ..db.models import Project
         project = db.query(Project).filter(Project.id == project_id).first()
         timestamps = None
         if project and project.status == "completed":
             try:
-                timestamps = self.calculate_chapter_timestamps(project_id, db)
+                # Try to get saved timestamps first, fallback to calculation
+                timestamps = self.calculate_chapter_timestamps(project_id, db, use_saved=True)
             except Exception as e:
-                logger.warning(f"Could not calculate timestamps for project {project_id}: {e}")
+                logger.warning(f"Could not get timestamps for project {project_id}: {e}")
         
         chapters = []
         for chunk in chunks:
@@ -280,8 +358,13 @@ class ChapterService:
                 "chunk_index": chunk.index
             }
             
-            # Add timestamps if available
-            if timestamps:
+            # Add timestamps if available (prefer saved, then calculated)
+            if chunk.chapter_timestamp_seconds is not None and chunk.chapter_timestamp_formatted:
+                # Use saved timestamp from database
+                chapter_data["timestamp_formatted"] = chunk.chapter_timestamp_formatted
+                chapter_data["timestamp_seconds"] = chunk.chapter_timestamp_seconds
+            elif timestamps:
+                # Fallback to calculated timestamp
                 matching_timestamp = next(
                     (ts for ts in timestamps if ts.chunk_index == chunk.index),
                     None

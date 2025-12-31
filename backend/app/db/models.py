@@ -143,6 +143,18 @@ class Chunk(Base):
         comment="Original chapter number from EPUB structure"
     )
     
+    # Chapter timestamp (saved during project completion)
+    chapter_timestamp_seconds = Column(
+        Float,
+        nullable=True,
+        comment="Chapter start timestamp in seconds (saved when project completes)"
+    )
+    chapter_timestamp_formatted = Column(
+        String,
+        nullable=True,
+        comment="Chapter start timestamp formatted as HH:MM:SS or M:SS"
+    )
+    
     # Content and processing
     text_content = Column(String)
     is_processed = Column(Boolean, default=False)

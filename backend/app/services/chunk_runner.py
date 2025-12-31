@@ -53,7 +53,18 @@ async def _process_single_chunk(
 
         while attempt < 5 and not success:
             # Check for cancellation before each retry attempt
-            db.refresh(project)
+            # Safely refresh project - if it's been deleted, re-query it
+            try:
+                db.refresh(project)
+            except Exception:
+                # Project might have been deleted or modified in another session
+                # Re-query it from database
+                project_id_for_query = project.id if project else None
+                project = db.query(Project).filter(Project.id == project_id_for_query).first()
+                if not project:
+                    logger.warning(f"Project {project_id_for_query} not found in database")
+                    return False, "Project not found", None
+            
             if project.is_cancelled or project.status == "cancelled":
                 logger.info(f"⏹️ Chunk {chunk.index} processing cancelled")
                 return False, "Cancelled by user", None
@@ -149,7 +160,16 @@ async def _process_single_chunk(
             attempt += 1
 
             # Check for cancellation before next retry
-            db.refresh(project)
+            # Safely refresh project status
+            try:
+                db.refresh(project)
+            except Exception:
+                project_id_for_query = project.id if project else None
+                project = db.query(Project).filter(Project.id == project_id_for_query).first()
+                if not project:
+                    logger.warning(f"Project {project_id_for_query} not found during retry")
+                    return False, "Project not found", None
+            
             if project.is_cancelled or project.status == "cancelled":
                 logger.info(f"⏹️ Chunk {chunk.index} retry cancelled")
                 return False, "Cancelled by user", None
@@ -242,7 +262,22 @@ async def process_chunks(
     unprocessed_chunks = [c for c in chunks if not c.is_processed]
 
     for chunk in unprocessed_chunks:
-        db.refresh(project)
+        # Safely refresh project - if it's been deleted, re-query it
+        try:
+            db.refresh(project)
+        except Exception:
+            project_id_for_query = project.id if project else None
+            project = db.query(Project).filter(Project.id == project_id_for_query).first()
+            if not project:
+                logger.warning(f"Project {project_id_for_query} not found in database")
+                return ChunkRunResult(
+                    processed_count=db.query(Chunk).filter(Chunk.project_id == project_id_for_query, Chunk.is_processed).count() if project_id_for_query else 0,
+                    total_chunks=total_chunks,
+                    failed_chunks=session_failed_chunks,
+                    last_error="Project not found in database",
+                    cancelled=False,
+                )
+        
         if project.is_cancelled or project.status == "cancelled":
             await manager.broadcast({
                 "type": "status_update",
@@ -271,7 +306,22 @@ async def process_chunks(
         )
         
         # Check for cancellation after chunk processing
-        db.refresh(project)
+        # Safely refresh project - if it's been deleted, re-query it
+        try:
+            db.refresh(project)
+        except Exception:
+            project_id_for_query = project.id if project else None
+            project = db.query(Project).filter(Project.id == project_id_for_query).first()
+            if not project:
+                logger.warning(f"Project {project_id_for_query} not found after chunk processing")
+                return ChunkRunResult(
+                    processed_count=db.query(Chunk).filter(Chunk.project_id == project_id_for_query, Chunk.is_processed).count() if project_id_for_query else 0,
+                    total_chunks=total_chunks,
+                    failed_chunks=session_failed_chunks,
+                    last_error="Project not found in database",
+                    cancelled=False,
+                )
+        
         if project.is_cancelled or project.status == "cancelled":
             logger.info(f"⏹️ Processing cancelled after chunk {chunk.index}")
             await manager.broadcast({

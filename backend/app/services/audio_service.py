@@ -121,12 +121,15 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
         })
 
         # Calculate chapter timestamps BEFORE merge (chunk files will be deleted after merge)
+        # and save them to database so they persist after chunk files are deleted
         try:
             from .chapter_service import ChapterService
             chapter_service = ChapterService()
-            timestamps = chapter_service.calculate_chapter_timestamps(project_id, db)
+            timestamps = chapter_service.calculate_chapter_timestamps(project_id, db, use_saved=False)
             if timestamps:
-                logger.info(f"✅ Calculated timestamps for {len(timestamps)} chapters in project {project_id} (before merge)")
+                # Save timestamps to database so they persist after chunk files are deleted
+                chapter_service.save_chapter_timestamps(project_id, timestamps, db)
+                logger.info(f"✅ Calculated and saved timestamps for {len(timestamps)} chapters in project {project_id} (before merge)")
         except Exception as e:
             logger.warning(f"⚠️ Could not calculate chapter timestamps before merge: {e}")
             # Non-critical, continue

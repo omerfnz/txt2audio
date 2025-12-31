@@ -76,7 +76,7 @@ async def download_merged_audio(project_id: int, db: Session = Depends(get_db)):
     
     chunks = db.query(Chunk).filter(
         Chunk.project_id == project_id,
-        Chunk.is_processed == True
+        Chunk.is_processed
     ).order_by(Chunk.index).all()
     
     if not chunks:
@@ -108,7 +108,7 @@ async def download_merged_audio(project_id: int, db: Session = Depends(get_db)):
         print(f"✓ Using existing merged file: {output_path}")
     else:
         # Fallback: merge on-demand if file doesn't exist
-        print(f"⚠ Merged file not found, merging on-demand...")
+        print("⚠ Merged file not found, merging on-demand...")
         try:
             merged_path = await merge_project_audio(
                 project=project,
@@ -123,7 +123,17 @@ async def download_merged_audio(project_id: int, db: Session = Depends(get_db)):
             )
             project.audio_path = str(final_path)
             db.commit()
-            db.refresh(project)
+            # Safely refresh project - if it's been deleted, re-query it
+            try:
+                db.refresh(project)
+            except Exception:
+                project_id_for_query = project.id if project else project_id
+                project = db.query(Project).filter(Project.id == project_id_for_query).first()
+                if not project:
+                    raise HTTPException(
+                        status_code=404,
+                        detail="Project not found in database"
+                    )
         except Exception as e:
             raise HTTPException(
                 status_code=500, 
