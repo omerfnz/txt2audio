@@ -120,6 +120,17 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
             "progress": 99.0
         })
 
+        # Calculate chapter timestamps BEFORE merge (chunk files will be deleted after merge)
+        try:
+            from .chapter_service import ChapterService
+            chapter_service = ChapterService()
+            timestamps = chapter_service.calculate_chapter_timestamps(project_id, db)
+            if timestamps:
+                logger.info(f"✅ Calculated timestamps for {len(timestamps)} chapters in project {project_id} (before merge)")
+        except Exception as e:
+            logger.warning(f"⚠️ Could not calculate chapter timestamps before merge: {e}")
+            # Non-critical, continue
+        
         merged_path = await merge_project_audio(
             project=project,
             chunks=chunks,
@@ -212,17 +223,6 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
         project.status = "completed"
         project.completed_at = datetime.utcnow()
         db.commit()
-        
-        # Calculate chapter timestamps after merge (non-blocking)
-        try:
-            from .chapter_service import ChapterService
-            chapter_service = ChapterService()
-            timestamps = chapter_service.calculate_chapter_timestamps(project_id, db)
-            if timestamps:
-                logger.info(f"✅ Calculated timestamps for {len(timestamps)} chapters in project {project_id}")
-        except Exception as e:
-            logger.warning(f"⚠️ Could not calculate chapter timestamps: {e}")
-            # Non-critical, continue
 
         await manager.broadcast({
             "type": "status_update",
