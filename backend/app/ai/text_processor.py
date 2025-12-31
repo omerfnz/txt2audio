@@ -402,13 +402,42 @@ class TextProcessor:
                     if not chapter_title.rstrip().endswith(('.', '!', '?', ':', ';')):
                         chapter_title = chapter_title.rstrip() + "."
                     
-                    # Chapter başlığını ayrı bir chunk olarak ekle (içerikle birleştirme)
-                    all_chunks.append(self.validate_chunk(chapter_title))
-                    
-                    # Kalan içeriği normal chunking ile işle
-                    if chapter_content:
-                        content_chunks = self._normal_chunking(chapter_content, max_chars, min_chars, nlp)
-                        all_chunks.extend(content_chunks)
+                    # Chapter başlığı çok kısa ise (20 karakterden az), ilk cümleyle birleştir
+                    # Bu, TTS'in stuttering sorununu önler
+                    if len(chapter_title) < 20 and chapter_content:
+                        # İlk cümleyi al
+                        doc = nlp(chapter_content)
+                        first_sentence = next(doc.sents, None)
+                        if first_sentence:
+                            first_sent_text = first_sentence.text.strip()
+                            # Chapter başlığı + ilk cümle sığıyorsa birleştir
+                            combined = chapter_title + " " + first_sent_text
+                            if len(combined) <= max_chars:
+                                all_chunks.append(self.validate_chunk(combined))
+                                # Kalan içeriği işle
+                                remaining_content = chapter_content[len(first_sent_text):].strip()
+                                if remaining_content:
+                                    content_chunks = self._normal_chunking(remaining_content, max_chars, min_chars, nlp)
+                                    all_chunks.extend(content_chunks)
+                            else:
+                                # Sığmıyorsa, chapter başlığını ayrı chunk olarak ekle
+                                all_chunks.append(self.validate_chunk(chapter_title))
+                                # Kalan içeriği işle
+                                content_chunks = self._normal_chunking(chapter_content, max_chars, min_chars, nlp)
+                                all_chunks.extend(content_chunks)
+                        else:
+                            # Cümle bulunamadı, chapter başlığını ayrı ekle
+                            all_chunks.append(self.validate_chunk(chapter_title))
+                            if chapter_content:
+                                content_chunks = self._normal_chunking(chapter_content, max_chars, min_chars, nlp)
+                                all_chunks.extend(content_chunks)
+                    else:
+                        # Chapter başlığı yeterince uzun, ayrı chunk olarak ekle
+                        all_chunks.append(self.validate_chunk(chapter_title))
+                        # Kalan içeriği normal chunking ile işle
+                        if chapter_content:
+                            content_chunks = self._normal_chunking(chapter_content, max_chars, min_chars, nlp)
+                            all_chunks.extend(content_chunks)
                 else:
                     # Başlık bulunamadı, tüm bölümü normal chunking ile işle
                     section_chunks = self._normal_chunking(chapter_section, max_chars, min_chars, nlp)
