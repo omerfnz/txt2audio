@@ -50,15 +50,22 @@ export const ChapterList = ({ chapters, onChapterClick, selectedChunkIndex }: Ch
             }
           }}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full">
             <BookOpen className="w-4 h-4 text-primary shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold text-foreground truncate">
                 {chapter.title}
               </div>
-              {chapter.timestamp_formatted && (
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  {chapter.timestamp_formatted}
+              {chapter.timestamp_formatted ? (
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[10px] font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                    {chapter.timestamp_formatted}
+                  </span>
+                  <span className="text-[9px] text-muted-foreground/70">YouTube timestamp</span>
+                </div>
+              ) : (
+                <div className="text-[9px] text-muted-foreground/50 mt-0.5 italic">
+                  Timestamp available after completion
                 </div>
               )}
             </div>

@@ -66,6 +66,11 @@ export const ChapterSidebar = ({
             </Badge>
           )}
         </div>
+        {chapters.length > 0 && (
+          <p className="text-[9px] text-muted-foreground/70 mt-2 leading-relaxed">
+            Click to jump to chapter. Timestamps appear after project completion for YouTube timelapse.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="flex-1 overflow-hidden p-4">
         {loading ? (
