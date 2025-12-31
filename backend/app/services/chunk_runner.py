@@ -41,6 +41,7 @@ async def _process_single_chunk(
     output_path: str,
     use_gpu: bool,
     engine_provider,
+    db,
 ) -> Tuple[bool, Optional[str], Optional[str]]:
     """Tek chunk üretimi + retry."""
     engine = engine_provider(use_gpu=use_gpu)
@@ -51,6 +52,11 @@ async def _process_single_chunk(
         chunk_error = ""
 
         while attempt < 5 and not success:
+            # Check for cancellation before each retry attempt
+            db.refresh(project)
+            if project.is_cancelled or project.status == "cancelled":
+                logger.info(f"⏹️ Chunk {chunk.index} processing cancelled")
+                return False, "Cancelled by user", None
             try:
                 base_temp = project.temperature or settings.DEFAULT_TEMPERATURE
                 base_speed = project.speed or settings.DEFAULT_SPEED
@@ -142,6 +148,12 @@ async def _process_single_chunk(
 
             attempt += 1
 
+            # Check for cancellation before next retry
+            db.refresh(project)
+            if project.is_cancelled or project.status == "cancelled":
+                logger.info(f"⏹️ Chunk {chunk.index} retry cancelled")
+                return False, "Cancelled by user", None
+
             if attempt < 5:
                 logger.warning("Retry %s/5 for chunk %s", attempt, chunk.index)
                 if hasattr(engine, "release_memory"):
@@ -153,7 +165,7 @@ async def _process_single_chunk(
                 "❌ Chunk %s failed after 5 attempts, skipping...",
                 chunk.index
             )
-            return False, f"Failed after 5 retries", None
+            return False, "Failed after 5 retries", None
 
         # Recursive split fallback (artık kullanılmayacak çünkü 5 deneme yeterli)
         if not success and len(chunk.text_content) > 200:
@@ -238,13 +250,13 @@ async def process_chunks(
                 "status": "cancelled",
                 "progress": (db.query(Chunk)
                              .filter(Chunk.project_id == project.id,
-                                     Chunk.is_processed == True)
+                                     Chunk.is_processed)
                              .count() / max(total_chunks, 1)) * 100,
             })
             project.status = "cancelled"
             db.commit()
             return ChunkRunResult(
-                processed_count=db.query(Chunk).filter(Chunk.project_id == project.id, Chunk.is_processed == True).count(),
+                processed_count=db.query(Chunk).filter(Chunk.project_id == project.id, Chunk.is_processed).count(),
                 total_chunks=total_chunks,
                 failed_chunks=session_failed_chunks,
                 last_error=last_error_message or None,
@@ -255,8 +267,31 @@ async def process_chunks(
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
         success, err, path_out = await _process_single_chunk(
-            chunk, project, output_path, use_gpu, engine_provider
+            chunk, project, output_path, use_gpu, engine_provider, db
         )
+        
+        # Check for cancellation after chunk processing
+        db.refresh(project)
+        if project.is_cancelled or project.status == "cancelled":
+            logger.info(f"⏹️ Processing cancelled after chunk {chunk.index}")
+            await manager.broadcast({
+                "type": "status_update",
+                "project_id": project.id,
+                "status": "cancelled",
+                "progress": (db.query(Chunk)
+                             .filter(Chunk.project_id == project.id,
+                                     Chunk.is_processed)
+                             .count() / max(total_chunks, 1)) * 100,
+            })
+            project.status = "cancelled"
+            db.commit()
+            return ChunkRunResult(
+                processed_count=db.query(Chunk).filter(Chunk.project_id == project.id, Chunk.is_processed).count(),
+                total_chunks=total_chunks,
+                failed_chunks=session_failed_chunks,
+                last_error=last_error_message or None,
+                cancelled=True,
+            )
 
         if success:
             chunk.is_processed = True
@@ -264,7 +299,7 @@ async def process_chunks(
             db.commit()
 
             processed_count = db.query(Chunk).filter(
-                Chunk.project_id == project.id, Chunk.is_processed == True
+                Chunk.project_id == project.id, Chunk.is_processed
             ).count()
             progress = (processed_count / total_chunks) * 100
 
@@ -304,7 +339,7 @@ async def process_chunks(
                 engine.release_memory()
 
     processed_count = db.query(Chunk).filter(
-        Chunk.project_id == project.id, Chunk.is_processed == True
+        Chunk.project_id == project.id, Chunk.is_processed
     ).count()
 
     return ChunkRunResult(

@@ -605,15 +605,24 @@ def get_project_chapters(project_id: int, db: Session = Depends(get_db)) -> Dict
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    from ..services.chapter_service import ChapterService
-    chapter_service = ChapterService()
-    chapters = chapter_service.get_chapters(project_id, db)
-    
-    return {
-        "project_id": project_id,
-        "chapters": chapters,
-        "total": len(chapters)
-    }
+    try:
+        from ..services.chapter_service import ChapterService
+        chapter_service = ChapterService()
+        chapters = chapter_service.get_chapters(project_id, db)
+        
+        return {
+            "project_id": project_id,
+            "chapters": chapters if chapters else [],
+            "total": len(chapters) if chapters else 0
+        }
+    except Exception as e:
+        logger.error(f"Error getting chapters for project {project_id}: {e}")
+        # Return empty chapters list instead of raising error
+        return {
+            "project_id": project_id,
+            "chapters": [],
+            "total": 0
+        }
 
 
 @router.get("/projects/{project_id}/timelapse")
@@ -649,21 +658,6 @@ def get_project_timelapse(project_id: int, db: Session = Depends(get_db)) -> Dic
         "project_id": project_id,
         "timelapse": timelapse_text,
         "chapters_count": len(timestamps)
-    }
-    
-    chunks = db.query(Chunk).filter(Chunk.project_id == project_id).order_by(Chunk.index).all()
-    
-    return {
-        "project_id": project_id,
-        "chunks": [
-            {
-                "index": chunk.index,
-                "text": chunk.text_content,
-                "is_processed": chunk.is_processed,
-                "audio_path": chunk.chunk_audio_path if chunk.is_processed else None
-            }
-            for chunk in chunks
-        ]
     }
 
 
