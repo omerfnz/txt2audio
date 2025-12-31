@@ -33,6 +33,8 @@ export const ChapterSidebar = ({
             title: ch.title,
             order: ch.order,
             chunk_index: ch.chunk_index,
+            timestamp_formatted: ch.timestamp_formatted,
+            timestamp_seconds: ch.timestamp_seconds,
           }))
         );
       } catch (err) {

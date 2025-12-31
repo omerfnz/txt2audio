@@ -596,6 +596,21 @@ def get_project_chunks(project_id: int, db: Session = Depends(get_db)) -> Dict[s
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    
+    chunks = db.query(Chunk).filter(Chunk.project_id == project_id).order_by(Chunk.index).all()
+    
+    return {
+        "project_id": project_id,
+        "chunks": [
+            {
+                "index": chunk.index,
+                "text": chunk.text_content,
+                "is_processed": chunk.is_processed,
+                "audio_path": chunk.chunk_audio_path if chunk.is_processed else None
+            }
+            for chunk in chunks
+        ]
+    }
 
 
 @router.get("/projects/{project_id}/chapters")

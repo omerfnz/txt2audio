@@ -25,10 +25,30 @@ export const ChapterList = ({ chapters, onChapterClick, selectedChunkIndex }: Ch
           key={chapter.order}
           className={cn(
             'p-3 cursor-pointer transition-all duration-200 border-none',
-            'hover:bg-primary/10 hover:ring-1 hover:ring-primary/20',
+            'hover:bg-primary/10 hover:ring-1 hover:ring-primary/20 active:scale-[0.98]',
+            'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
             selectedChunkIndex === chapter.chunk_index && 'bg-primary/10 ring-2 ring-primary'
           )}
-          onClick={() => onChapterClick?.(chapter.chunk_index)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Chapter clicked:', chapter.title, 'chunk_index:', chapter.chunk_index);
+            if (onChapterClick) {
+              onChapterClick(chapter.chunk_index);
+            } else {
+              console.warn('onChapterClick is not defined');
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              if (onChapterClick) {
+                onChapterClick(chapter.chunk_index);
+              }
+            }
+          }}
         >
           <div className="flex items-center gap-2">
             <BookOpen className="w-4 h-4 text-primary shrink-0" />

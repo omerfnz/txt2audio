@@ -101,14 +101,25 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
     };
 
     const handleChapterClick = (chunkIndex: number) => {
-        // Scroll to chunk in the list
-        const chunkElement = document.getElementById(`chunk-${chunkIndex}`);
-        if (chunkElement) {
-            chunkElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
+        // Scroll to chunk in the list (wait a bit for DOM to be ready)
+        setTimeout(() => {
+            const chunkElement = document.getElementById(`chunk-${chunkIndex}`);
+            if (chunkElement) {
+                chunkElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Highlight the chunk briefly
+                chunkElement.classList.add('ring-2', 'ring-primary');
+                setTimeout(() => {
+                    chunkElement.classList.remove('ring-2', 'ring-primary');
+                }, 2000);
+            }
+        }, 100);
+        
         // Also play the chunk if it's processed
         if (chunks[chunkIndex]?.isProcessed) {
             handlePlayChunk(chunkIndex);
+        } else {
+            // Show a message if chunk is not processed yet
+            console.log(`Chunk ${chunkIndex} is not processed yet`);
         }
     };
 
