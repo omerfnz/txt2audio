@@ -154,16 +154,27 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
                 if (!response.ok) {
                     throw new Error('Failed to download timelapse');
                 }
+                
+                // Get filename from Content-Disposition header, fallback to project name
+                const contentDisposition = response.headers.get('Content-Disposition');
+                let filename = `timelapse_project_${projectId}.txt`;
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+                    if (filenameMatch) {
+                        filename = filenameMatch[1];
+                    }
+                }
+                
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `timelapse_project_${projectId}.txt`;
+                a.download = filename;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
-                alert('Timelapse dosyası indirildi!');
+                alert(`Timelapse dosyası indirildi: ${filename}`);
             } else {
                 // Copy to clipboard
                 const response = await getTimelapse(projectId);

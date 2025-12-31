@@ -728,11 +728,17 @@ def get_project_timelapse(project_id: int, download: bool = False, db: Session =
     
     # If download requested, return as file download
     if download:
+        # Use project name for filename, sanitize it for filesystem
+        import re
+        safe_project_name = re.sub(r'[^\w\s-]', '', project.name or f"project_{project_id}")
+        safe_project_name = re.sub(r'[-\s]+', '_', safe_project_name).strip('_')
+        filename = f"{safe_project_name}_timelapse.txt"
+        
         return Response(
             content=timelapse_text,
             media_type="text/plain",
             headers={
-                "Content-Disposition": f'attachment; filename="timelapse_project_{project_id}.txt"'
+                "Content-Disposition": f'attachment; filename="{filename}"'
             }
         )
     
