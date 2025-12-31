@@ -35,6 +35,8 @@ class ChapterDetector:
         self.roman_pattern = r'^M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$'
         
         # Chapter prefixes (case-insensitive)
+        # Note: Only "Chapter" is used for word-numbered chapters to avoid false positives
+        # "Part", "Book", etc. are book sections, not chapters
         self.prefixes = ['Chapter', 'Part', 'Section', 'Book', 'Act', 'Scene']
     
     def roman_to_int(self, roman: str) -> int:
@@ -65,9 +67,47 @@ class ChapterDetector:
             List of detected chapters with their positions and metadata
         """
         chapters = []
-        lines = text.split('\n')
+        # Use finditer to search across entire text (not just line by line)
+        # This allows finding "Chapter One" even when it's in the middle of a line
         current_position = 0
         chapter_order = 1
+        
+        # First, search for word-numbered chapters ("Chapter One", "Chapter Two", etc.)
+        # across the entire text
+        # Only accept "Chapter" prefix for word-numbered chapters to avoid false positives
+        # like "Part One", "Book One" which are book sections, not chapters
+        word_to_num = {
+            'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+            'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
+            'eleven': 11, 'twelve': 12, 'thirteen': 13, 'fourteen': 14, 'fifteen': 15,
+            'sixteen': 16, 'seventeen': 17, 'eighteen': 18, 'nineteen': 19, 'twenty': 20,
+            'thirty': 30, 'forty': 40, 'fifty': 50, 'sixty': 60, 'seventy': 70,
+            'eighty': 80, 'ninety': 90, 'hundred': 100, 'thousand': 1000
+        }
+        
+        # Only search for "Chapter" prefix with word numbers
+        pattern = r'\b(Chapter)\s+(One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|Eleven|Twelve|Thirteen|Fourteen|Fifteen|Sixteen|Seventeen|Eighteen|Nineteen|Twenty|Thirty|Forty|Fifty|Sixty|Seventy|Eighty|Ninety|Hundred|Thousand)(?:\s|$|\.)'
+        
+        for match in re.finditer(pattern, text, re.IGNORECASE):
+            found_prefix = match.group(1)
+            word_number = match.group(2).lower()
+            order = word_to_num.get(word_number, 0)
+            if order > 0:
+                chapter_pos = match.start()
+                chapter_title = match.group(0).strip()
+                
+                chapters.append(ChapterInfo(
+                    title=chapter_title,
+                    chapter_type="numbered",
+                    order=order,
+                    position=chapter_pos,
+                    prefix=found_prefix
+                ))
+                chapter_order = max(chapter_order, order) + 1
+        
+        # Also check line by line for other formats (Roman numerals, numbered, etc.)
+        lines = text.split('\n')
+        current_position = 0
         
         for line_num, line in enumerate(lines):
             line_stripped = line.strip()
@@ -140,78 +180,33 @@ class ChapterDetector:
                     chapter_order = max(chapter_order, order) + 1
                     break
             
-            # Check for prefixed word numbers: "Chapter Two", "Part Three", etc.
-            # This handles normalized Roman numerals (e.g., "II." -> "Chapter Two")
-            # Also check within the line (not just at start) for cases like "text Chapter One more text"
-            for prefix in self.prefixes:
-                # Pattern: "Chapter Two", "Part Three", etc. (case-insensitive)
-                # Match words like "One", "Two", "Three", "Four", etc.
-                # First try at line start
-                prefixed_word_match = re.match(
-                    rf'^({re.escape(prefix)})\s+(One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|Eleven|Twelve|Thirteen|Fourteen|Fifteen|Sixteen|Seventeen|Eighteen|Nineteen|Twenty|Thirty|Forty|Fifty|Sixty|Seventy|Eighty|Ninety|Hundred|Thousand)(?:\s|$|\.)',
-                    line_stripped,
-                    re.IGNORECASE
-                )
-                # If not at start, search within the line
-                if not prefixed_word_match:
-                    prefixed_word_match = re.search(
-                        rf'\b({re.escape(prefix)})\s+(One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|Eleven|Twelve|Thirteen|Fourteen|Fifteen|Sixteen|Seventeen|Eighteen|Nineteen|Twenty|Thirty|Forty|Fifty|Sixty|Seventy|Eighty|Ninety|Hundred|Thousand)(?:\s|$|\.)',
-                        line_stripped,
-                        re.IGNORECASE
-                    )
-                
-                if prefixed_word_match:
-                    found_prefix = prefixed_word_match.group(1)
-                    word_number = prefixed_word_match.group(2).lower()
-                    # Convert word to number
-                    word_to_num = {
-                        'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
-                        'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
-                        'eleven': 11, 'twelve': 12, 'thirteen': 13, 'fourteen': 14, 'fifteen': 15,
-                        'sixteen': 16, 'seventeen': 17, 'eighteen': 18, 'nineteen': 19, 'twenty': 20,
-                        'thirty': 30, 'forty': 40, 'fifty': 50, 'sixty': 60, 'seventy': 70,
-                        'eighty': 80, 'ninety': 90, 'hundred': 100, 'thousand': 1000
-                    }
-                    order = word_to_num.get(word_number, 0)
-                    if order > 0:
-                        # Calculate position: if match is at start, use current_position
-                        # Otherwise, find the position of the match within the line
-                        if hasattr(prefixed_word_match, 'start') and prefixed_word_match.start() == 0:
-                            chapter_pos = current_position
-                        elif hasattr(prefixed_word_match, 'start'):
-                            chapter_pos = current_position + prefixed_word_match.start()
-                        else:
-                            chapter_pos = current_position
-                        
-                        # Extract the chapter title (the matched part)
-                        chapter_title = prefixed_word_match.group(0).strip()
-                        
-                        chapters.append(ChapterInfo(
-                            title=chapter_title,
-                            chapter_type="numbered",
-                            order=order,
-                            position=chapter_pos,
-                            prefix=found_prefix
-                        ))
-                        chapter_order = max(chapter_order, order) + 1
-                    break
+            # Skip word-numbered chapters here - already handled above with finditer
+            # This section only handles Roman numerals and numeric chapters
             
             current_position += len(line) + 1  # +1 for newline
         
+        # Remove duplicates (same position)
+        seen_positions = set()
+        unique_chapters = []
+        for chapter in chapters:
+            if chapter.position not in seen_positions:
+                seen_positions.add(chapter.position)
+                unique_chapters.append(chapter)
+        
         # Sort by position to maintain text order
-        chapters.sort(key=lambda x: x.position)
+        unique_chapters.sort(key=lambda x: x.position)
         
         # Re-number chapters sequentially if needed (in case of gaps)
         # This ensures chapter_order is always 1, 2, 3, 4...
-        if chapters:
-            sorted_by_order = sorted(chapters, key=lambda x: x.order)
+        if unique_chapters:
+            sorted_by_order = sorted(unique_chapters, key=lambda x: x.order)
             order_map = {}
             for idx, chapter in enumerate(sorted_by_order, start=1):
                 order_map[(chapter.position, chapter.order)] = idx
             
             # Update order for all chapters
-            for chapter in chapters:
+            for chapter in unique_chapters:
                 new_order = order_map.get((chapter.position, chapter.order), chapter.order)
                 chapter.order = new_order
         
-        return chapters
+        return unique_chapters

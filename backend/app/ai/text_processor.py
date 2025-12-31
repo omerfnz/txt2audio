@@ -314,7 +314,8 @@ class TextProcessor:
         """
         Chapter-aware chunking: Chapter başlangıçlarını chunk başlangıcı olarak zorla.
         
-        Chapter başlıklarını içeren cümleleri bulur ve bunları chunk başlangıcı yapar.
+        Metni chapter pozisyonlarına göre böler, her bölümü ayrı ayrı chunk'lara böler.
+        Bu şekilde chapter başlıkları her zaman chunk başlangıcında olur.
         
         Args:
             text: Normalize edilmiş metin
@@ -330,127 +331,88 @@ class TextProcessor:
             # Chapter yoksa normal chunking yap
             return self._normal_chunking(text, max_chars, min_chars, nlp)
         
-        # Chapter pozisyonlarını sıralı dict olarak sakla (hızlı lookup için)
-        # Key: position, Value: chapter info
-        chapter_map = {ch.position: ch for ch in chapters}
-        chapter_positions = sorted(chapter_map.keys())
+        # Chapter pozisyonlarını sırala
+        chapter_positions = sorted(set([ch.position for ch in chapters]))
         
-        # Metni cümlelere böl
-        doc = nlp(text)
-        sentences = []
-        sentence_positions = []
-        current_pos = 0
+        all_chunks: List[str] = []
+        last_pos = 0
         
-        for sent in doc.sents:
-            sent_text = sent.text.strip()
-            if sent_text:
-                # Cümlenin metindeki gerçek pozisyonunu bul
-                pos = text.find(sent_text, current_pos)
-                if pos == -1:
-                    pos = current_pos
-                sentences.append(sent_text)
-                sentence_positions.append(pos)
-                current_pos = pos + len(sent_text)
-        
-        if not sentences:
-            return [""]
-        
-        chunks: List[str] = []
-        current_chunk = ""
-        sentence_idx = 0
-        
-        while sentence_idx < len(sentences):
-            sentence = sentences[sentence_idx]
-            sent_pos = sentence_positions[sentence_idx]
+        # Metni chapter pozisyonlarına göre böl
+        for chapter_pos in chapter_positions:
+            # Chapter'dan önceki bölümü işle
+            if chapter_pos > last_pos:
+                section_text = text[last_pos:chapter_pos].strip()
+                if section_text:
+                    # Bu bölümü normal chunking ile işle
+                    section_chunks = self._normal_chunking(section_text, max_chars, min_chars, nlp)
+                    all_chunks.extend(section_chunks)
             
-            # Bu cümle bir chapter başlangıcı mı kontrol et
-            is_chapter_start = False
-            
-            for chapter_pos in chapter_positions:
-                # Chapter pozisyonu bu cümlenin içinde mi? (biraz tolerans ver)
-                # Chapter pozisyonu cümlenin başlangıcına yakın olmalı (ilk 50 karakter içinde)
-                if chapter_pos >= sent_pos and chapter_pos < sent_pos + min(50, len(sentence)):
-                    is_chapter_start = True
+            # Bu chapter'dan sonraki chapter'a kadar olan bölümü bul
+            next_chapter_pos = None
+            for ch in chapters:
+                if ch.position > chapter_pos:
+                    next_chapter_pos = ch.position
                     break
             
-            if is_chapter_start:
-                # Chapter başlangıcı - mevcut chunk'ı kaydet ve yeni chunk başlat
-                if current_chunk:
-                    chunks.append(self.validate_chunk(current_chunk))
-                    current_chunk = ""
-                
-                # Chapter cümlesini yeni chunk olarak başlat
-                current_chunk = sentence
-                sentence_idx += 1
-                
-                # Chapter cümlesinden sonraki cümleleri ekle (max_chars'a kadar)
-                while sentence_idx < len(sentences):
-                    next_sentence = sentences[sentence_idx]
-                    next_sent_pos = sentence_positions[sentence_idx]
-                    
-                    # Bir sonraki chapter'a geldik mi kontrol et
-                    next_is_chapter = False
-                    for chapter_pos in chapter_positions:
-                        if chapter_pos >= next_sent_pos and chapter_pos < next_sent_pos + min(50, len(next_sentence)):
-                            next_is_chapter = True
-                            break
-                    
-                    if next_is_chapter:
-                        break
-                    
-                    # Cümleyi eklemeyi dene
-                    separator = " " if current_chunk else ""
-                    potential_chunk = current_chunk + separator + next_sentence
-                    
-                    if len(potential_chunk) <= max_chars:
-                        current_chunk = potential_chunk
-                        sentence_idx += 1
-                    else:
-                        # Sığmıyor, chunk'ı kaydet ve yeni chunk başlat
-                        chunks.append(self.validate_chunk(current_chunk))
-                        current_chunk = next_sentence
-                        sentence_idx += 1
-                        break
+            if next_chapter_pos:
+                chapter_section = text[chapter_pos:next_chapter_pos].strip()
             else:
-                # Normal chunking mantığı
-                if len(sentence) > max_chars:
-                    # Önce eldeki chunk'ı kaydet
-                    if current_chunk:
-                        chunks.append(self.validate_chunk(current_chunk))
-                        current_chunk = ""
-                    
-                    # Cümleyi alt parçalara böl
-                    sub_chunks = self._smart_split(sentence, max_chars)
-                    
-                    # Alt parçaları ekle
-                    if sub_chunks:
-                        chunks.extend([self.validate_chunk(sc) for sc in sub_chunks[:-1]])
-                        current_chunk = sub_chunks[-1]
+                chapter_section = text[chapter_pos:].strip()
+            
+            if chapter_section:
+                # Chapter başlığını bul (ilk satır veya ilk cümle)
+                lines = chapter_section.split('\n', 1)
+                if len(lines) > 1:
+                    chapter_title = lines[0].strip()
+                    chapter_content = lines[1].strip()
                 else:
-                    # Cümleyi mevcut chunk'a eklemeyi dene
-                    separator = " " if current_chunk else ""
-                    potential_chunk = current_chunk + separator + sentence
-                    
-                    if len(potential_chunk) <= max_chars:
-                        current_chunk = potential_chunk
+                    # Cümle bazlı bul
+                    doc = nlp(chapter_section)
+                    sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
+                    if sentences:
+                        chapter_title = sentences[0]
+                        chapter_content = ' '.join(sentences[1:]) if len(sentences) > 1 else ""
                     else:
-                        # Sığmıyor, mevcut chunk'ı kaydet
-                        if current_chunk:
-                            chunks.append(self.validate_chunk(current_chunk))
-                        current_chunk = sentence
+                        # Fallback: ilk 100 karakter
+                        chapter_title = chapter_section[:100].strip()
+                        chapter_content = chapter_section[100:].strip()
                 
-                sentence_idx += 1
+                # İlk chunk: chapter başlığı (veya başlık + biraz içerik)
+                if chapter_title:
+                    first_chunk_text = chapter_title
+                    if chapter_content:
+                        # Başlık + içerik sığıyorsa birleştir
+                        potential_first = chapter_title + " " + chapter_content[:max_chars - len(chapter_title) - 1]
+                        if len(potential_first) <= max_chars:
+                            first_chunk_text = potential_first
+                            chapter_content = chapter_content[max_chars - len(chapter_title) - 1:].strip()
+                    
+                    all_chunks.append(self.validate_chunk(first_chunk_text))
+                    
+                    # Kalan içeriği normal chunking ile işle
+                    if chapter_content:
+                        content_chunks = self._normal_chunking(chapter_content, max_chars, min_chars, nlp)
+                        all_chunks.extend(content_chunks)
+                else:
+                    # Başlık bulunamadı, tüm bölümü normal chunking ile işle
+                    section_chunks = self._normal_chunking(chapter_section, max_chars, min_chars, nlp)
+                    all_chunks.extend(section_chunks)
+            
+            last_pos = next_chapter_pos if next_chapter_pos else len(text)
         
-        # Kalan son parçayı ekle
-        if current_chunk:
-            chunks.append(self.validate_chunk(current_chunk))
+        # Son kalan metni işle
+        if last_pos < len(text):
+            remaining_text = text[last_pos:].strip()
+            if remaining_text:
+                remaining_chunks = self._normal_chunking(remaining_text, max_chars, min_chars, nlp)
+                all_chunks.extend(remaining_chunks)
         
         # Boş chunkları temizle
-        chunks = [c for c in chunks if c]
+        all_chunks = [c for c in all_chunks if c]
         
-        # Problematic chunk'ları tespit et ve daha küçük parçalara böl
+        # Problematic chunk'ları kontrol et
         final_chunks = []
-        for chunk in chunks:
+        for chunk in all_chunks:
             if self.is_chunk_problematic(chunk) and len(chunk) > 100:
                 print(f"⚠ Problematic chunk detected (len={len(chunk)}), splitting smaller...")
                 smaller_max = max_chars // 2
