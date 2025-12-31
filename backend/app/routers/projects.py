@@ -642,7 +642,12 @@ def get_project_chapters(project_id: int, db: Session = Depends(get_db)) -> Dict
 
 @router.post("/projects/{project_id}/recalculate-timestamps")
 def recalculate_chapter_timestamps(project_id: int, db: Session = Depends(get_db)) -> Dict[str, Any]:
-    """Recalculate chapter timestamps for a completed project"""
+    """
+    Recalculate chapter timestamps for a completed project.
+    
+    NOTE: This only works if chunk audio files still exist.
+    After merge, chunk files are deleted and timestamps cannot be recalculated accurately.
+    """
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -654,6 +659,21 @@ def recalculate_chapter_timestamps(project_id: int, db: Session = Depends(get_db
         )
     
     from ..services.chapter_service import ChapterService
+    from ..db.models import Chunk
+    
+    # Check if chunk files exist
+    chunks = db.query(Chunk).filter(Chunk.project_id == project_id).all()
+    chunks_with_audio = sum(
+        1 for c in chunks 
+        if c.chunk_audio_path and os.path.exists(c.chunk_audio_path)
+    )
+    
+    if chunks_with_audio == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot recalculate timestamps: Chunk audio files have been deleted after merge. "
+                   "Timestamps can only be calculated during project completion when chunk files are available."
+        )
     
     chapter_service = ChapterService()
     try:
@@ -663,7 +683,7 @@ def recalculate_chapter_timestamps(project_id: int, db: Session = Depends(get_db
             return {
                 "project_id": project_id,
                 "success": False,
-                "message": "No chapters found to recalculate",
+                "message": "No chapters found or timestamps could not be calculated",
                 "chapters_count": 0
             }
         

@@ -136,9 +136,14 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
             } else {
                 alert(`⚠️ ${response.message}`);
             }
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Failed to recalculate timestamps:', error);
-            alert('Timestamp\'leri yeniden hesaplama başarısız. Lütfen tekrar deneyin.');
+            const errorMessage = error instanceof Error ? error.message : 'Bilinmeyen hata';
+            if (errorMessage.includes('deleted after merge') || errorMessage.includes('Chunk audio files')) {
+                alert('⚠️ Timestamp\'ler yeniden hesaplanamıyor.\n\nChunk dosyaları merge işleminden sonra silinmiş. Timestamp\'ler sadece proje tamamlanırken hesaplanabilir.');
+            } else {
+                alert(`Timestamp\'leri yeniden hesaplama başarısız: ${errorMessage}`);
+            }
         } finally {
             setRecalculating(false);
         }

@@ -117,8 +117,8 @@ class ChapterService:
         Reads audio durations of chunks and sums them up to find
         where each chapter starts in the final audio.
         
-        If chunk files are missing (deleted after merge), attempts to
-        calculate from final audio file using chunk text lengths as weights.
+        NOTE: Timestamps can only be calculated when chunk audio files are available.
+        After merge, chunk files are deleted and timestamps cannot be recalculated.
         
         Args:
             project_id: Project ID
@@ -158,17 +158,21 @@ class ChapterService:
         # Sort by order
         chapter_chunks.sort(key=lambda x: x[2])  # Sort by chapter_order
         
-        # Check if chunk files exist
+        # Check if chunk files exist - if not, we cannot calculate accurate timestamps
+        # Timestamps can only be calculated when chunk files are still available (during project completion)
         chunks_with_audio = sum(
             1 for c in chunks 
             if c.chunk_audio_path and os.path.exists(c.chunk_audio_path)
         )
         
-        use_final_audio = chunks_with_audio == 0 and project.audio_path and os.path.exists(project.audio_path)
-        
-        if use_final_audio:
-            logger.info(f"Chunk files not found, using final audio file for project {project_id}")
-            return self._calculate_from_final_audio(project, chunks, chapter_chunks)
+        if chunks_with_audio == 0:
+            logger.warning(
+                f"Cannot calculate timestamps for project {project_id}: "
+                f"Chunk audio files have been deleted after merge. "
+                f"Timestamps are only calculated during project completion when chunk files are available."
+            )
+            # Return empty list - timestamps cannot be calculated accurately after chunk files are deleted
+            return []
         
         # Calculate cumulative durations from chunk files
         timestamps = []
@@ -236,79 +240,6 @@ class ChapterService:
         )
         
         return timestamps
-    
-    def _calculate_from_final_audio(
-        self,
-        project,
-        chunks: List[Chunk],
-        chapter_chunks: List[tuple]
-    ) -> List[ChapterTimestamp]:
-        """
-        Calculate timestamps from final audio file using text length as weight.
-        
-        This is a fallback when chunk files are deleted after merge.
-        """
-        try:
-            final_audio = AudioSegment.from_file(project.audio_path)
-            total_duration_ms = len(final_audio)
-            total_text_length = sum(len(c.text_content or "") for c in chunks)
-            
-            if total_text_length == 0:
-                logger.warning("Total text length is 0, cannot calculate timestamps")
-                return []
-            
-            timestamps = []
-            cumulative_text_length = 0
-            
-            for idx, (chunk_index, chapter_title, chapter_order) in enumerate(chapter_chunks):
-                if idx == 0:
-                    timestamp_seconds = 0.0
-                    timestamp_formatted = "0:00"
-                else:
-                    # Sum text lengths from previous chapter to this chapter
-                    prev_chunk_index = chapter_chunks[idx - 1][0]
-                    for i in range(prev_chunk_index, chunk_index):
-                        chunk = next((c for c in chunks if c.index == i), None)
-                        if chunk:
-                            cumulative_text_length += len(chunk.text_content or "")
-                    
-                    # Calculate timestamp based on text length proportion
-                    proportion = cumulative_text_length / total_text_length
-                    timestamp_seconds = (total_duration_ms / 1000.0) * proportion
-                    
-                    # Format as HH:MM:SS or M:SS
-                    hours = int(timestamp_seconds // 3600)
-                    minutes = int((timestamp_seconds % 3600) // 60)
-                    seconds = int(timestamp_seconds % 60)
-                    
-                    if hours > 0:
-                        timestamp_formatted = f"{hours}:{minutes:02d}:{seconds:02d}"
-                    else:
-                        timestamp_formatted = f"{minutes}:{seconds:02d}"
-                
-                timestamps.append(ChapterTimestamp(
-                    title=chapter_title,
-                    order=chapter_order,
-                    timestamp_seconds=timestamp_seconds,
-                    timestamp_formatted=timestamp_formatted,
-                    chunk_index=chunk_index
-                ))
-                
-                logger.debug(
-                    f"Chapter '{chapter_title}' estimated at {timestamp_formatted} "
-                    f"(from final audio, text proportion: {cumulative_text_length}/{total_text_length})"
-                )
-            
-            logger.info(
-                f"Calculated timestamps from final audio for {len(timestamps)} chapters "
-                f"in project {project.id}"
-            )
-            
-            return timestamps
-            
-        except Exception as e:
-            logger.error(f"Failed to calculate timestamps from final audio: {e}")
-            return []
     
     def get_chapters(
         self,
