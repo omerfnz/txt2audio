@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Cpu, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getReferenceVoices, getMusicList, getApiBase } from '../api/client';
+import { getReferenceVoices, getMusicList, getApiBase, getTTSPresets } from '../api/client';
 import { DropZone } from './upload/DropZone';
 import { VoiceSelector } from './upload/VoiceSelector';
 import { PresetSelector } from './upload/PresetSelector';
@@ -59,11 +59,11 @@ export function FileUpload({ onUpload }: FileUploadProps) {
 
     // Advanced Settings State
     const [language, setLanguage] = useState('en');
-    const [speed, setSpeed] = useState(0.9);
-    const [temperature, setTemperature] = useState(0.75);
+    const [speed, setSpeed] = useState(0.95); // Default to en_nonfiction speed
+    const [temperature, setTemperature] = useState(0.35); // Default to en_nonfiction temperature
     const [topK, setTopK] = useState(50);
-    const [topP, setTopP] = useState(0.85);
-    const [repetitionPenalty, setRepetitionPenalty] = useState(2.0);
+    const [topP, setTopP] = useState(0.88); // Default to en_nonfiction top_p
+    const [repetitionPenalty, setRepetitionPenalty] = useState(2.5); // Default to en_nonfiction repetition_penalty
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Background music
@@ -71,6 +71,29 @@ export function FileUpload({ onUpload }: FileUploadProps) {
     const [bgMusicFile, setBgMusicFile] = useState<string>('');
     const [bgMusicVolume, setBgMusicVolume] = useState<number>(10); // UI 0-100
     const [musicOptions, setMusicOptions] = useState<Array<{ name: string; filename: string; path: string }>>([]);
+
+    // Load presets on mount and initialize state with default preset values
+    useEffect(() => {
+        const loadPresets = async () => {
+            try {
+                const data = await getTTSPresets();
+                if (data && data.presets) {
+                    // Initialize state with selected preset values
+                    const preset = data.presets[selectedPresetId] as any;
+                    if (preset && preset.parameters) {
+                        setTemperature(preset.parameters.temperature);
+                        setTopP(preset.parameters.top_p);
+                        setRepetitionPenalty(preset.parameters.repetition_penalty);
+                        setSpeed(preset.parameters.speed);
+                        console.log('Initialized with preset values:', preset.parameters);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to load presets:', err);
+            }
+        };
+        loadPresets();
+    }, []); // Only run once on mount
 
     // Load reference voices and music on mount
     useEffect(() => {

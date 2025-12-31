@@ -152,9 +152,12 @@ async def create_project(
     use a preset configuration or be manually specified.
     """
     try:
+        logger.info(f"Creating project: name={name}, preset_id={preset_id}, text_file={text_file.filename}")
+        
         # 1. Get preset configuration
         preset = get_preset(preset_id)
         if not preset:
+            logger.error(f"Invalid preset_id: {preset_id}")
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid preset_id: {preset_id}"
@@ -186,6 +189,7 @@ async def create_project(
             final_speed
         )
         if not is_valid:
+            logger.error(f"Parameter validation failed: {error_msg}")
             raise HTTPException(status_code=400, detail=error_msg)
         
         # 5. Save text file
@@ -201,11 +205,18 @@ async def create_project(
                 shutil.copyfileobj(voice_file.file, buffer)
             voice_path = str(voice_path)
         elif reference_voice_path:
-            voice_path = settings.REFERENCE_VOICES_DIR / reference_voice_path
+            logger.debug(f"Using reference voice path: {reference_voice_path}")
+            # reference_voice_path can be a full path or relative path
+            if os.path.isabs(reference_voice_path):
+                voice_path = Path(reference_voice_path)
+            else:
+                voice_path = settings.REFERENCE_VOICES_DIR / reference_voice_path
+            
             if not voice_path.exists():
+                logger.error(f"Reference voice not found: {voice_path} (original: {reference_voice_path})")
                 raise HTTPException(
                     status_code=400,
-                    detail="Reference voice not found"
+                    detail=f"Reference voice not found: {reference_voice_path}"
                 )
             voice_path = str(voice_path)
         else:
@@ -346,11 +357,12 @@ async def create_project(
             },
             "message": "Project created and text chunked successfully."
         }
-    except HTTPException:
+    except HTTPException as he:
+        logger.error(f"HTTPException creating project: {he.detail}")
         raise
     except Exception as e:
-        print(f"Error creating project: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception(f"Unexpected error creating project: {e}")
+        raise HTTPException(status_code=500, detail=f"Error creating project: {str(e)}")
 
 @router.post("/projects/{project_id}/process")
 async def process_project(
