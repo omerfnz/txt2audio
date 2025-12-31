@@ -293,6 +293,8 @@ export interface ChaptersResponse {
     title: string;
     order: number;
     chunk_index: number;
+    timestamp_formatted?: string;
+    timestamp_seconds?: number;
   }>;
   total: number;
 }

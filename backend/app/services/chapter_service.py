@@ -214,7 +214,7 @@ class ChapterService:
             db: Database session
             
         Returns:
-            List of chapter dictionaries with title, order, and optional timestamp
+            List of chapter dictionaries with title, order, chunk_index, and optional timestamps
         """
         chunks = db.query(Chunk).filter(
             Chunk.project_id == project_id,
@@ -222,12 +222,34 @@ class ChapterService:
             Chunk.chapter_order.isnot(None)
         ).order_by(Chunk.chapter_order, Chunk.index).all()
         
+        # Check if project is completed to calculate timestamps
+        from ..db.models import Project
+        project = db.query(Project).filter(Project.id == project_id).first()
+        timestamps = None
+        if project and project.status == "completed":
+            try:
+                timestamps = self.calculate_chapter_timestamps(project_id, db)
+            except Exception as e:
+                logger.warning(f"Could not calculate timestamps for project {project_id}: {e}")
+        
         chapters = []
         for chunk in chunks:
-            chapters.append({
+            chapter_data = {
                 "title": chunk.chapter_title,
                 "order": chunk.chapter_order,
                 "chunk_index": chunk.index
-            })
+            }
+            
+            # Add timestamps if available
+            if timestamps:
+                matching_timestamp = next(
+                    (ts for ts in timestamps if ts.chunk_index == chunk.index),
+                    None
+                )
+                if matching_timestamp:
+                    chapter_data["timestamp_formatted"] = matching_timestamp.timestamp_formatted
+                    chapter_data["timestamp_seconds"] = matching_timestamp.timestamp_seconds
+            
+            chapters.append(chapter_data)
         
         return chapters
