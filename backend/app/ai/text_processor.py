@@ -94,7 +94,8 @@ class TextProcessor:
     
     def _smart_split(self, text: str, max_chars: int) -> List[str]:
         """
-        Uzun bir metni/cümleyi anlamlı yerlerden (noktalama, bağlaç) bölmeye çalışır.
+        Uzun bir metni/cümleyi SADECE noktalama işaretlerinde böler.
+        Kelime sınırlarında değil, sadece noktalama işaretlerinde böl.
         """
         if len(text) <= max_chars:
             return [text]
@@ -102,61 +103,49 @@ class TextProcessor:
         chunks = []
         current_text = text
         
-        # Bağlaç regex'i (Anlamlı bölme noktaları için)
-        # and, but, or, nor, for, yet, so, because, which, that, who, when, where
-        # although, though, while, unless, since, if (Edebi metinler için eklendi)
-        conjunctions = r'\s+(and|but|or|nor|for|yet|so|because|which|that|who|when|where|although|though|while|unless|since|if)\s'
-        
         while len(current_text) > max_chars:
-            # Kesme noktası bul
-            # Öncelik sırası: 
-            # 1. Alt cümle bitişleri (;:)
-            # 2. Virgüller (,)
-            # 3. Bağlaçlar (and, but, which...)
-            # 4. Boşluk ( )
-            
-            # Max limit içindeki son geçerli konumu bulmaya çalışacağız
+            # Max limit içindeki son noktalama işaretini bul
             search_area = current_text[:max_chars]
             
-            # Regex ile en uygun bölme noktasını ara (sondan başa doğru)
+            # Öncelik sırası: Noktalama işaretleri (sondan başa doğru)
+            # 1. Cümle bitişleri: . ! ? (nokta, ünlem, soru işareti)
+            # 2. Alt cümle bitişleri: ; : (noktalı virgül, iki nokta)
+            # 3. Virgül: ,
+            # 4. Hiçbiri yoksa: Mecbur kelime sınırında böl (ama bu çok nadir olmalı)
+            
             split_index = -1
             
-            # 1. Noktalı virgül veya iki nokta
-            split_match = re.search(r'[;:]\s', search_area[::-1])
-            if split_match:
-                split_index = len(search_area) - split_match.end() + 1
+            # 1. Cümle bitişleri: . ! ? (en öncelikli)
+            sentence_end_match = re.search(r'[.!?]\s+', search_area[::-1])
+            if sentence_end_match:
+                # Noktalama işaretinden SONRA böl (noktalama ilk chunk'ta kalsın)
+                split_index = len(search_area) - sentence_end_match.start()
             else:
-                # 2. Virgül dene
-                comma_match = re.search(r',\s', search_area[::-1])
-                if comma_match:
-                    split_index = len(search_area) - comma_match.end() + 1
+                # 2. Alt cümle bitişleri: ; :
+                semicolon_match = re.search(r'[;:]\s+', search_area[::-1])
+                if semicolon_match:
+                    split_index = len(search_area) - semicolon_match.start()
                 else:
-                    # 3. Bağlaç dene (En azından cümlenin ortasında rastgele kesmeyelim)
-                    # search_area üzerinde normal arama yapıp en sonuncuyu bulalım (reverse regex zor olabilir)
-                    # Son 100 karakter içinde arayalım ki çok geriye gitmeyelim
-                    window_offset = len(search_area) - min(len(search_area), 150)
-                    search_window = search_area[window_offset:]
-                    conj_matches = list(re.finditer(conjunctions, search_window))
-                    
-                    if conj_matches:
-                        # En son eşleşmeyi al
-                        last_match = conj_matches[-1]
-                        # search_window içindeki pozisyonunu search_area'ya uyarla
-                        # Bağlacın BAŞLADIĞI yerden böl (bağlaç yeni chunk'ta kalsın, daha doğal bir akış sağlar)
-                        split_index = window_offset + last_match.start()
-                    else:
-                        # 4. Boşluk dene (mecburiyet)
-                        space_match = re.search(r'\s', search_area[::-1])
-                        if space_match:
-                            split_index = len(search_area) - space_match.end()
+                    # 3. Virgül: ,
+                    comma_match = re.search(r',\s+', search_area[::-1])
+                    if comma_match:
+                        split_index = len(search_area) - comma_match.start()
             
             if split_index > 0:
                 chunks.append(current_text[:split_index].strip())
                 current_text = current_text[split_index:].strip()
             else:
-                # Hiçbir bölme noktası bulamadık
-                chunks.append(current_text[:max_chars].strip())
-                current_text = current_text[max_chars:].strip()
+                # Hiçbir noktalama işareti bulamadık - mecbur kelime sınırında böl
+                # Son boşluğu bul (kelime ortasından bölmemek için)
+                last_space = search_area.rfind(' ')
+                if last_space > max_chars * 0.5:  # En azından yarısından sonra böl
+                    split_index = last_space
+                    chunks.append(current_text[:split_index].strip())
+                    current_text = current_text[split_index:].strip()
+                else:
+                    # Gerçekten hiç boşluk yok (çok uzun kelime), mecbur böl
+                    chunks.append(current_text[:max_chars].strip())
+                    current_text = current_text[max_chars:].strip()
                 
         if current_text:
             chunks.append(current_text)
@@ -379,6 +368,11 @@ class TextProcessor:
                 
                 # İlk chunk: chapter başlığı (veya başlık + biraz içerik)
                 if chapter_title:
+                    # Chapter başlığının sonuna nokta ekle (eğer yoksa)
+                    # Bu TTS'in nefes alması için bir duraklama sağlar
+                    if not chapter_title.rstrip().endswith(('.', '!', '?', ':', ';')):
+                        chapter_title = chapter_title.rstrip() + "."
+                    
                     first_chunk_text = chapter_title
                     if chapter_content:
                         # Başlık + içerik sığıyorsa birleştir
