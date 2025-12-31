@@ -314,19 +314,18 @@ async def create_project(
         with open(text_path, "r", encoding="utf-8") as f:
             full_text = f.read()
 
-        # Detect chapters BEFORE normalization
-        # Chapter detector can detect "II." format, but after normalization
-        # it becomes "Chapter Two" which detector can't recognize
-        detected_chapters = text_processor.detect_chapters(full_text)
-        
-        # Normalize text after chapter detection
+        # Normalize text first
         normalized_text = text_processor.normalizer.normalize(full_text, lang=final_language)
         
-        # Recalculate chapter positions in normalized text
-        # (normalization changes text length, so positions need adjustment)
+        # Detect chapters in normalized text (after normalization)
+        # This ensures chapter positions match the normalized text
+        detected_chapters = text_processor.detect_chapters(normalized_text)
+        
+        # Log chapter detection
         if detected_chapters:
-            # Re-detect chapters in normalized text to get correct positions
-            detected_chapters = text_processor.detect_chapters(normalized_text)
+            logger.info(f"Detected {len(detected_chapters)} chapters in normalized text for project {project.id}")
+        else:
+            logger.warning(f"No chapters detected in normalized text for project {project.id}")
         
         # Chunk text with chapter awareness
         # Pass normalized text and chapters to split_into_chunks
