@@ -314,11 +314,21 @@ async def create_project(
         with open(text_path, "r", encoding="utf-8") as f:
             full_text = f.read()
 
-        # Detect chapters before chunking
-        detected_chapters = text_processor.detect_chapters(full_text)
+        # Normalize text first (for accurate chapter detection)
+        normalized_text = text_processor.normalizer.normalize(full_text, lang=final_language)
         
-        # Chunk text (Gutenberg cleaner artık gerekli değil - temiz txt dosyası kullanılıyor)
-        chunks = text_processor.split_into_chunks(full_text)
+        # Detect chapters in normalized text (after normalization)
+        # This ensures chapter positions are accurate after normalization
+        detected_chapters = text_processor.detect_chapters(normalized_text)
+        
+        # Chunk text with chapter awareness
+        # Pass normalized text and chapters to split_into_chunks
+        # normalize=False because we already normalized above
+        chunks = text_processor.split_into_chunks(
+            normalized_text,
+            normalize=False,  # Already normalized
+            chapters=detected_chapters  # Pass detected chapters
+        )
 
         # 9. Log chunk statistics for analysis
         if chunks:

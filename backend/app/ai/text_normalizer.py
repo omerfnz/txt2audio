@@ -1,6 +1,5 @@
 import re
 from num2words import num2words
-from typing import Dict
 
 class AdvancedTextNormalizer:
     """
@@ -167,7 +166,7 @@ class AdvancedTextNormalizer:
             try:
                 val = float(match.group(1).replace(',', ''))
                 return num2words(val, lang='en', to='currency', currency='USD')
-            except:
+            except Exception:
                 return match.group(0)
                 
         text = re.sub(r'\$(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)', currency_replacer, text)
@@ -179,7 +178,7 @@ class AdvancedTextNormalizer:
             try:
                 val = int(match.group(1))
                 return num2words(val, lang='en', to='year')
-            except:
+            except Exception:
                 return match.group(0)
 
         # Önce yılları işle (virgül olmayan 4 basamaklı sayılar)
@@ -191,7 +190,7 @@ class AdvancedTextNormalizer:
             try:
                 val = int(match.group(1).replace(',', ''))
                 return num2words(val, lang='en', to='ordinal')
-            except:
+            except Exception:
                 return match.group(0)
                 
         text = re.sub(r'\b(\d{1,3}(?:,\d{3})*)(st|nd|rd|th)\b', ordinal_replacer, text)
@@ -217,7 +216,7 @@ class AdvancedTextNormalizer:
                     result += " " + num2words(int(digit), lang='en')
                 
                 return result
-            except:
+            except Exception:
                 return match.group(0)
         
         text = re.sub(r'\b\d{1,3}(?:,\d{3})*\.\d+\b', decimal_replacer, text)
@@ -233,7 +232,7 @@ class AdvancedTextNormalizer:
                 
                 # XTTS için sayıyı kelimeye çevir
                 return num2words(val, lang='en')
-            except:
+            except Exception:
                 return match.group(0)
         
         # Virgüllü sayıları yakala (örn: 1,234 veya 140,000)
@@ -257,7 +256,7 @@ class AdvancedTextNormalizer:
 
                 # Sayıyı kelimeye çevir
                 return num2words(val, lang='en')
-            except:
+            except Exception:
                 return match.group(0)
 
         # Virgül içermeyen, henüz işlenmemiş standart sayılar
@@ -339,7 +338,7 @@ class AdvancedTextNormalizer:
         if not text:
             return ""
 
-        # 1. Tek başına Roma rakamı bölümler (örn: ^I$ veya I\n)
+        # 1. Tek başına Roma rakamı bölümler (örn: ^I$ veya I\n) - noktasız format
         def standalone_roman_replacer(match):
             roman = match.group(1).strip()
             if re.match(r'^M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$', roman):
@@ -348,11 +347,32 @@ class AdvancedTextNormalizer:
                     if num > 0:
                         word = num2words(num, lang='en').title()
                         return f"\n\nChapter {word}\n\n"
-                except:
+                except Exception:
                     pass
             return match.group(0)
 
         text = re.sub(r'(?:^|\n\n)\s*([IVXLCDM]{1,10})\s*(?:\n|$)', standalone_roman_replacer, text, flags=re.MULTILINE)
+
+        # 1b. Tek başına Roma rakamı bölümler - noktalı format (örn: "II." -> "Chapter Two")
+        def standalone_roman_with_period_replacer(match):
+            roman = match.group(1).strip().rstrip('.')
+            if re.match(r'^M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$', roman):
+                try:
+                    num = self.roman_to_int(roman)
+                    if num > 0:
+                        word = num2words(num, lang='en').title()
+                        return f"\n\nChapter {word}\n\n"
+                except Exception:
+                    pass
+            return match.group(0)
+
+        # Regex: Satır başında veya boş satırdan sonra "II." formatı
+        text = re.sub(
+            r'(?:^|\n\s*\n)\s*([IVXLCDM]+)\.\s*(?=\n|$)',
+            standalone_roman_with_period_replacer,
+            text,
+            flags=re.MULTILINE
+        )
 
         # 2. "Chapter X", "Part X", "Section X", "Book X" formatını normalize et (Roma rakamı veya sayı)
         def section_replacer(match):
@@ -366,7 +386,7 @@ class AdvancedTextNormalizer:
                 
                 if num > 0:
                     return f"{prefix} {num2words(num, lang='en').title()}"
-            except:
+            except Exception:
                 pass
             return match.group(0)
 
@@ -379,7 +399,7 @@ class AdvancedTextNormalizer:
             try:
                 num = int(num_str)
                 return f"{num2words(num, lang='en', to='ordinal').title()}."
-            except:
+            except Exception:
                 return match.group(0)
 
         text = re.sub(r'\b(\d+)\.(?=\s|$)', numbered_section_replacer, text)
