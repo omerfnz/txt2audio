@@ -7,7 +7,7 @@ export const useWebSocket = () => {
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const connectRef = useRef<() => void>();
+  const connectRef = useRef<(() => void) | undefined>(undefined);
 
   const getWsUrl = () => {
     const envUrl = import.meta.env.VITE_WS_URL as string | undefined;
@@ -85,8 +85,9 @@ export const useWebSocket = () => {
       wsRef.current = ws;
     } catch (error) {
       console.error('WebSocket connection failed:', error);
-      if (connectRef.current) {
-        reconnectTimeoutRef.current = setTimeout(connectRef.current, RECONNECT_INTERVAL);
+      const connectFn = connectRef.current;
+      if (connectFn) {
+        reconnectTimeoutRef.current = setTimeout(connectFn, RECONNECT_INTERVAL);
       }
     }
   }, []);

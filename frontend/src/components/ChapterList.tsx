@@ -1,4 +1,4 @@
-import { Chapter } from '@/types';
+import type { Chapter } from '@/types';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { BookOpen } from 'lucide-react';

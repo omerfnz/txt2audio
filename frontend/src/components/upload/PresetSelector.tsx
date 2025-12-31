@@ -65,7 +65,7 @@ export function PresetSelector({
             setLoading(true);
             const data = await getTTSPresets();
             if (data && data.presets) {
-                setPresets(data.presets);
+                setPresets(data.presets as Record<string, TTSPreset>);
             } else {
                 setPresets({});
             }

@@ -143,15 +143,20 @@ export async function checkBackendHealth(): Promise<boolean> {
     return response.status === 200;
   } catch (error: unknown) {
     // Detaylı hata loglama
-    if (error.response) {
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as { response?: { status: number; data: unknown }; request?: unknown; message?: string };
       // Sunucu yanıt verdi ama hata kodu döndü
-      console.error('Backend health check failed:', error.response.status, error.response.data);
-    } else if (error.request) {
-      // İstek gönderildi ama yanıt alınamadı (timeout, network error)
-      console.error('Backend health check failed: No response received', error.message);
+      if (axiosError.response) {
+        console.error('Backend health check failed:', axiosError.response.status, axiosError.response.data);
+      } else if (axiosError.request) {
+        // İstek gönderildi ama yanıt alınamadı (timeout, network error)
+        console.error('Backend health check failed: No response received', axiosError.message || 'Unknown error');
+      } else {
+        // İstek hazırlanırken hata oluştu
+        console.error('Backend health check failed:', axiosError.message || 'Unknown error');
+      }
     } else {
-      // İstek hazırlanırken hata oluştu
-      console.error('Backend health check failed:', error.message);
+      console.error('Backend health check failed:', error);
     }
     return false;
   }

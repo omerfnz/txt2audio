@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChapterList } from './ChapterList';
 import { getChapters } from '@/api/client';
-import { Chapter } from '@/types';
+import type { Chapter } from '@/types';
 import { BookOpen } from 'lucide-react';
 
 interface ChapterSidebarProps {
