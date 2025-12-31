@@ -116,20 +116,32 @@ class TextProcessor:
             split_index = -1
             
             # 1. Cümle bitişleri: . ! ? (en öncelikli)
-            sentence_end_match = re.search(r'[.!?]\s+', search_area[::-1])
-            if sentence_end_match:
+            # Sondan başa doğru arama yapıyoruz - rfind kullanarak
+            last_period = search_area.rfind('. ')
+            last_exclamation = search_area.rfind('! ')
+            last_question = search_area.rfind('? ')
+            
+            # En son noktalama işaretini bul
+            sentence_end_pos = max(last_period, last_exclamation, last_question)
+            
+            if sentence_end_pos > max_chars * 0.5:  # En azından yarısından sonra böl
                 # Noktalama işaretinden SONRA böl (noktalama ilk chunk'ta kalsın)
-                split_index = len(search_area) - sentence_end_match.start()
+                split_index = sentence_end_pos + 2  # +2 for ". " or "! " or "? "
             else:
                 # 2. Alt cümle bitişleri: ; :
-                semicolon_match = re.search(r'[;:]\s+', search_area[::-1])
-                if semicolon_match:
-                    split_index = len(search_area) - semicolon_match.start()
+                last_semicolon = search_area.rfind('; ')
+                last_colon = search_area.rfind(': ')
+                semicolon_pos = max(last_semicolon, last_colon)
+                
+                if semicolon_pos > max_chars * 0.5:
+                    split_index = semicolon_pos + 2  # +2 for "; " or ": "
                 else:
                     # 3. Virgül: ,
-                    comma_match = re.search(r',\s+', search_area[::-1])
-                    if comma_match:
-                        split_index = len(search_area) - comma_match.start()
+                    last_comma = search_area.rfind(', ')
+                    if last_comma > max_chars * 0.5:
+                        split_index = last_comma + 2  # +2 for ", "
+                    else:
+                        split_index = -1
             
             if split_index > 0:
                 chunks.append(current_text[:split_index].strip())
@@ -355,12 +367,29 @@ class TextProcessor:
                     chapter_title = lines[0].strip()
                     chapter_content = lines[1].strip()
                 else:
-                    # Cümle bazlı bul
+                    # Cümle bazlı bul - ama chapter başlığı genellikle kısa olur
+                    # "Chapter One", "Chapter Two" gibi - bunları ayırt et
                     doc = nlp(chapter_section)
                     sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
                     if sentences:
-                        chapter_title = sentences[0]
-                        chapter_content = ' '.join(sentences[1:]) if len(sentences) > 1 else ""
+                        first_sentence = sentences[0]
+                        # Eğer ilk cümle "Chapter X" formatındaysa, sadece o kadar al
+                        # Aksi halde ilk cümleyi al
+                        if re.match(r'^Chapter\s+(One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|\d+)[.!?]?\s*$', first_sentence, re.IGNORECASE):
+                            chapter_title = first_sentence
+                            chapter_content = ' '.join(sentences[1:]) if len(sentences) > 1 else ""
+                        else:
+                            # İlk cümle chapter başlığı değil, muhtemelen içerikle birleşmiş
+                            # "Chapter X" kısmını bul
+                            chapter_match = re.search(r'^(Chapter\s+(?:One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|\d+))[.!?]?\s+', first_sentence, re.IGNORECASE)
+                            if chapter_match:
+                                chapter_title = chapter_match.group(1)
+                                chapter_content = first_sentence[len(chapter_match.group(0)):].strip()
+                                if len(sentences) > 1:
+                                    chapter_content += ' ' + ' '.join(sentences[1:])
+                            else:
+                                chapter_title = first_sentence
+                                chapter_content = ' '.join(sentences[1:]) if len(sentences) > 1 else ""
                     else:
                         # Fallback: ilk 100 karakter
                         chapter_title = chapter_section[:100].strip()
@@ -373,15 +402,8 @@ class TextProcessor:
                     if not chapter_title.rstrip().endswith(('.', '!', '?', ':', ';')):
                         chapter_title = chapter_title.rstrip() + "."
                     
-                    first_chunk_text = chapter_title
-                    if chapter_content:
-                        # Başlık + içerik sığıyorsa birleştir
-                        potential_first = chapter_title + " " + chapter_content[:max_chars - len(chapter_title) - 1]
-                        if len(potential_first) <= max_chars:
-                            first_chunk_text = potential_first
-                            chapter_content = chapter_content[max_chars - len(chapter_title) - 1:].strip()
-                    
-                    all_chunks.append(self.validate_chunk(first_chunk_text))
+                    # Chapter başlığını ayrı bir chunk olarak ekle (içerikle birleştirme)
+                    all_chunks.append(self.validate_chunk(chapter_title))
                     
                     # Kalan içeriği normal chunking ile işle
                     if chapter_content:
