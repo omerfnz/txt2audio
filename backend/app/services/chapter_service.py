@@ -47,38 +47,67 @@ class ChapterService:
         
         Args:
             project_id: Project ID
-            chapters: List of detected chapters
-            chunks: List of chunks (ordered by index)
+            chapters: List of detected chapters (positions are in normalized text)
+            chunks: List of chunks (ordered by index, text_content is from normalized text)
             db: Database session
         """
         if not chapters:
             logger.debug(f"No chapters detected for project {project_id}")
             return
         
-        # Create a map of character position to chunk index
-        # We need to find which chunk each chapter position falls into
-        position_to_chunk = {}
+        # Sort chunks by index to ensure correct order
+        sorted_chunks = sorted(chunks, key=lambda c: c.index)
+        
+        # Reconstruct normalized text from chunks to find exact positions
+        # This ensures accurate mapping between chapter positions and chunks
+        chunk_start_positions = {}  # Map chunk index to its start position in normalized text
         current_pos = 0
         
-        for chunk in chunks:
+        for chunk in sorted_chunks:
             chunk_text = chunk.text_content or ""
-            chunk_length = len(chunk_text)
-            
-            # Map all positions in this chunk to this chunk's index
-            for pos in range(current_pos, current_pos + chunk_length):
-                position_to_chunk[pos] = chunk.index
-            
-            current_pos += chunk_length + 1  # +1 for space/newline between chunks
+            chunk_start_positions[chunk.index] = current_pos
+            # Add chunk length + 1 for separator (space/newline between chunks)
+            current_pos += len(chunk_text) + 1
         
         # Assign chapters to chunks
         chapters_assigned = 0
         for chapter in chapters:
-            # Find the chunk that contains this chapter's position
-            chunk_index = position_to_chunk.get(chapter.position)
+            chapter_pos = chapter.position
+            chapter_title_lower = chapter.title.lower() if chapter.title else ""
+            
+            # Find which chunk contains this chapter position
+            chunk_index = None
+            
+            # First, try to find by position mapping
+            for chunk in sorted_chunks:
+                chunk_start = chunk_start_positions.get(chunk.index, 0)
+                chunk_text = chunk.text_content or ""
+                chunk_end = chunk_start + len(chunk_text)
+                
+                # Check if chapter position is within this chunk's range
+                # Use a small tolerance (100 chars) to handle edge cases
+                if chunk_start <= chapter_pos <= chunk_end + 100:
+                    chunk_index = chunk.index
+                    break
+            
+            # Fallback: If position mapping fails, try to find by chapter title in chunk text
+            if chunk_index is None:
+                for chunk in sorted_chunks:
+                    chunk_text = (chunk.text_content or "").lower()
+                    # Check if chapter title appears in chunk (case-insensitive)
+                    if chapter_title_lower and chapter_title_lower in chunk_text:
+                        # Also check if it's near the beginning of the chunk (first 200 chars)
+                        if chunk_text.find(chapter_title_lower) < 200:
+                            chunk_index = chunk.index
+                            logger.debug(
+                                f"Found chapter '{chapter.title}' in chunk {chunk.index} by title matching "
+                                f"(position {chapter.position} not found in position map)"
+                            )
+                            break
             
             if chunk_index is not None:
                 # Find the chunk object
-                chunk = next((c for c in chunks if c.index == chunk_index), None)
+                chunk = next((c for c in sorted_chunks if c.index == chunk_index), None)
                 if chunk:
                     # Format chapter title for display
                     if chapter.prefix:
