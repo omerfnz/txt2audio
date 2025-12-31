@@ -142,14 +142,24 @@ class ChapterDetector:
             
             # Check for prefixed word numbers: "Chapter Two", "Part Three", etc.
             # This handles normalized Roman numerals (e.g., "II." -> "Chapter Two")
+            # Also check within the line (not just at start) for cases like "text Chapter One more text"
             for prefix in self.prefixes:
                 # Pattern: "Chapter Two", "Part Three", etc. (case-insensitive)
                 # Match words like "One", "Two", "Three", "Four", etc.
+                # First try at line start
                 prefixed_word_match = re.match(
                     rf'^({re.escape(prefix)})\s+(One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|Eleven|Twelve|Thirteen|Fourteen|Fifteen|Sixteen|Seventeen|Eighteen|Nineteen|Twenty|Thirty|Forty|Fifty|Sixty|Seventy|Eighty|Ninety|Hundred|Thousand)(?:\s|$|\.)',
                     line_stripped,
                     re.IGNORECASE
                 )
+                # If not at start, search within the line
+                if not prefixed_word_match:
+                    prefixed_word_match = re.search(
+                        rf'\b({re.escape(prefix)})\s+(One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|Eleven|Twelve|Thirteen|Fourteen|Fifteen|Sixteen|Seventeen|Eighteen|Nineteen|Twenty|Thirty|Forty|Fifty|Sixty|Seventy|Eighty|Ninety|Hundred|Thousand)(?:\s|$|\.)',
+                        line_stripped,
+                        re.IGNORECASE
+                    )
+                
                 if prefixed_word_match:
                     found_prefix = prefixed_word_match.group(1)
                     word_number = prefixed_word_match.group(2).lower()
@@ -164,49 +174,27 @@ class ChapterDetector:
                     }
                     order = word_to_num.get(word_number, 0)
                     if order > 0:
+                        # Calculate position: if match is at start, use current_position
+                        # Otherwise, find the position of the match within the line
+                        if hasattr(prefixed_word_match, 'start') and prefixed_word_match.start() == 0:
+                            chapter_pos = current_position
+                        elif hasattr(prefixed_word_match, 'start'):
+                            chapter_pos = current_position + prefixed_word_match.start()
+                        else:
+                            chapter_pos = current_position
+                        
+                        # Extract the chapter title (the matched part)
+                        chapter_title = prefixed_word_match.group(0).strip()
+                        
                         chapters.append(ChapterInfo(
-                            title=line_stripped,
+                            title=chapter_title,
                             chapter_type="numbered",
                             order=order,
-                            position=current_position,
-                            prefix=found_prefix
-                        ))
-                    chapter_order = max(chapter_order, order) + 1
-                    break
-            
-            # Check for prefixed word numbers: "Chapter Two", "Part Three", etc.
-            # This handles normalized Roman numerals (e.g., "II." -> "Chapter Two")
-            for prefix in self.prefixes:
-                # Pattern: "Chapter Two", "Part Three", etc. (case-insensitive)
-                # Match words like "One", "Two", "Three", "Four", etc.
-                prefixed_word_match = re.match(
-                    rf'^({re.escape(prefix)})\s+(One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|Eleven|Twelve|Thirteen|Fourteen|Fifteen|Sixteen|Seventeen|Eighteen|Nineteen|Twenty|Thirty|Forty|Fifty|Sixty|Seventy|Eighty|Ninety|Hundred|Thousand)(?:\s|$|\.)',
-                    line_stripped,
-                    re.IGNORECASE
-                )
-                if prefixed_word_match:
-                    found_prefix = prefixed_word_match.group(1)
-                    word_number = prefixed_word_match.group(2).lower()
-                    # Convert word to number
-                    word_to_num = {
-                        'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
-                        'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
-                        'eleven': 11, 'twelve': 12, 'thirteen': 13, 'fourteen': 14, 'fifteen': 15,
-                        'sixteen': 16, 'seventeen': 17, 'eighteen': 18, 'nineteen': 19, 'twenty': 20,
-                        'thirty': 30, 'forty': 40, 'fifty': 50, 'sixty': 60, 'seventy': 70,
-                        'eighty': 80, 'ninety': 90, 'hundred': 100, 'thousand': 1000
-                    }
-                    order = word_to_num.get(word_number, 0)
-                    if order > 0:
-                        chapters.append(ChapterInfo(
-                            title=line_stripped,
-                            chapter_type="numbered",
-                            order=order,
-                            position=current_position,
+                            position=chapter_pos,
                             prefix=found_prefix
                         ))
                         chapter_order = max(chapter_order, order) + 1
-                        break
+                    break
             
             current_position += len(line) + 1  # +1 for newline
         
