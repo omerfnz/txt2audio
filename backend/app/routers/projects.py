@@ -239,11 +239,32 @@ async def create_project(
                 voice_path,
             )
 
-            # En stabil klonlama için 3–15 sn arası, orta seviye bir RMS önerilir
-            if duration_sec < 3.0 or duration_sec > 15.0:
+            # XTTS v2 için minimum 3 saniye önerilir
+            # Model genellikle ilk birkaç saniyeyi kullanır, daha uzun dosyalar da çalışır
+            # Ancak çok uzun dosyalar işlem süresini artırabilir
+            if duration_sec < 3.0:
                 raise HTTPException(
                     status_code=400,
-                    detail="Reference voice duration must be between 3 and 15 seconds for stable voice cloning.",
+                    detail="Reference voice duration must be at least 3 seconds for stable voice cloning.",
+                )
+            
+            # Uyarı: Çok uzun dosyalar için (30+ saniye) sadece uyarı ver, hata verme
+            # XTTS v2 uzun referans sesleri handle edebilir, sadece ilk kısmı kullanır
+            if duration_sec > 30.0:
+                logger.warning(
+                    "Reference voice is very long | project_name=%s duration=%.2fs path=%s. "
+                    "XTTS will use the first portion, but processing may be slower.",
+                    name,
+                    duration_sec,
+                    voice_path,
+                )
+            elif duration_sec > 15.0:
+                logger.info(
+                    "Reference voice is longer than recommended | project_name=%s duration=%.2fs path=%s. "
+                    "XTTS will use the first portion for voice cloning.",
+                    name,
+                    duration_sec,
+                    voice_path,
                 )
 
             # Çok sessiz veya aşırı yüksek referanslar için sadece uyarı logla
