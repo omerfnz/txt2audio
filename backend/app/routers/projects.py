@@ -640,9 +640,64 @@ def get_project_chapters(project_id: int, db: Session = Depends(get_db)) -> Dict
         }
 
 
+@router.post("/projects/{project_id}/recalculate-timestamps")
+def recalculate_chapter_timestamps(project_id: int, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """Recalculate chapter timestamps for a completed project"""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    if project.status != "completed":
+        raise HTTPException(
+            status_code=400,
+            detail="Project must be completed to recalculate timestamps"
+        )
+    
+    from ..services.chapter_service import ChapterService
+    
+    chapter_service = ChapterService()
+    try:
+        timestamps = chapter_service.calculate_chapter_timestamps(project_id, db)
+        
+        if not timestamps:
+            return {
+                "project_id": project_id,
+                "success": False,
+                "message": "No chapters found to recalculate",
+                "chapters_count": 0
+            }
+        
+        logger.info(f"✅ Recalculated timestamps for {len(timestamps)} chapters in project {project_id}")
+        
+        return {
+            "project_id": project_id,
+            "success": True,
+            "message": f"Successfully recalculated timestamps for {len(timestamps)} chapters",
+            "chapters_count": len(timestamps),
+            "timestamps": [
+                {
+                    "title": ts.title,
+                    "order": ts.order,
+                    "timestamp_formatted": ts.timestamp_formatted,
+                    "timestamp_seconds": ts.timestamp_seconds,
+                    "chunk_index": ts.chunk_index
+                }
+                for ts in timestamps
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Error recalculating timestamps for project {project_id}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to recalculate timestamps: {str(e)}"
+        )
+
+
 @router.get("/projects/{project_id}/timelapse")
-def get_project_timelapse(project_id: int, db: Session = Depends(get_db)) -> Dict[str, Any]:
+def get_project_timelapse(project_id: int, download: bool = False, db: Session = Depends(get_db)):
     """Get YouTube timelapse format for a project"""
+    from fastapi.responses import Response
+    
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -660,6 +715,8 @@ def get_project_timelapse(project_id: int, db: Session = Depends(get_db)) -> Dic
     timestamps = chapter_service.calculate_chapter_timestamps(project_id, db)
     
     if not timestamps:
+        if download:
+            raise HTTPException(status_code=404, detail="No chapters detected in this project")
         return {
             "project_id": project_id,
             "timelapse": "",
@@ -668,6 +725,16 @@ def get_project_timelapse(project_id: int, db: Session = Depends(get_db)) -> Dic
     
     exporter = TimelapseExporter()
     timelapse_text = exporter.export_youtube_format(timestamps)
+    
+    # If download requested, return as file download
+    if download:
+        return Response(
+            content=timelapse_text,
+            media_type="text/plain",
+            headers={
+                "Content-Disposition": f'attachment; filename="timelapse_project_{project_id}.txt"'
+            }
+        )
     
     return {
         "project_id": project_id,

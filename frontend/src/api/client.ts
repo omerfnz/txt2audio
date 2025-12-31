@@ -321,3 +321,20 @@ export async function getTimelapse(projectId: number): Promise<TimelapseResponse
   );
   return response.data;
 }
+
+export async function recalculateTimestamps(projectId: number): Promise<{
+  project_id: number;
+  success: boolean;
+  message: string;
+  chapters_count: number;
+  timestamps?: Array<{
+    title: string;
+    order: number;
+    timestamp_formatted: string;
+    timestamp_seconds: number;
+    chunk_index: number;
+  }>;
+}> {
+  const response = await api.post(`/projects/${projectId}/recalculate-timestamps`);
+  return response.data;
+}

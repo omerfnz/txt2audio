@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Player } from '../components/Player';
 import { useProjectStatus } from '../hooks/useProjectStatus';
 import { Terminal, CheckCircle, Circle, Clock, Zap, Download } from 'lucide-react';
-import { cancelProcessing, resumeProject, getApiBase, getTimelapse } from '../api/client';
+import { cancelProcessing, resumeProject, getApiBase, getTimelapse, recalculateTimestamps } from '../api/client';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +34,7 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
     const [resumeLoading, setResumeLoading] = useState(false);
     const [now, setNow] = useState(Date.now());
     const [timelapseLoading, setTimelapseLoading] = useState(false);
+    const [recalculating, setRecalculating] = useState(false);
 
     // Update 'now' every second for real-time elapsed/remaining updates
     useEffect(() => {
@@ -123,18 +124,56 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
         }
     };
 
-    const handleExportTimelapse = async () => {
+    const handleRecalculateTimestamps = async () => {
+        try {
+            setRecalculating(true);
+            const response = await recalculateTimestamps(projectId);
+            
+            if (response.success) {
+                alert(`✅ Timestamp'ler yeniden hesaplandı!\n\n${response.message}\n\nChapter sayısı: ${response.chapters_count}`);
+                // Reload chapters to show updated timestamps
+                window.location.reload();
+            } else {
+                alert(`⚠️ ${response.message}`);
+            }
+        } catch (error) {
+            console.error('Failed to recalculate timestamps:', error);
+            alert('Timestamp\'leri yeniden hesaplama başarısız. Lütfen tekrar deneyin.');
+        } finally {
+            setRecalculating(false);
+        }
+    };
+
+    const handleExportTimelapse = async (download: boolean = false) => {
         try {
             setTimelapseLoading(true);
-            const response = await getTimelapse(projectId);
             
-            if (response.timelapse) {
-                // Copy to clipboard
-                await navigator.clipboard.writeText(response.timelapse);
-                // Show notification
-                alert('YouTube Timelapse kopyalandı!\n\nVideo açıklamasına yapıştırabilirsiniz.\n\nFormat:\n0:00 Chapter 1\n15:32 Chapter 2\n...');
+            if (download) {
+                // Download as file
+                const response = await fetch(`${getApiBase()}/projects/${projectId}/timelapse?download=true`);
+                if (!response.ok) {
+                    throw new Error('Failed to download timelapse');
+                }
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `timelapse_project_${projectId}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                alert('Timelapse dosyası indirildi!');
             } else {
-                alert(response.message || 'No timelapse available');
+                // Copy to clipboard
+                const response = await getTimelapse(projectId);
+                
+                if (response.timelapse) {
+                    await navigator.clipboard.writeText(response.timelapse);
+                    alert('YouTube Timelapse kopyalandı!\n\nVideo açıklamasına yapıştırabilirsiniz.\n\nFormat:\n0:00 Chapter 1\n15:32 Chapter 2\n...');
+                } else {
+                    alert(response.message || 'No timelapse available');
+                }
             }
         } catch (error) {
             console.error('Failed to export timelapse:', error);
@@ -227,22 +266,53 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
                                 <Button onClick={handlePlayFinal} size="sm" className="bg-primary hover:bg-primary/90 font-bold uppercase tracking-wider text-[11px]">
                                     Play Final Audio (MP3)
                                 </Button>
-                                <Button 
-                                    onClick={handleExportTimelapse} 
-                                    size="sm" 
-                                    variant="outline"
-                                    className="font-bold uppercase tracking-wider text-[11px]"
-                                    disabled={timelapseLoading}
-                                >
-                                    {timelapseLoading ? (
-                                        <>Loading...</>
-                                    ) : (
-                                        <>
-                                            <Download className="w-3 h-3 mr-1" />
-                                            Export Timelapse
-                                        </>
-                                    )}
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                    <Button 
+                                        onClick={handleRecalculateTimestamps}
+                                        size="sm" 
+                                        variant="outline"
+                                        className="font-bold uppercase tracking-wider text-[11px]"
+                                        disabled={recalculating}
+                                        title="Yeniden hesapla chapter timestamp'lerini"
+                                    >
+                                        {recalculating ? (
+                                            <>Hesaplanıyor...</>
+                                        ) : (
+                                            <>🔄 Yeniden Hesapla</>
+                                        )}
+                                    </Button>
+                                    <Button 
+                                        onClick={() => handleExportTimelapse(false)} 
+                                        size="sm" 
+                                        variant="outline"
+                                        className="font-bold uppercase tracking-wider text-[11px]"
+                                        disabled={timelapseLoading}
+                                        title="Copy to clipboard"
+                                    >
+                                        {timelapseLoading ? (
+                                            <>Loading...</>
+                                        ) : (
+                                            <>📋 Copy Timelapse</>
+                                        )}
+                                    </Button>
+                                    <Button 
+                                        onClick={() => handleExportTimelapse(true)} 
+                                        size="sm" 
+                                        variant="outline"
+                                        className="font-bold uppercase tracking-wider text-[11px]"
+                                        disabled={timelapseLoading}
+                                        title="Download as TXT file"
+                                    >
+                                        {timelapseLoading ? (
+                                            <>Loading...</>
+                                        ) : (
+                                            <>
+                                                <Download className="w-3 h-3 mr-1" />
+                                                Download TXT
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
                             </>
                         )}
 

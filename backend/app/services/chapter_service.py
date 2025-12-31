@@ -149,34 +149,41 @@ class ChapterService:
         # Calculate cumulative durations
         timestamps = []
         cumulative_duration_ms = 0
-        last_chapter_chunk_index = 0
+        last_processed_chunk_index = 0
         
-        for chunk_index, chapter_title, chapter_order in chapter_chunks:
-            # Sum durations of all chunks from the last chapter to this chapter
-            # (from last_chapter_chunk_index to chunk_index-1)
-            for i in range(last_chapter_chunk_index, chunk_index):
-                chunk = next((c for c in chunks if c.index == i), None)
-                if chunk and chunk.chunk_audio_path:
-                    try:
-                        audio = AudioSegment.from_file(chunk.chunk_audio_path)
-                        cumulative_duration_ms += len(audio)
-                    except Exception as e:
-                        logger.warning(
-                            f"Could not read audio duration for chunk {i}: {e}"
-                        )
-            
-            # Convert to seconds
-            timestamp_seconds = cumulative_duration_ms / 1000.0
-            
-            # Format as HH:MM:SS
-            hours = int(timestamp_seconds // 3600)
-            minutes = int((timestamp_seconds % 3600) // 60)
-            seconds = int(timestamp_seconds % 60)
-            
-            if hours > 0:
-                timestamp_formatted = f"{hours}:{minutes:02d}:{seconds:02d}"
+        for idx, (chunk_index, chapter_title, chapter_order) in enumerate(chapter_chunks):
+            # For the first chapter, timestamp is always 0:00
+            if idx == 0:
+                timestamp_seconds = 0.0
+                timestamp_formatted = "0:00"
+                # Don't add any duration for first chapter, it starts at 0
             else:
-                timestamp_formatted = f"{minutes}:{seconds:02d}"
+                # For subsequent chapters, sum durations from last processed chunk to this chapter's chunk
+                # Sum durations of all chunks from last_processed_chunk_index to chunk_index (exclusive)
+                for i in range(last_processed_chunk_index, chunk_index):
+                    chunk = next((c for c in chunks if c.index == i), None)
+                    if chunk and chunk.chunk_audio_path:
+                        try:
+                            audio = AudioSegment.from_file(chunk.chunk_audio_path)
+                            cumulative_duration_ms += len(audio)
+                            logger.debug(f"Added chunk {i} duration: {len(audio)}ms (total: {cumulative_duration_ms}ms)")
+                        except Exception as e:
+                            logger.warning(
+                                f"Could not read audio duration for chunk {i}: {e}"
+                            )
+                
+                # Convert to seconds
+                timestamp_seconds = cumulative_duration_ms / 1000.0
+                
+                # Format as HH:MM:SS or M:SS
+                hours = int(timestamp_seconds // 3600)
+                minutes = int((timestamp_seconds % 3600) // 60)
+                seconds = int(timestamp_seconds % 60)
+                
+                if hours > 0:
+                    timestamp_formatted = f"{hours}:{minutes:02d}:{seconds:02d}"
+                else:
+                    timestamp_formatted = f"{minutes}:{seconds:02d}"
             
             timestamps.append(ChapterTimestamp(
                 title=chapter_title,
@@ -188,11 +195,11 @@ class ChapterService:
             
             logger.debug(
                 f"Chapter '{chapter_title}' starts at {timestamp_formatted} "
-                f"(chunk {chunk_index})"
+                f"(chunk {chunk_index}, cumulative_ms={cumulative_duration_ms})"
             )
             
-            # Update last chapter chunk index for next iteration
-            last_chapter_chunk_index = chunk_index
+            # Update last processed chunk index for next iteration
+            last_processed_chunk_index = chunk_index
         
         logger.info(
             f"Calculated timestamps for {len(timestamps)} chapters "
