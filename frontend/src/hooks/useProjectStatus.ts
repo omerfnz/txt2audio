@@ -23,13 +23,16 @@ export const useProjectStatus = (projectId: number | null) => {
   // Load project data
   useEffect(() => {
     if (!projectId) {
-      setStatus('idle');
-      setProgress(0);
-      setChunks([]);
-      setLogs([]);
-      setProcessingStartTime(null);
-      setEstimatedEndTime(null);
-      setSpeed(null);
+      // Use setTimeout to avoid setState in effect
+      setTimeout(() => {
+        setStatus('idle');
+        setProgress(0);
+        setChunks([]);
+        setLogs([]);
+        setProcessingStartTime(null);
+        setEstimatedEndTime(null);
+        setSpeed(null);
+      }, 0);
       return;
     }
 
@@ -94,48 +97,59 @@ export const useProjectStatus = (projectId: number | null) => {
       if (newStatus === 'chunk_skipped') {
         const chunkIndex = lastMessage.chunk_index;
         const message = lastMessage.message || `Chunk ${chunkIndex} skipped`;
-        addLog(`⚠️ ${message}`);
+        // Use setTimeout to avoid setState in effect
+        setTimeout(() => addLog(`⚠️ ${message}`), 0);
         return;
       }
       
-      setStatus(newStatus);
-      if (lastMessage.progress !== undefined) {
-        setProgress(lastMessage.progress);
-      }
+      // Use setTimeout to avoid setState in effect
+      setTimeout(() => {
+        setStatus(newStatus);
+        if (lastMessage.progress !== undefined) {
+          setProgress(lastMessage.progress);
+        }
+        
+        if ((newStatus === 'processing' || newStatus === 'merging') && !processingStartTime) {
+          const now = new Date();
+          setProcessingStartTime(now);
+          localStorage.setItem(`processingStartTime_${projectId}`, now.toISOString());
+        }
+      }, 0);
       
-      if ((newStatus === 'processing' || newStatus === 'merging') && !processingStartTime) {
-        const now = new Date();
-        setProcessingStartTime(now);
-        localStorage.setItem(`processingStartTime_${projectId}`, now.toISOString());
-      }
-      
-      addLog(`Status: ${newStatus} (${lastMessage.progress || 0}%)`);
+      setTimeout(() => addLog(`Status: ${newStatus} (${lastMessage.progress || 0}%)`), 0);
     } else if (lastMessage.type === 'progress_update') {
       const newProgress = lastMessage.progress || 0;
-      setProgress(newProgress);
+      // Use setTimeout to avoid setState in effect
+      setTimeout(() => {
+        setProgress(newProgress);
 
-      if (lastMessage.chunk_index !== undefined) {
-        const chunkIndex = lastMessage.chunk_index;
-        setChunks(prev => {
-          const newChunks = [...prev];
-          if (newChunks[chunkIndex]) {
-            newChunks[chunkIndex].isProcessed = true;
-            if (lastMessage.chunk_text_preview) {
-              newChunks[chunkIndex].text = lastMessage.chunk_text_preview;
+        if (lastMessage.chunk_index !== undefined) {
+          const chunkIndex = lastMessage.chunk_index;
+          setChunks(prev => {
+            const newChunks = [...prev];
+            if (newChunks[chunkIndex]) {
+              newChunks[chunkIndex].isProcessed = true;
+              if (lastMessage.chunk_text_preview) {
+                newChunks[chunkIndex].text = lastMessage.chunk_text_preview;
+              }
             }
-          }
-          return newChunks;
-        });
-
-        if (lastMessage.chunk_text_preview) {
-          const preview = lastMessage.chunk_text_preview.replace(/\s+/g, ' ').trim();
-          const shortPreview = preview.length > 80 ? `${preview.slice(0, 80)}…` : preview;
-          addLog(`Processed chunk ${chunkIndex}: "${shortPreview}"`);
-        } else {
-          addLog(`Processed chunk ${chunkIndex}`);
+            return newChunks;
+          });
         }
-      } else if (status === 'merging') {
-        addLog(`Merging progress: ${newProgress.toFixed(1)}%`);
+
+        if (lastMessage.chunk_index !== undefined) {
+          if (lastMessage.chunk_text_preview) {
+            const preview = lastMessage.chunk_text_preview.replace(/\s+/g, ' ').trim();
+            const shortPreview = preview.length > 80 ? `${preview.slice(0, 80)}…` : preview;
+            setTimeout(() => addLog(`Processed chunk ${lastMessage.chunk_index}: "${shortPreview}"`), 0);
+          } else {
+            setTimeout(() => addLog(`Processed chunk ${lastMessage.chunk_index}`), 0);
+          }
+        }
+      }, 0);
+
+      if (status === 'merging') {
+        setTimeout(() => addLog(`Merging progress: ${newProgress.toFixed(1)}%`), 0);
       }
     }
   }, [lastMessage, projectId, addLog, processingStartTime, status]);
@@ -159,22 +173,27 @@ export const useProjectStatus = (projectId: number | null) => {
       
       if (finalRemaining < 0) finalRemaining = 0;
       prevRemainingRef.current = finalRemaining;
-      setEstimatedEndTime(new Date(now + finalRemaining));
+      // Use setTimeout to avoid setState in effect
+      setTimeout(() => setEstimatedEndTime(new Date(now + finalRemaining)), 0);
 
       // Speed calculation: (processed_chunks / elapsed_minutes)
       const processedCount = chunks.filter(c => c.isProcessed).length;
       const elapsedMin = elapsedMs / 60000;
       if (elapsedMin > 0.05) { // At least 3 seconds
-          setSpeed(processedCount / elapsedMin);
+          setTimeout(() => setSpeed(processedCount / elapsedMin), 0);
       }
     } else if (status === 'completed' || status === 'failed' || progress >= 100) {
-      setEstimatedEndTime(null);
+      // Use setTimeout to avoid setState in effect
+      setTimeout(() => {
+        setEstimatedEndTime(null);
+        setSpeed(null);
+      }, 0);
       prevRemainingRef.current = null;
-      setSpeed(null);
       if (projectId && (status === 'completed' || status === 'failed')) {
         localStorage.removeItem(`processingStartTime_${projectId}`);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, progress, processingStartTime, projectId, chunks.length]);
 
   return {

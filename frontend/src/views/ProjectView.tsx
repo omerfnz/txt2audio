@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Player } from '../components/Player';
 import { useProjectStatus } from '../hooks/useProjectStatus';
-import { Terminal, CheckCircle, Circle, Clock, Zap } from 'lucide-react';
-import { cancelProcessing, resumeProject, getApiBase } from '../api/client';
+import { Terminal, CheckCircle, Circle, Clock, Zap, Download } from 'lucide-react';
+import { cancelProcessing, resumeProject, getApiBase, getTimelapse } from '../api/client';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ChapterSidebar } from '@/components/ChapterSidebar';
 
 interface ProjectViewProps {
     projectId: number;
@@ -32,6 +33,7 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
     const [cancelLoading, setCancelLoading] = useState(false);
     const [resumeLoading, setResumeLoading] = useState(false);
     const [now, setNow] = useState(Date.now());
+    const [timelapseLoading, setTimelapseLoading] = useState(false);
 
     // Update 'now' every second for real-time elapsed/remaining updates
     useEffect(() => {
@@ -95,6 +97,38 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
         const prevIndex = currentChunkIndex - 1;
         if (prevIndex >= 0 && chunks[prevIndex]?.isProcessed) {
             handlePlayChunk(prevIndex);
+        }
+    };
+
+    const handleChapterClick = (chunkIndex: number) => {
+        // Scroll to chunk in the list
+        const chunkElement = document.getElementById(`chunk-${chunkIndex}`);
+        if (chunkElement) {
+            chunkElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        // Also play the chunk if it's processed
+        if (chunks[chunkIndex]?.isProcessed) {
+            handlePlayChunk(chunkIndex);
+        }
+    };
+
+    const handleExportTimelapse = async () => {
+        try {
+            setTimelapseLoading(true);
+            const response = await getTimelapse(projectId);
+            
+            if (response.timelapse) {
+                // Copy to clipboard
+                await navigator.clipboard.writeText(response.timelapse);
+                alert('Timelapse copied to clipboard!');
+            } else {
+                alert(response.message || 'No timelapse available');
+            }
+        } catch (error) {
+            console.error('Failed to export timelapse:', error);
+            alert('Failed to export timelapse. Please try again.');
+        } finally {
+            setTimelapseLoading(false);
         }
     };
 
@@ -177,9 +211,27 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
                         )}
 
                         {status === 'completed' && (
-                            <Button onClick={handlePlayFinal} size="sm" className="bg-primary hover:bg-primary/90 font-bold uppercase tracking-wider text-[11px]">
-                                Play Final Audio (MP3)
-                            </Button>
+                            <>
+                                <Button onClick={handlePlayFinal} size="sm" className="bg-primary hover:bg-primary/90 font-bold uppercase tracking-wider text-[11px]">
+                                    Play Final Audio (MP3)
+                                </Button>
+                                <Button 
+                                    onClick={handleExportTimelapse} 
+                                    size="sm" 
+                                    variant="outline"
+                                    className="font-bold uppercase tracking-wider text-[11px]"
+                                    disabled={timelapseLoading}
+                                >
+                                    {timelapseLoading ? (
+                                        <>Loading...</>
+                                    ) : (
+                                        <>
+                                            <Download className="w-3 h-3 mr-1" />
+                                            Export Timelapse
+                                        </>
+                                    )}
+                                </Button>
+                            </>
                         )}
 
                         {canResume && (
@@ -222,6 +274,7 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
                                     {chunks.map((chunk, idx) => {
                                         return (
                                             <Card
+                                                id={`chunk-${idx}`}
                                                 key={idx}
                                                 className={cn(
                                                     'p-3 flex items-center justify-between transition-all duration-250 border-none',
@@ -276,6 +329,13 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
 
                     {/* Right Column Stack */}
                     <div className="flex flex-col gap-6 h-[500px]">
+                        
+                        {/* Chapters Sidebar */}
+                        <ChapterSidebar
+                            projectId={projectId}
+                            onChapterClick={handleChapterClick}
+                            selectedChunkIndex={currentChunkIndex}
+                        />
                         
                         {/* Audio Tools Panel */}
                         <Card className="flex-none border-none bg-background/50 shadow-xl ring-1 ring-border/50">

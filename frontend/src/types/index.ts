@@ -30,3 +30,11 @@ export interface WebSocketMessage {
   error?: string;
   message?: string;
 }
+
+export interface Chapter {
+  title: string;
+  order: number;
+  chunk_index: number;
+  timestamp_formatted?: string;
+  timestamp_seconds?: number;
+}

@@ -1,11 +1,9 @@
-import os
 import json
 import asyncio
 import subprocess
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 import logging
-from sqlalchemy.orm import Session
 from ..db.models import Project, Chunk
 from ..core.config import settings
 from .websocket import manager
@@ -206,7 +204,7 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
             if mastered_output.exists():
                 try:
                     mastered_output.unlink()
-                except:
+                except Exception:
                     pass
             final_path = mixed_path
 
@@ -214,6 +212,17 @@ async def process_audio_task(project_id: int, use_gpu: bool = False):
         project.status = "completed"
         project.completed_at = datetime.utcnow()
         db.commit()
+        
+        # Calculate chapter timestamps after merge (non-blocking)
+        try:
+            from .chapter_service import ChapterService
+            chapter_service = ChapterService()
+            timestamps = chapter_service.calculate_chapter_timestamps(project_id, db)
+            if timestamps:
+                logger.info(f"✅ Calculated timestamps for {len(timestamps)} chapters in project {project_id}")
+        except Exception as e:
+            logger.warning(f"⚠️ Could not calculate chapter timestamps: {e}")
+            # Non-critical, continue
 
         await manager.broadcast({
             "type": "status_update",

@@ -141,7 +141,7 @@ export async function checkBackendHealth(): Promise<boolean> {
     
     console.log('Backend health check response:', response.status, response.data);
     return response.status === 200;
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Detaylı hata loglama
     if (error.response) {
       // Sunucu yanıt verdi ama hata kodu döndü
@@ -232,7 +232,7 @@ export async function deleteProject(projectId: number): Promise<{ message: strin
   return response.data;
 }
 
-export async function getTTSPresets(): Promise<{ presets: Record<string, any> }> {
+export async function getTTSPresets(): Promise<{ presets: Record<string, unknown> }> {
   return retryRequest(async () => {
     const response = await api.get("/tts-presets");
     return response.data;
@@ -276,6 +276,41 @@ export async function resumeProject(
         use_gpu: useGpu,
       },
     }
+  );
+  return response.data;
+}
+
+// Chapters
+
+export interface ChaptersResponse {
+  project_id: number;
+  chapters: Array<{
+    title: string;
+    order: number;
+    chunk_index: number;
+  }>;
+  total: number;
+}
+
+export async function getChapters(projectId: number): Promise<ChaptersResponse> {
+  const response = await api.get<ChaptersResponse>(
+    `/projects/${projectId}/chapters`
+  );
+  return response.data;
+}
+
+// Timelapse
+
+export interface TimelapseResponse {
+  project_id: number;
+  timelapse: string;
+  chapters_count: number;
+  message?: string;
+}
+
+export async function getTimelapse(projectId: number): Promise<TimelapseResponse> {
+  const response = await api.get<TimelapseResponse>(
+    `/projects/${projectId}/timelapse`
   );
   return response.data;
 }

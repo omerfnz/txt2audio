@@ -4,11 +4,13 @@ import sys
 import re
 
 from .text_normalizer import AdvancedTextNormalizer
+from .chapter_detector import ChapterDetector, ChapterInfo
 
 class TextProcessor:
     def __init__(self):
         self.normalizer = AdvancedTextNormalizer()
         self.models = {}  # { 'en': nlp_model, 'tr': nlp_model }
+        self.chapter_detector = ChapterDetector()
 
 
     def _get_model(self):
@@ -242,6 +244,21 @@ class TextProcessor:
                 final_chunks.append(chunk)
         
         return final_chunks if final_chunks else [""]
+    
+    def detect_chapters(self, text: str) -> List[ChapterInfo]:
+        """
+        Detect chapters in text before processing.
+        
+        This should be called before split_into_chunks to identify
+        chapter boundaries.
+        
+        Args:
+            text: Raw text content (before normalization)
+            
+        Returns:
+            List of detected chapters
+        """
+        return self.chapter_detector.detect_chapters(text)
 
 if __name__ == "__main__":
     try:

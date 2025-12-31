@@ -282,6 +282,9 @@ async def create_project(
         with open(text_path, "r", encoding="utf-8") as f:
             full_text = f.read()
 
+        # Detect chapters before chunking
+        detected_chapters = text_processor.detect_chapters(full_text)
+        
         # Chunk text (Gutenberg cleaner artık gerekli değil - temiz txt dosyası kullanılıyor)
         chunks = text_processor.split_into_chunks(full_text)
 
@@ -304,6 +307,7 @@ async def create_project(
                 )
 
         # 10. Create chunks in database
+        db_chunks = []
         for i, chunk_text in enumerate(chunks):
             db_chunk = Chunk(
                 project_id=project.id,
@@ -312,8 +316,21 @@ async def create_project(
                 is_processed=False
             )
             db.add(db_chunk)
+            db_chunks.append(db_chunk)
         
         db.commit()
+        
+        # 11. Save chapter information to chunks
+        if detected_chapters:
+            from ..services.chapter_service import ChapterService
+            chapter_service = ChapterService()
+            chapter_service.save_chapters(
+                project_id=project.id,
+                chapters=detected_chapters,
+                chunks=db_chunks,
+                db=db
+            )
+            logger.info(f"Detected and saved {len(detected_chapters)} chapters for project {project.id}")
 
         return {
             "project_id": project.id,
@@ -579,6 +596,60 @@ def get_project_chunks(project_id: int, db: Session = Depends(get_db)) -> Dict[s
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+
+
+@router.get("/projects/{project_id}/chapters")
+def get_project_chapters(project_id: int, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """Get chapter list for a project"""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    from ..services.chapter_service import ChapterService
+    chapter_service = ChapterService()
+    chapters = chapter_service.get_chapters(project_id, db)
+    
+    return {
+        "project_id": project_id,
+        "chapters": chapters,
+        "total": len(chapters)
+    }
+
+
+@router.get("/projects/{project_id}/timelapse")
+def get_project_timelapse(project_id: int, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """Get YouTube timelapse format for a project"""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    if project.status != "completed":
+        raise HTTPException(
+            status_code=400,
+            detail="Project must be completed to generate timelapse"
+        )
+    
+    from ..services.chapter_service import ChapterService
+    from ..services.timelapse_exporter import TimelapseExporter
+    
+    chapter_service = ChapterService()
+    timestamps = chapter_service.calculate_chapter_timestamps(project_id, db)
+    
+    if not timestamps:
+        return {
+            "project_id": project_id,
+            "timelapse": "",
+            "message": "No chapters detected in this project"
+        }
+    
+    exporter = TimelapseExporter()
+    timelapse_text = exporter.export_youtube_format(timestamps)
+    
+    return {
+        "project_id": project_id,
+        "timelapse": timelapse_text,
+        "chapters_count": len(timestamps)
+    }
     
     chunks = db.query(Chunk).filter(Chunk.project_id == project_id).order_by(Chunk.index).all()
     

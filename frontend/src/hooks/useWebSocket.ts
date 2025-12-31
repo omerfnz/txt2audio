@@ -7,6 +7,7 @@ export const useWebSocket = () => {
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const connectRef = useRef<() => void>();
 
   const getWsUrl = () => {
     const envUrl = import.meta.env.VITE_WS_URL as string | undefined;
@@ -71,7 +72,9 @@ export const useWebSocket = () => {
       ws.onclose = () => {
         console.log('WebSocket disconnected. Reconnecting...');
         wsRef.current = null;
-        reconnectTimeoutRef.current = setTimeout(connect, RECONNECT_INTERVAL);
+        if (connectRef.current) {
+          reconnectTimeoutRef.current = setTimeout(connectRef.current, RECONNECT_INTERVAL);
+        }
       };
 
       ws.onerror = (error) => {
@@ -82,11 +85,15 @@ export const useWebSocket = () => {
       wsRef.current = ws;
     } catch (error) {
       console.error('WebSocket connection failed:', error);
-      reconnectTimeoutRef.current = setTimeout(connect, RECONNECT_INTERVAL);
+      if (connectRef.current) {
+        reconnectTimeoutRef.current = setTimeout(connectRef.current, RECONNECT_INTERVAL);
+      }
     }
   }, []);
 
   useEffect(() => {
+    // Store connect in ref to avoid closure issues
+    connectRef.current = connect;
     connect();
     return () => {
       if (wsRef.current) {

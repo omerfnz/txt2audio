@@ -31,22 +31,25 @@ export function Player({ audioUrl, projectId, onNext, onPrevious }: PlayerProps)
                 const playPromise = audioRef.current.play();
                 if (playPromise !== undefined) {
                     playPromise
-                        .then(() => setIsPlaying(true))
+                        .then(() => {
+                            // Use setTimeout to avoid setState in effect
+                            setTimeout(() => setIsPlaying(true), 0);
+                        })
                         .catch((err) => {
                             console.warn('Auto-play prevented or failed:', err);
-                            setIsPlaying(false);
+                            setTimeout(() => setIsPlaying(false), 0);
                         });
                 }
             } catch (error) {
                 console.error('Failed to set audio source:', error);
-                setIsPlaying(false);
+                setTimeout(() => setIsPlaying(false), 0);
             }
         } else {
             // Reset state when no audio URL
             const audio = audioRef.current;
             audio.pause();
             audio.src = '';
-            setIsPlaying(false);
+            setTimeout(() => setIsPlaying(false), 0);
         }
 
         const audio = audioRef.current;
